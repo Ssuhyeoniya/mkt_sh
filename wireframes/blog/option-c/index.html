@@ -51,8 +51,8 @@
   }
   .a-panel{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
-    padding:18px; display:flex; flex-direction:column;
-    min-height:320px;             /* ← 높이 앵커 (TOP 5 기준) */
+    padding:16px; display:flex; flex-direction:column;
+    min-height:260px;             /* ← 높이 축소 */
   }
   .a-panel .ph{
     flex-shrink:0;
@@ -90,12 +90,11 @@
   .top-list .tt{ flex:1 1 auto; min-width:0; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .top-list .vv{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-2); flex-shrink:0; }
 
-  /* 카테고리 분포 — 항목들이 균등하게 패널을 채움 (각 항목 최소 36px) */
-  .cat-bars{ flex:1 1 auto; display:flex; flex-direction:column; }
+  /* 카테고리 분포 — 최대 5개, 위쪽 정렬 (자연 높이) */
+  .cat-bars{ flex:1 1 auto; display:flex; flex-direction:column; align-content:flex-start; }
   .cat-bar{
-    flex:1 1 0; min-height:36px;
-    display:flex; flex-direction:column; justify-content:center;
-    padding:6px 0;
+    /* flex 분배 제거 → 자연 높이로 위쪽부터 채움 */
+    padding:8px 0;
   }
   .cat-bar + .cat-bar{ border-top:1px solid var(--line); }
   .cat-bar .label{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; }
@@ -103,6 +102,32 @@
   .cat-bar .label .v{ font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:11.5px; }
   .cat-bar .track{ height:6px; background:#1a1e25; border-radius:99px; overflow:hidden; }
   .cat-bar .fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),#9c83ff); }
+
+  /* 시간 추이: 탭 + 툴팁 */
+  .trend-tabs{ display:inline-flex; gap:0; background:#1a1e25; padding:2px; border-radius:7px; flex-shrink:0; }
+  .trend-tab{
+    font-size:11px; padding:4px 10px; border-radius:5px;
+    background:transparent; border:0; color:var(--muted); cursor:pointer; line-height:1.3;
+  }
+  .trend-tab:hover{ color:#fff; }
+  .trend-tab.active{ background:var(--accent); color:#fff; }
+  .trend-wrap{ position:relative; }
+  .trend-tooltip{
+    position:absolute; top:0; pointer-events:none;
+    background:#1a1e25; border:1px solid var(--line-2); border-radius:8px;
+    padding:8px 10px; font-size:11px; color:var(--text);
+    box-shadow:0 6px 20px rgba(0,0,0,.5);
+    transform:translateX(-50%) translateY(-100%);
+    margin-top:-6px;
+    display:none; z-index:5; white-space:nowrap; min-width:130px;
+  }
+  .trend-tooltip .tt-date{
+    color:var(--muted); margin-bottom:5px; font-family:'JetBrains Mono',monospace;
+    padding-bottom:5px; border-bottom:1px solid var(--line);
+  }
+  .trend-tooltip .tt-row{ display:flex; align-items:center; gap:6px; padding:2px 0; }
+  .trend-tooltip .tt-row .lbl{ color:var(--muted); }
+  .trend-tooltip .tt-row .num{ font-family:'JetBrains Mono',monospace; margin-left:auto; padding-left:14px; color:var(--text); }
 
   /* ── 더보기 모달 (전체 발행글 랭킹) ───────────── */
   .modal-overlay{
@@ -149,10 +174,24 @@
     font-size:11.5px; color:var(--muted);
   }
 
-  /* Trend chart — 패널 내부에서 stretch (최소 200px) */
-  .trend-wrap{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
-  .trend-svg{ flex:1 1 auto; width:100%; min-height:200px; display:block; }
+  /* Trend chart — 패널 내부에서 stretch (최소 160px) */
+  .trend-area{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
+  .trend-svg{ flex:1 1 auto; width:100%; min-height:160px; display:block; }
   .trend-legend{ display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--muted); flex-shrink:0; }
+
+  /* ── 반응형: 모바일 1열 3행 ── */
+  @media (max-width: 900px){
+    .analytics-row{ grid-template-columns:1fr; }
+    .a-panel{ min-height:240px; }
+    .kpi-grid{ grid-template-columns:repeat(2, 1fr); }
+  }
+  @media (max-width: 640px){
+    .kpi-grid{ grid-template-columns:1fr; }
+    .sidebar{ width:64px; padding:10px 6px; }
+    .sidebar .brand-name, .sidebar .brand-ver, .sidebar .nav-section, .sidebar .nav-item{ display:none; }
+    .main{ padding:18px 14px; }
+    .conn{ min-width:0; flex-wrap:wrap; }
+  }
 
   /* ── Bottom table ───────────────────────────────── */
   .table-head, .post-row{
@@ -298,15 +337,24 @@
       </div>
       <div class="a-panel">
         <div class="ph">
-          <div class="eyebrow">시간 추이</div>
-          <h2>월별 발행 / 누적 방문</h2>
+          <div class="ph-text">
+            <div class="eyebrow">시간 추이</div>
+            <h2>총방문 / 인바운드</h2>
+          </div>
+          <div class="trend-tabs">
+            <button class="trend-tab active" data-mode="daily">일별</button>
+            <button class="trend-tab" data-mode="monthly">월별</button>
+          </div>
         </div>
         <div class="pb">
-          <div class="trend-wrap">
-            <svg class="trend-svg" id="trend" viewBox="0 0 300 160" preserveAspectRatio="none"></svg>
+          <div class="trend-area">
+            <div class="trend-wrap">
+              <svg class="trend-svg" id="trend" viewBox="0 0 360 180"></svg>
+              <div class="trend-tooltip" id="trend-tooltip"></div>
+            </div>
             <div class="trend-legend">
-              <span><span class="dot" style="background:var(--accent)"></span> 발행수</span>
-              <span><span class="dot" style="background:var(--green)"></span> 누적방문</span>
+              <span><span class="dot" style="background:var(--accent)"></span> 총방문</span>
+              <span><span class="dot" style="background:var(--green)"></span> 인바운드</span>
             </div>
           </div>
         </div>
@@ -487,7 +535,8 @@
       map[c].count++;
       map[c].totalVisit += Number(r.totalVisit||0);
     });
-    const arr = Object.entries(map).sort((a,b)=>b[1].count-a[1].count);
+    // 최대 5개까지만 표시 (건수 많은 순)
+    const arr = Object.entries(map).sort((a,b)=>b[1].count-a[1].count).slice(0, 5);
     const max = Math.max.apply(null, arr.map(([,v])=>v.count).concat([1]));
     if (!arr.length){ $('cat-bars').innerHTML = '<div class="empty" style="margin:auto">데이터 없음</div>'; return; }
     $('cat-bars').innerHTML = arr.map(function(e){
@@ -499,40 +548,106 @@
     }).join('');
   }
 
-  function renderTrend(rows){
-    const map = {};
-    rows.forEach(function(r){
-      const m = String(r['날짜']||'').slice(0,7);
-      if (!m) return;
-      if (!map[m]) map[m] = { count:0, totalVisit:0 };
-      map[m].count++;
-      map[m].totalVisit += Number(r.totalVisit||0);
-    });
-    const months = Object.keys(map).sort();
-    const svg = $('trend');
-    if (!months.length){ svg.innerHTML = ''; return; }
-    const counts = months.map(m=>map[m].count);
-    const visits = months.map(m=>map[m].totalVisit);
-    const W = 300, H = 160, P = 12, BOTTOM = 22;
-    const maxC = Math.max.apply(null, counts.concat([1]));
-    const maxV = Math.max.apply(null, visits.concat([1]));
-    const x  = i => P + i * ((W-2*P)/Math.max(months.length-1,1));
-    const yC = v => H - BOTTOM - (v/maxC) * (H - BOTTOM - P);
-    const yV = v => H - BOTTOM - (v/maxV) * (H - BOTTOM - P);
+  // ── 시간 추이: 일별/월별 + Y축 + 호버 툴팁 ──────────────
+  let TREND_MODE = 'daily';
+  function fmtK(n){
+    n = Number(n) || 0;
+    if (n >= 1000) return (n/1000).toFixed(n>=10000?0:1) + 'k';
+    return String(Math.round(n));
+  }
 
-    const pathC = months.map((m,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${yC(counts[i]).toFixed(1)}`).join(' ');
-    const pathV = months.map((m,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${yV(visits[i]).toFixed(1)}`).join(' ');
-    const areaC = pathC + ` L${x(months.length-1).toFixed(1)},${H-BOTTOM} L${x(0).toFixed(1)},${H-BOTTOM} Z`;
+  function renderTrend(rows){
+    // 일/월별 집계 — 합산: 총방문(totalVisit), 인바운드(inbound)
+    const map = {};
+    const sliceLen = (TREND_MODE === 'monthly') ? 7 : 10;
+    rows.forEach(function(r){
+      const k = String(r['날짜']||'').slice(0, sliceLen);
+      if (!k) return;
+      if (!map[k]) map[k] = { totalVisit:0, inbound:0 };
+      map[k].totalVisit += Number(r.totalVisit||0);
+      map[k].inbound    += Number(r.inbound||0);
+    });
+    const keys   = Object.keys(map).sort();
+    const svg    = $('trend');
+    const tip    = $('trend-tooltip');
+    if (!keys.length){ svg.innerHTML = ''; tip.style.display='none'; return; }
+
+    const visits   = keys.map(k=>map[k].totalVisit);
+    const inbounds = keys.map(k=>map[k].inbound);
+
+    // viewBox geometry (Y축 좌측 라벨 공간 38px, 우측 8, 상단 8, 하단 24)
+    const W = 360, H = 180, P_T = 8, P_B = 24, P_L = 38, P_R = 8;
+    const innerW = W - P_L - P_R;
+    const innerH = H - P_T - P_B;
+    const maxV = Math.max.apply(null, visits.concat([1]));
+    const maxI = Math.max.apply(null, inbounds.concat([1]));
+
+    const x  = i => P_L + i * (innerW / Math.max(keys.length - 1, 1));
+    const yV = v => P_T + innerH - (v / maxV) * innerH;   // 총방문 (좌측 Y축 기준)
+    const yI = v => P_T + innerH - (v / maxI) * innerH;   // 인바운드 (별도 정규화)
+
+    const pathV = keys.map((k,i)=> (i?'L':'M') + x(i).toFixed(1) + ',' + yV(visits[i]).toFixed(1)).join(' ');
+    const pathI = keys.map((k,i)=> (i?'L':'M') + x(i).toFixed(1) + ',' + yI(inbounds[i]).toFixed(1)).join(' ');
+    const areaV = pathV + ' L' + x(keys.length-1).toFixed(1) + ',' + (P_T+innerH) + ' L' + x(0).toFixed(1) + ',' + (P_T+innerH) + ' Z';
 
     let html = '';
-    html += `<g stroke="rgba(255,255,255,.05)"><line x1="${P}" y1="${H-BOTTOM}" x2="${W-P}" y2="${H-BOTTOM}"/><line x1="${P}" y1="${(H-BOTTOM+P)/2}" x2="${W-P}" y2="${(H-BOTTOM+P)/2}"/></g>`;
-    html += `<path d="${areaC}" fill="rgba(124,92,255,.12)"/>`;
-    html += `<path d="${pathC}" fill="none" stroke="#7c5cff" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
-    html += `<path d="${pathV}" fill="none" stroke="#3ddc97" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
-    months.forEach(function(m,i){
-      html += `<text x="${x(i)}" y="${H-6}" font-size="9" fill="#7a8290" text-anchor="middle">${m.slice(5)}</text>`;
+
+    // Y축 grid + 좌측 라벨 (총방문 기준 5눈금)
+    for (let i = 0; i <= 4; i++){
+      const yPos = P_T + (innerH * i / 4);
+      const val  = maxV * (1 - i/4);
+      html += '<line x1="'+P_L+'" y1="'+yPos+'" x2="'+(W-P_R)+'" y2="'+yPos+'" stroke="rgba(255,255,255,.05)" stroke-width="1"/>';
+      html += '<text x="'+(P_L-5)+'" y="'+(yPos+3)+'" font-size="9" fill="#7a8290" text-anchor="end">'+fmtK(val)+'</text>';
+    }
+    // 영역 + 라인
+    html += '<path d="'+areaV+'" fill="rgba(124,92,255,.12)"/>';
+    html += '<path d="'+pathV+'" fill="none" stroke="#7c5cff" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+    html += '<path d="'+pathI+'" fill="none" stroke="#3ddc97" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+
+    // X축 라벨 (균일 간격)
+    const labelEvery = Math.max(1, Math.ceil(keys.length / 6));
+    keys.forEach(function(k, i){
+      if (i % labelEvery === 0 || i === keys.length-1){
+        const lbl = (TREND_MODE === 'monthly') ? k.slice(2,7) : k.slice(5,10);
+        html += '<text x="'+x(i).toFixed(1)+'" y="'+(H-6)+'" font-size="9" fill="#7a8290" text-anchor="middle">'+lbl+'</text>';
+      }
     });
+
+    // 호버 영역 + 점 + 가이드 라인
+    keys.forEach(function(k, i){
+      const cx = x(i).toFixed(1);
+      const halfW = (innerW / Math.max(keys.length-1, 1)) / 2;
+      html += '<g class="hover-grp" data-i="'+i+'">';
+      html += '<rect x="'+(x(i)-halfW).toFixed(1)+'" y="'+P_T+'" width="'+(halfW*2).toFixed(1)+'" height="'+innerH+'" fill="transparent" pointer-events="all"/>';
+      html += '<line class="hv" x1="'+cx+'" y1="'+P_T+'" x2="'+cx+'" y2="'+(P_T+innerH)+'" stroke="rgba(255,255,255,.18)" stroke-width="1" opacity="0"/>';
+      html += '<circle class="hd" cx="'+cx+'" cy="'+yV(visits[i]).toFixed(1)+'" r="3.5" fill="#7c5cff" stroke="#0b0d10" stroke-width="1.5" opacity="0"/>';
+      html += '<circle class="hd" cx="'+cx+'" cy="'+yI(inbounds[i]).toFixed(1)+'" r="3.5" fill="#3ddc97" stroke="#0b0d10" stroke-width="1.5" opacity="0"/>';
+      html += '</g>';
+    });
+
     svg.innerHTML = html;
+
+    // 호버 이벤트 바인딩
+    svg.querySelectorAll('.hover-grp').forEach(function(g){
+      const i = parseInt(g.dataset.i, 10);
+      g.addEventListener('mouseenter', function(){
+        g.querySelectorAll('.hd, .hv').forEach(function(el){ el.setAttribute('opacity','1'); });
+        const rect = svg.getBoundingClientRect();
+        const wrap = svg.parentNode.getBoundingClientRect();
+        const ratioX = rect.width / W;
+        const xPx = rect.left - wrap.left + x(i) * ratioX;
+        tip.style.left = xPx + 'px';
+        tip.style.display = 'block';
+        tip.innerHTML =
+          '<div class="tt-date">'+keys[i]+'</div>'
+          + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
+          + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
+      });
+      g.addEventListener('mouseleave', function(){
+        g.querySelectorAll('.hd, .hv').forEach(function(el){ el.setAttribute('opacity','0'); });
+        tip.style.display = 'none';
+      });
+    });
   }
 
   // ── table + pagination ───────────────────────────
@@ -671,6 +786,16 @@
   $('q').addEventListener('input',     function(){ CURRENT_PAGE=1; renderTable(); });
   $('cat').addEventListener('change',  function(){ CURRENT_PAGE=1; renderTable(); });
   $('sort').addEventListener('change', function(){ CURRENT_PAGE=1; renderTable(); });
+
+  // 시간 추이: 일별/월별 탭
+  document.querySelectorAll('.trend-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.trend-tab').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      TREND_MODE = btn.dataset.mode;
+      renderTrend(SCOPED_ROWS);
+    });
+  });
 
   // 기간 조회: 빠른 선택 버튼
   document.querySelectorAll('.qbtn').forEach(function(btn){
