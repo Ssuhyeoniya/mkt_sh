@@ -33,7 +33,7 @@
   .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
   .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
 
-  /* 카테고리 막대그래프 (방문자 + 인바운드) */
+  /* 카테고리 막대그래프 — 세로형 (X: 카테고리, Y: 값) */
   .cat-chart-card{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
     padding:18px; margin-bottom:14px;
@@ -44,20 +44,73 @@
   .cat-chart-card .legend{ display:flex; gap:12px; font-size:11.5px; color:var(--muted); flex-wrap:wrap; }
   .cat-chart-card .legend .it{ display:inline-flex; align-items:center; gap:5px; }
 
-  .cat-chart{ display:flex; flex-direction:column; gap:10px; }
-  .cat-row{ display:grid; grid-template-columns:84px 1fr 1fr; gap:14px; align-items:center; }
-  @media (max-width:640px){ .cat-row{ grid-template-columns:64px 1fr 1fr; gap:8px; } }
-  .cat-row .name{ font-size:12.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cat-bar-wrap{ position:relative; height:22px; background:#1a1e25; border-radius:6px; overflow:hidden; }
-  .cat-bar-wrap .fill{ position:absolute; left:0; top:0; bottom:0; border-radius:6px; }
-  .cat-bar-wrap .fill.visit{ background:linear-gradient(90deg, var(--accent), #9c83ff); }
-  .cat-bar-wrap .fill.inbound{ background:linear-gradient(90deg, var(--green), #76eaba); }
-  .cat-bar-wrap .v{
-    position:absolute; right:8px; top:50%; transform:translateY(-50%);
-    font-family:'JetBrains Mono', monospace; font-size:11px; color:#fff; font-weight:500;
-    text-shadow:0 0 6px rgba(0,0,0,.4);
+  .vchart{
+    position:relative;
+    display:flex; align-items:stretch;
+    gap:10px;
+    padding:24px 0 6px;        /* 위쪽: 값 라벨, 아래쪽: x축 라벨용 (안쪽에서 처리) */
   }
-  .cat-bar-wrap .v.outside{ color:var(--text-2); text-shadow:none; right:auto; left:auto; padding-left:8px; }
+  .vchart .y-axis{
+    width:42px; flex-shrink:0; position:relative; height:240px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--muted);
+    text-align:right; padding-right:6px;
+  }
+  .vchart .y-axis span{ line-height:1; }
+  .vchart .plot{
+    flex:1; min-width:0; position:relative; height:240px;
+    display:flex; align-items:flex-end; justify-content:space-around;
+    gap:6px;
+    border-left:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    padding:0 6px;
+  }
+  /* 가이드 그리드 라인 */
+  .vchart .plot::before, .vchart .plot::after,
+  .vchart .plot .gl{
+    content:""; position:absolute; left:0; right:0; height:1px;
+    background:rgba(255,255,255,.04); pointer-events:none;
+  }
+  .vchart .plot::before{ top:0; }
+  .vchart .plot::after{ top:50%; }
+  .vchart .plot .gl1{ top:25%; }
+  .vchart .plot .gl3{ top:75%; }
+
+  .vgroup{
+    flex:1; min-width:0; height:100%;
+    display:flex; flex-direction:column; align-items:center;
+    position:relative;
+  }
+  .vgroup .vbars{
+    display:flex; align-items:flex-end; justify-content:center;
+    gap:4px; width:100%; height:100%;
+    padding:0 4px;
+  }
+  .vbar{
+    flex:1; max-width:22px;
+    border-radius:4px 4px 0 0;
+    position:relative;
+    transition:filter .15s;
+    min-height:2px;
+  }
+  .vbar.visit{   background:linear-gradient(180deg, #9c83ff, var(--accent)); }
+  .vbar.inbound{ background:linear-gradient(180deg, #76eaba, var(--green)); }
+  .vbar:hover{ filter:brightness(1.2); }
+  .vbar .vlabel{
+    position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    margin-bottom:4px;
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    color:var(--text); white-space:nowrap;
+    opacity:.85;
+  }
+  .vgroup .xlabel{
+    position:absolute; top:100%; left:0; right:0;
+    margin-top:8px;
+    text-align:center;
+    font-size:11px; color:var(--text-2);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .vchart-bottom-gap{ height:28px; }   /* x 라벨 차지하는 영역 확보 */
 
   .hero{
     background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(124,92,255,.04));
@@ -159,7 +212,20 @@
     <div class="brand-ver">2026.05 · v1.0</div>
     <div class="nav-section">Overview</div>
     <a class="nav-item" href="../../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item" href="../../../salesmap/">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
     <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
     <a class="nav-item active" href="../">블로그</a>
     <a class="nav-item">인스타그램</a>
     <a class="nav-item">링크드인</a>
@@ -603,7 +669,7 @@
     `).join('');
   }
 
-  // 카테고리별 방문자 + 인바운드 막대그래프
+  // 카테고리별 방문자 + 인바운드 — 세로 막대그래프 (X: 카테고리, Y: 값)
   function renderCatChart(d){
     const wrap = $('cat-chart');
     if (!d || !d.catList || !d.catList.length){
@@ -611,25 +677,42 @@
       return;
     }
     // 누적 방문 많은 순 TOP 8
-    const arr = d.catList.slice().sort((a,b)=>b.totalVisit-a.totalVisit).slice(0,8);
+    const arr  = d.catList.slice().sort((a,b)=>b.totalVisit-a.totalVisit).slice(0,8);
     const maxV = Math.max.apply(null, arr.map(c=>c.totalVisit).concat([1]));
     const maxI = Math.max.apply(null, arr.map(c=>c.inbound).concat([1]));
-    wrap.innerHTML = arr.map(function(c){
-      const wv = Math.max(2, c.totalVisit / maxV * 100);
-      const wi = Math.max(2, c.inbound    / maxI * 100);
-      // 너비가 너무 좁으면 값 라벨이 안에 들어가지 않으므로 바 밖에 표시
-      const visitLabel = wv > 20
-        ? `<span class="v">${fmtK(c.totalVisit)}</span>`
-        : `<span class="v outside" style="left:${wv}%; padding-left:6px; color:var(--text-2);">${fmtK(c.totalVisit)}</span>`;
-      const inboundLabel = wi > 20
-        ? `<span class="v">${fmt(c.inbound)}</span>`
-        : `<span class="v outside" style="left:${wi}%; padding-left:6px; color:var(--text-2);">${fmt(c.inbound)}</span>`;
-      return `<div class="cat-row">
-        <div class="name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
-        <div class="cat-bar-wrap"><div class="fill visit" style="width:${wv}%"></div>${visitLabel}</div>
-        <div class="cat-bar-wrap"><div class="fill inbound" style="width:${wi}%"></div>${inboundLabel}</div>
-      </div>`;
+
+    // 좌측 Y축은 방문자 기준 5눈금으로 표시
+    const yTicks = [1, .75, .5, .25, 0].map(function(p){
+      return '<span>' + fmtK(maxV * p) + '</span>';
     }).join('');
+
+    const groups = arr.map(function(c){
+      // 각 metric 자체 max 기준 정규화 → 0~100%
+      const hv = Math.max(2, c.totalVisit / maxV * 100);
+      const hi = Math.max(2, c.inbound    / maxI * 100);
+      return ''
+        + '<div class="vgroup">'
+          + '<div class="vbars">'
+            + '<div class="vbar visit" style="height:'+hv.toFixed(1)+'%" title="방문자 '+fmt(c.totalVisit)+'">'
+              + '<span class="vlabel">'+fmtK(c.totalVisit)+'</span>'
+            + '</div>'
+            + '<div class="vbar inbound" style="height:'+hi.toFixed(1)+'%" title="인바운드 '+fmt(c.inbound)+'">'
+              + '<span class="vlabel">'+fmt(c.inbound)+'</span>'
+            + '</div>'
+          + '</div>'
+          + '<div class="xlabel" title="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+'</div>'
+        + '</div>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<div class="vchart">'
+        + '<div class="y-axis">' + yTicks + '</div>'
+        + '<div class="plot">'
+          + '<div class="gl gl1"></div><div class="gl gl3"></div>'
+          + groups
+        + '</div>'
+      + '</div>'
+      + '<div class="vchart-bottom-gap"></div>';
   }
 
   function refresh(){
