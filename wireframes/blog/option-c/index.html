@@ -214,27 +214,30 @@
     .conn{ min-width:0; flex-wrap:wrap; }
   }
 
-  /* ── Bottom table — 컨테이너 너비에 따라 균등 축소 + 가로 스크롤 폴백 ── */
-  .table-scroll{ overflow-x:auto; }
-  .table-scroll::-webkit-scrollbar{ height:8px; }
+  /* ── Bottom table — 가로 + 세로 스크롤 통합, sticky header ── */
+  .table-scroll{
+    overflow:auto;
+    max-height: 440px;          /* head ≈40 + 행 40 × 10 */
+  }
+  .table-scroll::-webkit-scrollbar{ width:8px; height:8px; }
   .table-scroll::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
   .table-head, .post-row{
     display:grid;
     grid-template-columns:
-      minmax(28px, 0.45fr)
-      minmax(40px, 0.7fr)
-      minmax(140px, 4fr)
-      minmax(56px, 1fr)
-      minmax(70px, 1.3fr)
-      minmax(72px, 1.1fr)
-      minmax(56px, 1fr)
-      minmax(50px, 0.9fr)
-      minmax(50px, 0.9fr)
-      minmax(50px, 0.9fr)
-      minmax(28px, 0.45fr)
-      minmax(46px, 0.8fr);
-    gap:8px; align-items:center;
-    min-width:760px;
+      minmax(24px, 0.35fr)   /* NO */
+      minmax(64px, 1fr)      /* 발행일 */
+      minmax(120px, 4fr)     /* 제목 */
+      minmax(36px, 0.6fr)    /* 썸네일 */
+      minmax(48px, 0.85fr)   /* 서비스 */
+      minmax(60px, 1.1fr)    /* 카테고리 */
+      minmax(48px, 0.85fr)   /* 총방문 */
+      minmax(44px, 0.8fr)    /* 주간 */
+      minmax(44px, 0.8fr)    /* 월간 */
+      minmax(44px, 0.8fr)    /* 유입 */
+      minmax(24px, 0.35fr)   /* 링크 */
+      minmax(40px, 0.7fr);   /* 상세 */
+    gap:6px; align-items:center;
+    min-width:700px;
   }
   .post-row .svc-tag{
     font-size:10.5px; padding:2px 7px; border-radius:4px;
@@ -374,6 +377,7 @@
     padding:10px 14px; background:var(--panel-2); color:var(--muted);
     font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
     border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:2;   /* 세로 스크롤 시 헤더 고정 */
   }
   .table-head .num-cell{ text-align:right; }
 
@@ -394,8 +398,7 @@
   .post-row .lk:hover{ color:var(--accent); border-color:var(--accent); }
 
   .table-body{
-    max-height: 400px;     /* 10행 × 40px */
-    overflow-y:auto;
+    /* 스크롤은 .table-scroll 에서 통합 처리 (head + body 동시 스크롤) */
   }
   .table-body::-webkit-scrollbar{ width:8px; }
   .table-body::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
@@ -573,12 +576,12 @@
      <div class="table-scroll">
       <div class="table-head">
         <div>NO</div>
-        <div>썸네일</div>
+        <div>발행일</div>
         <div>제목</div>
+        <div>썸네일</div>
         <div>서비스</div>
         <div>카테고리</div>
-        <div>발행일</div>
-        <div class="num-cell">누적방문</div>
+        <div class="num-cell">총방문</div>
         <div class="num-cell">주간</div>
         <div class="num-cell">월간</div>
         <div class="num-cell">유입</div>
@@ -726,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-12"></script>
+<script src="../proxy-client.js?v=20260510-13"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -1027,13 +1030,13 @@
         const link = r['링크'] ? `<a class="lk" href="${escAttr(r['링크'])}" target="_blank" rel="noopener noreferrer">↗</a>` : '<span class="lk" style="opacity:.3">-</span>';
         return '<div class="post-row">'
           + '<div class="no">'+idx+'</div>'
-          + '<div><div class="thumb-cell">'+thumb+'</div></div>'
+          + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
           + '<div class="title-wrap">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
           + '</div>'
+          + '<div><div class="thumb-cell">'+thumb+'</div></div>'
           + '<div>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</div>'
           + '<div>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</div>'
-          + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
           + '<div class="num-cell">'+fmt(r.totalVisit)+'</div>'
           + '<div class="num-cell">'+fmt(r.weeklyVisitor)+'</div>'
           + '<div class="num-cell">'+fmt(r.monthlyVisitor)+'</div>'
