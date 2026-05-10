@@ -111,6 +111,58 @@ function Blog_summary(params) {
   };
 }
 
+/**
+ * 행 업데이트 — postid 로 행을 찾아 service / category 컬럼만 갱신
+ *   params.postid    : 필수
+ *   params.service?  : 새 서비스 값 (생략 시 변경 없음)
+ *   params.category? : 새 카테고리 값 (생략 시 변경 없음)
+ */
+function Blog_update(params) {
+  params = params || {};
+  const postid = String(params.postid || '').trim();
+  if (!postid) throw new Error('postid_required');
+
+  const sheet = SpreadsheetApp.openById(BLOG_SHEET_ID).getSheetByName(BLOG_SHEET_NAME);
+  if (!sheet) throw new Error('sheet_not_found:' + BLOG_SHEET_NAME);
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) throw new Error('no_data');
+
+  const headers = values[0].map(function (h) { return String(h || '').trim(); });
+  const postidCol = headers.indexOf('postid');
+  if (postidCol < 0) throw new Error('postid_column_not_found');
+
+  // postid 매칭 행 찾기
+  let rowIdx = -1;
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][postidCol] == null ? '' : values[i][postidCol]).trim() === postid) {
+      rowIdx = i;
+      break;
+    }
+  }
+  if (rowIdx < 0) throw new Error('row_not_found:' + postid);
+
+  const updates = {};
+  const fields = ['service', 'category'];
+  fields.forEach(function (f) {
+    if (params[f] !== undefined && params[f] !== null) {
+      const c = headers.indexOf(f);
+      if (c >= 0) {
+        const v = String(params[f]);
+        sheet.getRange(rowIdx + 1, c + 1).setValue(v);
+        updates[f] = v;
+      }
+    }
+  });
+
+  return {
+    postid: postid,
+    rowNumber: rowIdx + 1,
+    updates: updates,
+    updatedAt: new Date().toISOString()
+  };
+}
+
 // ── helpers ─────────────────────────────────
 function blog_norm_(v) {
   if (v instanceof Date) return Utilities.formatDate(v, BLOG_TZ, 'yyyy-MM-dd');
