@@ -669,7 +669,7 @@
     `).join('');
   }
 
-  // 카테고리별 방문자 + 인바운드 — 세로 막대그래프 (X: 카테고리, Y: 값)
+  // 카테고리별 방문자 + 인바운드 — 세로 막대그래프 (X: 카테고리, Y: 값 · 단일 스케일)
   function renderCatChart(d){
     const wrap = $('cat-chart');
     if (!d || !d.catList || !d.catList.length){
@@ -677,26 +677,27 @@
       return;
     }
     // 누적 방문 많은 순 TOP 8
-    const arr  = d.catList.slice().sort((a,b)=>b.totalVisit-a.totalVisit).slice(0,8);
-    const maxV = Math.max.apply(null, arr.map(c=>c.totalVisit).concat([1]));
-    const maxI = Math.max.apply(null, arr.map(c=>c.inbound).concat([1]));
+    const arr = d.catList.slice().sort((a,b)=>b.totalVisit-a.totalVisit).slice(0,8);
 
-    // 좌측 Y축은 방문자 기준 5눈금으로 표시
+    // 단일 Y축 — 방문자/인바운드 모든 값 중 최대값 기준으로 정규화
+    const allVals = arr.flatMap(c => [c.totalVisit, c.inbound]);
+    const maxAll  = Math.max.apply(null, allVals.concat([1]));
+
+    // 좌측 Y축 5눈금 (k 포맷)
     const yTicks = [1, .75, .5, .25, 0].map(function(p){
-      return '<span>' + fmtK(maxV * p) + '</span>';
+      return '<span>' + fmtK(maxAll * p) + '</span>';
     }).join('');
 
     const groups = arr.map(function(c){
-      // 각 metric 자체 max 기준 정규화 → 0~100%
-      const hv = Math.max(2, c.totalVisit / maxV * 100);
-      const hi = Math.max(2, c.inbound    / maxI * 100);
+      const hv = Math.max(0.5, c.totalVisit / maxAll * 100);
+      const hi = Math.max(0.5, c.inbound    / maxAll * 100);
       return ''
         + '<div class="vgroup">'
           + '<div class="vbars">'
-            + '<div class="vbar visit" style="height:'+hv.toFixed(1)+'%" title="방문자 '+fmt(c.totalVisit)+'">'
+            + '<div class="vbar visit" style="height:'+hv.toFixed(2)+'%" title="방문자 '+fmt(c.totalVisit)+'">'
               + '<span class="vlabel">'+fmtK(c.totalVisit)+'</span>'
             + '</div>'
-            + '<div class="vbar inbound" style="height:'+hi.toFixed(1)+'%" title="인바운드 '+fmt(c.inbound)+'">'
+            + '<div class="vbar inbound" style="height:'+hi.toFixed(2)+'%" title="인바운드 '+fmt(c.inbound)+'">'
               + '<span class="vlabel">'+fmt(c.inbound)+'</span>'
             + '</div>'
           + '</div>'
