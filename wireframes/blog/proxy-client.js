@@ -39,10 +39,31 @@
         });
       }
       // GAS 웹앱은 Anyone 접근 시 GET 요청에 CORS 허용 헤더를 포함합니다.
-      const res = await fetch(u.toString(), { method: 'GET', redirect: 'follow' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'unknown_error');
+      let res;
+      try {
+        res = await fetch(u.toString(), { method: 'GET', redirect: 'follow' });
+      } catch (err) {
+        throw new Error('네트워크 오류: ' + err.message);
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — 권한 또는 URL 확인');
+
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        // GAS 코드 문법 오류 등 → HTML 에러 페이지 반환된 경우
+        const isHtml = /^\s*<!DOCTYPE|^\s*<html/i.test(text);
+        const snippet = text.slice(0, 140).replace(/\s+/g, ' ');
+        throw new Error(
+          (isHtml ? 'GAS가 HTML 에러 페이지 반환 — 모듈 코드 문법 오류 또는 재배포 필요. ' : 'JSON 파싱 실패. ')
+          + '응답 미리보기: ' + snippet
+        );
+      }
+      if (!json.ok) {
+        const avail = json.available ? ' (사용 가능: ' + json.available.join(', ') + ')' : '';
+        throw new Error(json.error + avail);
+      }
       return json;
     },
 
