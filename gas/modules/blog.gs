@@ -169,59 +169,96 @@ function Blog_update(params) {
  * 반환:
  *   { utm_term, count, items:[{date,datetime,company,manager,service}], byDate:[{date,count}] }
  */
+// 세일즈맵 행을 5분 캐시 (utm 단위 lookup용)
+function blog_loadSalesmap_() {
+  const cache = CacheService.getScriptCache();
+  const CACHE_KEY = 'salesmap_inbound_v1';
+  let parsed = null;
+  try {
+    const cached = cache.get(CACHE_KEY);
+    if (cached) parsed = JSON.parse(cached);
+  } catch (_) {}
+  if (parsed) return parsed;
+
+  const SALESMAP_NAME = 'Data_Result_Final';
+  const sheet = SpreadsheetApp.openById(BLOG_SHEET_ID).getSheetByName(SALESMAP_NAME);
+  if (!sheet) throw new Error('sheet_not_found:' + SALESMAP_NAME);
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) { parsed = { rows: [] }; }
+  else {
+    const headRow = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const headers = headRow.map(function (h) { return String(h || '').trim(); });
+    const utmIdx     = headers.indexOf('utm_term');
+    const dateIdx    = headers.indexOf('제출 날짜');
+    const companyIdx = headers.indexOf('기업명');
+    const managerIdx = headers.indexOf('담당자명');
+    const serviceIdx = headers.indexOf('관심 서비스');
+    if (utmIdx < 0) throw new Error('utm_term_column_not_found_in_salesmap');
+
+    const all = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+    const rows = [];
+    for (let i = 0; i < all.length; i++) {
+      const r = all[i];
+      const u = r[utmIdx] == null ? '' : String(r[utmIdx]).trim();
+      if (!u) continue;
+      const raw = dateIdx >= 0 ? r[dateIdx] : '';
+      let d = '';
+      if (raw instanceof Date) d = Utilities.formatDate(raw, BLOG_TZ, 'yyyy-MM-dd HH:mm');
+      else if (raw) d = String(raw).slice(0, 16);
+      rows.push({
+        u: u, d: d,
+        c: companyIdx >= 0 ? String(r[companyIdx] || '') : '',
+        m: managerIdx >= 0 ? String(r[managerIdx] || '') : '',
+        s: serviceIdx >= 0 ? String(r[serviceIdx] || '') : ''
+      });
+    }
+    parsed = { rows: rows };
+  }
+  try {
+    const json = JSON.stringify(parsed);
+    if (json.length < 95000) cache.put(CACHE_KEY, json, 300);
+  } catch (_) {}
+  return parsed;
+}
+
 function Blog_inboundDates(params) {
   params = params || {};
   const utm = String(params.utm_term || '').trim();
   if (!utm) throw new Error('utm_term_required');
-
-  const SALESMAP_NAME = 'Data_Result_Final';
-  const ss = SpreadsheetApp.openById(BLOG_SHEET_ID);
-  const sheet = ss.getSheetByName(SALESMAP_NAME);
-  if (!sheet) throw new Error('sheet_not_found:' + SALESMAP_NAME);
-
-  const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { utm_term: utm, count: 0, items: [], byDate: [] };
-
-  const headers = values[0].map(function (h) { return String(h || '').trim(); });
-  const utmIdx     = headers.indexOf('utm_term');
-  const dateIdx    = headers.indexOf('제출 날짜');
-  const companyIdx = headers.indexOf('기업명');
-  const managerIdx = headers.indexOf('담당자명');
-  const serviceIdx = headers.indexOf('관심 서비스');
-  if (utmIdx < 0) throw new Error('utm_term_column_not_found_in_salesmap');
-
+  const parsed = blog_loadSalesmap_();
+  const list = parsed.rows || [];
   const items = [];
   const byDateMap = {};
-  for (let i = 1; i < values.length; i++) {
-    const r = values[i];
-    if (String(r[utmIdx] == null ? '' : r[utmIdx]).trim() !== utm) continue;
-    let raw = dateIdx >= 0 ? r[dateIdx] : '';
-    let dateStr = '';
-    let dateTime = '';
-    if (raw instanceof Date) {
-      dateStr  = Utilities.formatDate(raw, BLOG_TZ, 'yyyy-MM-dd');
-      dateTime = Utilities.formatDate(raw, BLOG_TZ, 'yyyy-MM-dd HH:mm');
-    } else if (raw) {
-      const s = String(raw);
-      dateStr  = s.slice(0, 10);
-      dateTime = s.slice(0, 16);
-    }
-    items.push({
-      date: dateStr,
-      datetime: dateTime,
-      company: companyIdx >= 0 ? String(r[companyIdx] || '') : '',
-      manager: managerIdx >= 0 ? String(r[managerIdx] || '') : '',
-      service: serviceIdx >= 0 ? String(r[serviceIdx] || '') : ''
-    });
-    if (dateStr) byDateMap[dateStr] = (byDateMap[dateStr] || 0) + 1;
+  for (let i = 0; i < list.length; i++) {
+    const r = list[i];
+    if (r.u !== utm) continue;
+    const dt = r.d || '';
+    const date = dt.slice(0, 10);
+    items.push({ date: date, datetime: dt, company: r.c, manager: r.m, service: r.s });
+    if (date) byDateMap[date] = (byDateMap[date] || 0) + 1;
   }
-  // 최신순
   items.sort(function (a, b) { return (b.datetime || b.date) < (a.datetime || a.date) ? -1 : 1; });
   const byDate = Object.keys(byDateMap)
     .map(function (k) { return { date: k, count: byDateMap[k] }; })
     .sort(function (a, b) { return a.date < b.date ? 1 : -1; });
-
   return { utm_term: utm, count: items.length, items: items, byDate: byDate };
+}
+
+/**
+ * utm_term 별 인바운드 인입 건수 일괄 반환
+ *   { counts: {utm_term: count, ...}, total }
+ *   인사이트 페이지에서 한 번만 호출하여 모든 카테고리 인바운드 정확도 계산
+ */
+function Blog_inboundCounts() {
+  const parsed = blog_loadSalesmap_();
+  const list = parsed.rows || [];
+  const counts = {};
+  for (let i = 0; i < list.length; i++) {
+    const u = list[i].u;
+    counts[u] = (counts[u] || 0) + 1;
+  }
+  return { counts: counts, total: list.length };
 }
 
 // ── helpers ─────────────────────────────────
