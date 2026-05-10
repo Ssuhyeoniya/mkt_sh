@@ -336,6 +336,17 @@
   .d-section .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
   .d-section .body{ font-size:12.5px; color:var(--text-2); line-height:1.6; }
   .d-timeline-stub{ font-size:11.5px; color:var(--muted); padding:14px; background:#1a1e25; border-radius:8px; border:1px dashed var(--line-2); text-align:center; }
+  /* 인바운드 인입 리스트 */
+  .inbound-wrap{ background:#1a1e25; border:1px solid var(--line-2); border-radius:8px; max-height:220px; overflow-y:auto; }
+  .inbound-item{ padding:9px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:3px; }
+  .inbound-item:last-child{ border-bottom:0; }
+  .inbound-item .iro1{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .inbound-item .iro1 .dt{ font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--text); }
+  .inbound-item .iro1 .svc{ font-size:10.5px; padding:1px 6px; border-radius:4px; background:rgba(78,163,255,.15); color:#a3cdff; border:1px solid rgba(78,163,255,.3); }
+  .inbound-item .iro2{ font-size:11.5px; color:var(--text-2); }
+  .inbound-item .iro2 .mgr{ color:var(--muted); }
+  .inbound-summary{ padding:8px 12px; border-bottom:1px solid var(--line); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+  .inbound-summary .num{ color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight:600; }
 
   .d-meta{ padding:14px 18px 18px; border-top:1px solid var(--line); }
   .d-meta .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
@@ -598,6 +609,10 @@
         <span class="lbl">카테고리</span>
         <select class="d-select" id="d-cat-select" style="flex:1"></select>
       </div>
+      <div class="d-edit-row">
+        <span class="lbl">utm_term</span>
+        <input class="d-select" id="d-utm-input" type="text" placeholder="utm_term 입력" style="flex:1; font-family:'JetBrains Mono', monospace;" />
+      </div>
     </div>
     <div class="d-edit-banner" id="d-edit-banner"></div>
     <div class="d-kpi">
@@ -611,14 +626,17 @@
       <div class="body" id="d-summary">-</div>
     </div>
     <div class="d-section">
-      <div class="section-h">인바운드 인입 날짜</div>
-      <div class="d-timeline-stub">📅 차후 업데이트 연결 예정</div>
+      <div class="section-h">인바운드 인입 날짜 <span style="font-weight:400; color:var(--muted); margin-left:4px;" id="d-inbound-count"></span></div>
+      <div id="d-inbound-list">
+        <div class="d-timeline-stub">utm_term 정보가 필요합니다.</div>
+      </div>
     </div>
     <div class="d-meta">
       <div class="section-h">메타데이터</div>
       <div class="meta-item"><span class="k">postid</span><span class="v" id="d-meta-postid">-</span></div>
       <div class="meta-item"><span class="k">service</span><span class="v" id="d-meta-svc">-</span></div>
       <div class="meta-item"><span class="k">category</span><span class="v" id="d-meta-cat">-</span></div>
+      <div class="meta-item"><span class="k">utm_term</span><span class="v" id="d-meta-utm">-</span></div>
       <div class="meta-item"><span class="k">발행일</span><span class="v" id="d-meta-date">-</span></div>
     </div>
   </div>
@@ -1142,6 +1160,7 @@
     setText('d-meta-postid', row.postid || '-');
     setText('d-meta-svc',    row.service || '-');
     setText('d-meta-cat',    row.category || '-');
+    setText('d-meta-utm',    row.utm_term || '-');
     setText('d-meta-date',   fmtDate(row['날짜']));
 
     // 원문 링크
@@ -1153,6 +1172,48 @@
     $('detail-overlay').classList.add('open');
     $('detail-drawer').setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+
+    // 인바운드 인입 날짜 로드 (utm_term 매칭)
+    loadInboundDates(row.utm_term);
+  }
+
+  // ── 인바운드 인입 날짜 (세일즈맵 utm_term 매칭) ───────
+  async function loadInboundDates(utm_term){
+    const target = $('d-inbound-list');
+    const counter = $('d-inbound-count');
+    counter.textContent = '';
+    if (!utm_term){
+      target.innerHTML = '<div class="d-timeline-stub">utm_term 정보가 없어 매칭할 수 없습니다.</div>';
+      return;
+    }
+    if (!MktProxy.getUrl()){
+      target.innerHTML = '<div class="d-timeline-stub">프록시 미연결 — 연결 후 자동 표시</div>';
+      return;
+    }
+    target.innerHTML = '<div class="d-timeline-stub">불러오는 중...</div>';
+    try{
+      const data = await MktProxy.blogInboundDates(utm_term);
+      if (!data.count){
+        target.innerHTML = '<div class="d-timeline-stub">매칭되는 인바운드 없음 (utm_term: ' + escAttr(utm_term) + ')</div>';
+        return;
+      }
+      counter.textContent = '· ' + data.count + '건';
+      let html = '<div class="inbound-wrap">';
+      html += '<div class="inbound-summary"><span>매칭 utm_term: <code style="font-family:JetBrains Mono,monospace;color:var(--text-2);">'+escHtml(utm_term)+'</code></span><span><span class="num">'+data.count+'</span>건 인입</span></div>';
+      data.items.forEach(function(it){
+        html += '<div class="inbound-item">'
+          + '<div class="iro1">'
+            + '<span class="dt">'+ escHtml(it.datetime || it.date || '-') +'</span>'
+            + (it.service ? '<span class="svc">'+escHtml(it.service)+'</span>' : '')
+          + '</div>'
+          + '<div class="iro2">'+ escHtml(it.company || '-') + (it.manager ? ' <span class="mgr">· '+escHtml(it.manager)+'</span>' : '') +'</div>'
+        + '</div>';
+      });
+      html += '</div>';
+      target.innerHTML = html;
+    }catch(err){
+      target.innerHTML = '<div class="d-timeline-stub" style="color:var(--red); border-color:rgba(255,93,115,.3);">불러오기 실패: '+ escHtml(err.message) +'</div>';
+    }
   }
   function closeDetail(){
     $('detail-drawer').classList.remove('open');
@@ -1232,6 +1293,7 @@
     const categories = getCategories();
     const curSvc = String(CURRENT_DETAIL_ROW.service || '');
     const curCat = String(CURRENT_DETAIL_ROW.category || '');
+    const curUtm = String(CURRENT_DETAIL_ROW.utm_term || '');
     // 현재 값이 옵션 목록에 없으면 맨 앞에 추가
     if (curSvc && services.indexOf(curSvc) < 0) services.unshift(curSvc);
     if (curCat && categories.indexOf(curCat) < 0) categories.unshift(curCat);
@@ -1239,6 +1301,7 @@
       services.map(s => `<option value="${escAttr(s)}" ${s===curSvc?'selected':''}>${escHtml(s)}</option>`).join('');
     $('d-cat-select').innerHTML = '<option value="">— 선택 —</option>' +
       categories.map(c => `<option value="${escAttr(c)}" ${c===curCat?'selected':''}>${escHtml(c)}</option>`).join('');
+    $('d-utm-input').value = curUtm;
   }
 
   function setEditBanner(text, kind){
@@ -1272,9 +1335,11 @@
     if (!CURRENT_DETAIL_ROW) return;
     const newSvc = $('d-svc-select').value;
     const newCat = $('d-cat-select').value;
+    const newUtm = $('d-utm-input').value.trim();
     const oldSvc = String(CURRENT_DETAIL_ROW.service || '');
     const oldCat = String(CURRENT_DETAIL_ROW.category || '');
-    if (newSvc === oldSvc && newCat === oldCat){
+    const oldUtm = String(CURRENT_DETAIL_ROW.utm_term || '');
+    if (newSvc === oldSvc && newCat === oldCat && newUtm === oldUtm){
       setEditBanner('변경된 값이 없습니다.', '');
       return;
     }
@@ -1295,15 +1360,17 @@
 
     try{
       const params = { postid: CURRENT_DETAIL_ROW.postid };
-      if (newSvc !== oldSvc) params.service = newSvc;
+      if (newSvc !== oldSvc) params.service  = newSvc;
       if (newCat !== oldCat) params.category = newCat;
+      if (newUtm !== oldUtm) params.utm_term = newUtm;
       const res = await MktProxy.blogUpdate(params);
 
       // 로컬 데이터 갱신
       const updateLocal = function (row) {
         if (!row || String(row.postid) !== String(CURRENT_DETAIL_ROW.postid)) return;
-        if (params.service !== undefined) row.service = params.service;
+        if (params.service  !== undefined) row.service  = params.service;
         if (params.category !== undefined) row.category = params.category;
+        if (params.utm_term !== undefined) row.utm_term = params.utm_term;
       };
       CURRENT_ROWS.forEach(updateLocal);
       SCOPED_ROWS.forEach(updateLocal);

@@ -143,7 +143,7 @@ function Blog_update(params) {
   if (rowIdx < 0) throw new Error('row_not_found:' + postid);
 
   const updates = {};
-  const fields = ['service', 'category'];
+  const fields = ['service', 'category', 'utm_term'];
   fields.forEach(function (f) {
     if (params[f] !== undefined && params[f] !== null) {
       const c = headers.indexOf(f);
@@ -161,6 +161,67 @@ function Blog_update(params) {
     updates: updates,
     updatedAt: new Date().toISOString()
   };
+}
+
+/**
+ * 블로그 글의 utm_term 으로 세일즈맵(인바운드)에서 매칭되는 제출 건들 반환
+ *   params.utm_term : 필수
+ * 반환:
+ *   { utm_term, count, items:[{date,datetime,company,manager,service}], byDate:[{date,count}] }
+ */
+function Blog_inboundDates(params) {
+  params = params || {};
+  const utm = String(params.utm_term || '').trim();
+  if (!utm) throw new Error('utm_term_required');
+
+  const SALESMAP_NAME = 'Data_Result_Final';
+  const ss = SpreadsheetApp.openById(BLOG_SHEET_ID);
+  const sheet = ss.getSheetByName(SALESMAP_NAME);
+  if (!sheet) throw new Error('sheet_not_found:' + SALESMAP_NAME);
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return { utm_term: utm, count: 0, items: [], byDate: [] };
+
+  const headers = values[0].map(function (h) { return String(h || '').trim(); });
+  const utmIdx     = headers.indexOf('utm_term');
+  const dateIdx    = headers.indexOf('제출 날짜');
+  const companyIdx = headers.indexOf('기업명');
+  const managerIdx = headers.indexOf('담당자명');
+  const serviceIdx = headers.indexOf('관심 서비스');
+  if (utmIdx < 0) throw new Error('utm_term_column_not_found_in_salesmap');
+
+  const items = [];
+  const byDateMap = {};
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    if (String(r[utmIdx] == null ? '' : r[utmIdx]).trim() !== utm) continue;
+    let raw = dateIdx >= 0 ? r[dateIdx] : '';
+    let dateStr = '';
+    let dateTime = '';
+    if (raw instanceof Date) {
+      dateStr  = Utilities.formatDate(raw, BLOG_TZ, 'yyyy-MM-dd');
+      dateTime = Utilities.formatDate(raw, BLOG_TZ, 'yyyy-MM-dd HH:mm');
+    } else if (raw) {
+      const s = String(raw);
+      dateStr  = s.slice(0, 10);
+      dateTime = s.slice(0, 16);
+    }
+    items.push({
+      date: dateStr,
+      datetime: dateTime,
+      company: companyIdx >= 0 ? String(r[companyIdx] || '') : '',
+      manager: managerIdx >= 0 ? String(r[managerIdx] || '') : '',
+      service: serviceIdx >= 0 ? String(r[serviceIdx] || '') : ''
+    });
+    if (dateStr) byDateMap[dateStr] = (byDateMap[dateStr] || 0) + 1;
+  }
+  // 최신순
+  items.sort(function (a, b) { return (b.datetime || b.date) < (a.datetime || a.date) ? -1 : 1; });
+  const byDate = Object.keys(byDateMap)
+    .map(function (k) { return { date: k, count: byDateMap[k] }; })
+    .sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+
+  return { utm_term: utm, count: items.length, items: items, byDate: byDate };
 }
 
 // ── helpers ─────────────────────────────────

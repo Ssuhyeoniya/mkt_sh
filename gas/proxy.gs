@@ -31,9 +31,10 @@ function handle_(e) {
   };
   function reg_(name, ref){ if (typeof ref === 'function') ROUTES[name] = ref; }
   // blog
-  try { reg_('blog.list',        Blog_list);        } catch (_) {}
-  try { reg_('blog.summary',     Blog_summary);     } catch (_) {}
-  try { reg_('blog.update',      Blog_update);      } catch (_) {}
+  try { reg_('blog.list',          Blog_list);          } catch (_) {}
+  try { reg_('blog.summary',       Blog_summary);       } catch (_) {}
+  try { reg_('blog.update',        Blog_update);        } catch (_) {}
+  try { reg_('blog.inboundDates',  Blog_inboundDates);  } catch (_) {}
   // salesmap
   try { reg_('salesmap.list',    Salesmap_list);    } catch (_) {}
   try { reg_('salesmap.summary', Salesmap_summary); } catch (_) {}
