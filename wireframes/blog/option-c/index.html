@@ -49,7 +49,7 @@
   .a-panel{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
     padding:16px; display:flex; flex-direction:column;
-    min-height:260px;
+    min-height:360px;             /* 트렌드 차트 가독성 위해 패널 높이 확대 */
     min-width:0;                  /* 그리드 셀 안에서 축소 허용 */
     overflow:hidden;              /* 내부 콘텐츠가 패널 밖으로 못 나가게 */
   }
@@ -194,7 +194,7 @@
 
   /* Trend chart — 패널 내부에서 stretch (최소 160px) */
   .trend-area{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
-  .trend-svg{ flex:1 1 auto; width:100%; min-height:160px; display:block; }
+  .trend-svg{ flex:1 1 auto; width:100%; min-height:260px; display:block; }
   .trend-legend{ display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--muted); flex-shrink:0; }
 
   /* ── 반응형 ── */
@@ -536,7 +536,7 @@
         <div class="pb">
           <div class="trend-area">
             <div class="trend-wrap">
-              <svg class="trend-svg" id="trend" viewBox="0 0 360 180"></svg>
+              <svg class="trend-svg" id="trend" viewBox="0 0 360 260" preserveAspectRatio="none"></svg>
               <div class="trend-tooltip" id="trend-tooltip"></div>
             </div>
             <div class="trend-legend">
@@ -726,7 +726,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-7"></script>
+<script src="../proxy-client.js?v=20260510-8"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -885,7 +885,7 @@
     const inbounds = keys.map(k=>map[k].inbound);
 
     // viewBox geometry (Y축 좌측 라벨 공간 38px, 우측 8, 상단 8, 하단 24)
-    const W = 360, H = 180, P_T = 8, P_B = 24, P_L = 38, P_R = 8;
+    const W = 360, H = 260, P_T = 10, P_B = 26, P_L = 40, P_R = 8;
     const innerW = W - P_L - P_R;
     const innerH = H - P_T - P_B;
     const maxV = Math.max.apply(null, visits.concat([1]));
