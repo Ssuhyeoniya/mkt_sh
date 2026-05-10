@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>시안 C · Bento Grid · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#fafaf7; --line:#ececec; --muted:#7a7a7a; --text:#0f0f0f; }
+  html,body{ background:var(--bg); color:var(--text); font-family:'Pretendard',sans-serif; }
+  .num{ font-family:'JetBrains Mono', monospace; }
+  .card{ border-radius:20px; padding:22px; position:relative; overflow:hidden; border:1px solid var(--line); background:#fff; }
+  .card-tinted{ border:none; }
+  .pill{ font-size:11px; padding:3px 9px; border-radius:999px; background:#f1f1ee; color:#444; display:inline-block; }
+  .nav-pill{ font-size:13px; padding:8px 14px; border-radius:999px; color:#333; background:#fff; border:1px solid var(--line); }
+  .nav-pill.active{ background:#0f0f0f; color:#fff; border-color:#0f0f0f; }
+  .arrow{ position:absolute; right:18px; top:18px; font-size:18px; opacity:.5; }
+  .section-title{ font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .big{ font-size:42px; font-weight:600; letter-spacing:-.02em; }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-[1280px] mx-auto px-8 py-8">
+
+  <!-- Header -->
+  <header class="flex items-center justify-between mb-8">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-white" style="background:#0f0f0f">M</div>
+      <div>
+        <div class="text-[15px] font-semibold">Marketing CRM</div>
+        <div class="text-[11.5px]" style="color:var(--muted)">2026.05 · 종합 대시보드</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-[12.5px]">
+      <div class="px-3 py-1.5 rounded-full bg-white border border-[var(--line)]">최근 30일 ▾</div>
+      <div class="px-3 py-1.5 rounded-full bg-white border border-[var(--line)]">필터</div>
+      <div class="px-3 py-1.5 rounded-full text-white" style="background:#0f0f0f">동기화</div>
+    </div>
+  </header>
+
+  <!-- Pill Nav -->
+  <nav class="flex gap-2 flex-wrap mb-7">
+    <a class="nav-pill active">대시보드</a>
+    <a class="nav-pill">인바운드 · IB/OB 분석</a>
+    <a class="nav-pill">인바운드 · 종합</a>
+    <a class="nav-pill">세일즈맵</a>
+    <a class="nav-pill">고객사 · 성약</a>
+    <a class="nav-pill">고객사 · 이탈</a>
+    <a class="nav-pill">제휴점</a>
+    <a class="nav-pill">광고 · 인앱</a>
+    <a class="nav-pill">광고 · CORP</a>
+    <a class="nav-pill">SNS</a>
+  </nav>
+
+  <!-- Bento Grid -->
+  <section class="grid grid-cols-12 gap-4">
+
+    <!-- Hero KPI -->
+    <div class="card card-tinted col-span-6 row-span-2" style="background:linear-gradient(160deg,#FFE9C7,#FFC68A); min-height:280px">
+      <div class="section-title">핵심 지표</div>
+      <div class="mt-3">
+        <div class="text-[13px]" style="color:#5a3a13">신규 인바운드 (최근 30일)</div>
+        <div class="big mt-1" style="color:#3b2200">1,284</div>
+        <div class="flex gap-2 mt-2">
+          <span class="pill" style="background:rgba(255,255,255,.6); color:#5a3a13">▲ 12.4% MoM</span>
+          <span class="pill" style="background:rgba(255,255,255,.6); color:#5a3a13">목표 92%</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 400 90" class="absolute bottom-0 left-0 w-full">
+        <path d="M0,70 C40,60 80,55 120,40 C160,30 200,45 240,30 C280,15 320,25 360,10 L400,5 L400,90 L0,90 Z" fill="rgba(255,255,255,.45)"/>
+        <path d="M0,70 C40,60 80,55 120,40 C160,30 200,45 240,30 C280,15 320,25 360,10 L400,5" fill="none" stroke="#7a3e00" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <!-- 성약 -->
+    <div class="card col-span-3">
+      <div class="arrow">↗</div>
+      <div class="section-title">고객사 · 성약</div>
+      <div class="text-[13px] mt-3" style="color:var(--muted)">이번 달</div>
+      <div class="num text-[34px] font-semibold mt-1">187</div>
+      <div class="text-[12px]" style="color:#16a34a">▲ 6.1% 전월 대비</div>
+    </div>
+
+    <!-- 이탈 -->
+    <div class="card col-span-3" style="background:#0f0f0f; color:#fff; border:none">
+      <div class="arrow" style="color:#888">↗</div>
+      <div class="section-title" style="color:#9a9a9a">고객사 · 이탈</div>
+      <div class="text-[13px] mt-3" style="color:#bdbdbd">위험 고객</div>
+      <div class="num text-[34px] font-semibold mt-1">17</div>
+      <div class="text-[12px]" style="color:#ff8a8a">▲ 2건 이번 주</div>
+    </div>
+
+    <!-- 광고 인앱 -->
+    <div class="card col-span-3" style="background:#E7F0FF; border:none">
+      <div class="section-title">광고 · 인앱</div>
+      <div class="num text-[28px] font-semibold mt-3">ROAS 380%</div>
+      <div class="text-[12px]" style="color:#1f4ea3">집행 32건 · 노출 2.4M</div>
+      <div class="h-1.5 bg-white/70 rounded mt-3"><div class="h-1.5 rounded" style="width:78%; background:#1f6feb"></div></div>
+    </div>
+
+    <!-- 광고 CORP -->
+    <div class="card col-span-3" style="background:#E2F4E8; border:none">
+      <div class="section-title">광고 · CORP</div>
+      <div class="num text-[28px] font-semibold mt-3">ROAS 442%</div>
+      <div class="text-[12px]" style="color:#155e34">집행 18건 · 노출 1.1M</div>
+      <div class="h-1.5 bg-white/70 rounded mt-3"><div class="h-1.5 rounded" style="width:90%; background:#16a34a"></div></div>
+    </div>
+
+    <!-- 세일즈맵 -->
+    <div class="card col-span-6" style="min-height:260px">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="section-title">세일즈맵</div>
+          <div class="text-[16px] font-semibold mt-1">전국 세일즈 활동 분포</div>
+        </div>
+        <span class="pill">실시간</span>
+      </div>
+      <div class="relative h-[200px] mt-3 rounded-xl bg-[#f5f5f1] overflow-hidden">
+        <div class="absolute" style="left:32%; top:22%"><div class="rounded-full" style="background:#0f0f0f; width:12px; height:12px"></div></div>
+        <div class="absolute" style="left:55%; top:30%"><div class="rounded-full" style="background:#16a34a; width:18px; height:18px"></div></div>
+        <div class="absolute" style="left:42%; top:55%"><div class="rounded-full" style="background:#d97706; width:10px; height:10px"></div></div>
+        <div class="absolute" style="left:65%; top:62%"><div class="rounded-full" style="background:#1f6feb; width:14px; height:14px"></div></div>
+        <div class="absolute" style="left:23%; top:72%"><div class="rounded-full" style="background:#dc2626; width:8px; height:8px"></div></div>
+        <div class="absolute bottom-3 left-3 right-3 grid grid-cols-4 gap-2 text-[11.5px]">
+          <div class="bg-white/80 backdrop-blur rounded-md px-2 py-1">서울 412</div>
+          <div class="bg-white/80 backdrop-blur rounded-md px-2 py-1">경기 287</div>
+          <div class="bg-white/80 backdrop-blur rounded-md px-2 py-1">부산 152</div>
+          <div class="bg-white/80 backdrop-blur rounded-md px-2 py-1">광주 88</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IB/OB chart -->
+    <div class="card col-span-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="section-title">인바운드 · IB / OB 비교</div>
+          <div class="text-[16px] font-semibold mt-1">최근 12주 추이</div>
+        </div>
+        <div class="flex gap-2 text-[11.5px]">
+          <span class="pill"><span style="display:inline-block;width:6px;height:6px;border-radius:99px;background:#0f0f0f;margin-right:4px"></span>IB</span>
+          <span class="pill"><span style="display:inline-block;width:6px;height:6px;border-radius:99px;background:#16a34a;margin-right:4px"></span>OB</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 600 200" width="100%" height="200" class="mt-3">
+        <path d="M0,160 C50,150 100,130 150,120 C200,110 250,90 300,85 C350,80 400,60 450,50 C500,40 550,35 600,20 L600,200 L0,200 Z" fill="rgba(15,15,15,.06)"/>
+        <path d="M0,160 C50,150 100,130 150,120 C200,110 250,90 300,85 C350,80 400,60 450,50 C500,40 550,35 600,20" fill="none" stroke="#0f0f0f" stroke-width="2"/>
+        <path d="M0,180 C50,175 100,165 150,160 C200,155 250,145 300,140 C350,135 400,125 450,115 C500,108 550,98 600,90" fill="none" stroke="#16a34a" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <!-- 제휴점 -->
+    <div class="card col-span-4" style="background:#F1ECFF; border:none">
+      <div class="section-title">제휴점</div>
+      <div class="text-[16px] font-semibold mt-1">제휴점 현황</div>
+      <div class="grid grid-cols-2 gap-3 mt-4 text-[13px]">
+        <div><div class="text-[11.5px]" style="color:#5b3eb1">총합</div><div class="num text-[22px]">348</div></div>
+        <div><div class="text-[11.5px]" style="color:#5b3eb1">신규</div><div class="num text-[22px]">+12</div></div>
+        <div><div class="text-[11.5px]" style="color:#5b3eb1">활성</div><div class="num text-[22px]">312</div></div>
+        <div><div class="text-[11.5px]" style="color:#5b3eb1">중단</div><div class="num text-[22px]">14</div></div>
+      </div>
+    </div>
+
+    <!-- SNS preview -->
+    <div class="card col-span-8">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="section-title">SNS 미리보기</div>
+          <div class="text-[16px] font-semibold mt-1">블로그 · 인스타그램 · 링크드인</div>
+        </div>
+        <div class="flex gap-2 text-[11.5px]">
+          <span class="pill">블로그 24</span>
+          <span class="pill">인스타 31</span>
+          <span class="pill">링크드인 12</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="rounded-xl border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#f4f4ef] mb-2"></div>
+          <div class="text-[12.5px] font-medium">신규 캠페인 회고</div>
+          <div class="text-[11.5px]" style="color:var(--muted)">블로그 · 12.4k 조회</div>
+        </div>
+        <div class="rounded-xl border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#f4f4ef] mb-2"></div>
+          <div class="text-[12.5px] font-medium">봄 프로모션 릴스</div>
+          <div class="text-[11.5px]" style="color:var(--muted)">인스타 · 3.2k 좋아요</div>
+        </div>
+        <div class="rounded-xl border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#f4f4ef] mb-2"></div>
+          <div class="text-[12.5px] font-medium">B2B 케이스 스터디</div>
+          <div class="text-[11.5px]" style="color:var(--muted)">링크드인 · 412 반응</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAS status -->
+    <div class="card col-span-12 flex items-center justify-between" style="background:#0f0f0f; color:#fff; border:none">
+      <div>
+        <div class="section-title" style="color:#9a9a9a">시스템</div>
+        <div class="text-[14.5px] mt-1">GAS 프록시 · 7개 스프레드시트 동기화 정상 · 마지막 갱신 2분 전</div>
+      </div>
+      <div class="flex gap-2">
+        <span class="pill" style="background:#1c1c1c; color:#aaffd0">● 정상</span>
+        <span class="pill" style="background:#1c1c1c; color:#fff">설정 ↗</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="text-center text-[11.5px] py-6" style="color:var(--muted)">시안 C · Bento Grid · 마케팅 CRM 와이어프레임</div>
+</div>
+</body>
+</html>

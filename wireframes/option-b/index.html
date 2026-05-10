@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>시안 B · Light BI · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#f5f6f8; --panel:#ffffff; --line:#e6e8ec; --muted:#6b7280; --text:#111827; --primary:#1f6feb; --green:#16a34a; --red:#dc2626; --amber:#d97706; }
+  html,body{ background:var(--bg); color:var(--text); font-family:'Pretendard',sans-serif; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+  .num{ font-family:'JetBrains Mono', monospace; }
+  .chip{ font-size:11.5px; padding:2px 8px; border-radius:4px; background:#eef1f6; color:#374151; }
+  .top-tab{ padding:14px 16px; font-size:13.5px; color:#4b5563; border-bottom:2px solid transparent; }
+  .top-tab.active{ color:var(--primary); border-color:var(--primary); font-weight:600; }
+  .sub-tab{ font-size:12.5px; padding:6px 10px; border-radius:6px; color:#4b5563; }
+  .sub-tab.active{ background:#eaf1ff; color:var(--primary); font-weight:600; }
+  th{ font-size:12px; font-weight:600; color:#6b7280; text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); background:#f9fafb; }
+  td{ font-size:13px; padding:10px; border-bottom:1px solid #f0f1f4; }
+  .pill{ font-size:11px; padding:2px 8px; border-radius:999px; }
+  .donut{ background:conic-gradient(#1f6feb 0 62%, #16a34a 62% 82%, #d97706 82% 95%, #e6e8ec 95% 100%); }
+</style>
+</head>
+<body class="min-h-screen">
+<!-- Top Header -->
+<header class="bg-white border-b border-[var(--line)]">
+  <div class="px-8 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-md" style="background:linear-gradient(135deg,#1f6feb,#16a34a)"></div>
+      <div class="font-semibold text-[15px]">Marketing CRM Console</div>
+      <span class="chip ml-2">v2026.05</span>
+    </div>
+    <div class="flex items-center gap-3 text-[12.5px]">
+      <div class="px-3 py-1.5 rounded-md border border-[var(--line)]">기간 · 최근 30일 ▾</div>
+      <div class="px-3 py-1.5 rounded-md border border-[var(--line)]">필터</div>
+      <div class="px-3 py-1.5 rounded-md text-white" style="background:var(--primary)">+ 데이터 동기화</div>
+    </div>
+  </div>
+  <!-- Primary Tabs -->
+  <nav class="px-8 flex items-center gap-1">
+    <a class="top-tab active">대시보드</a>
+    <a class="top-tab">인바운드</a>
+    <a class="top-tab">고객사 관리</a>
+    <a class="top-tab">제휴점</a>
+    <a class="top-tab">광고</a>
+    <a class="top-tab">SNS</a>
+  </nav>
+</header>
+
+<main class="px-8 py-6">
+  <!-- Title -->
+  <div class="flex items-end justify-between mb-5">
+    <div>
+      <div class="text-[12.5px]" style="color:var(--muted)">대시보드 · 종합</div>
+      <h1 class="text-[24px] font-semibold">마케팅 종합 현황</h1>
+    </div>
+    <div class="flex items-center gap-2 text-[12px]" style="color:var(--muted)">
+      <span class="w-2 h-2 rounded-full" style="background:var(--green)"></span>
+      GAS 프록시 동기화 정상 · 마지막 갱신 2분 전
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <section class="grid grid-cols-5 gap-3 mb-5">
+    <div class="panel p-4">
+      <div class="text-[12px]" style="color:var(--muted)">신규 인바운드</div>
+      <div class="num text-[22px] mt-1">1,284</div>
+      <div class="text-[11.5px]" style="color:var(--green)">▲ 12.4% MoM</div>
+    </div>
+    <div class="panel p-4">
+      <div class="text-[12px]" style="color:var(--muted)">아웃바운드 컨택</div>
+      <div class="num text-[22px] mt-1">2,041</div>
+      <div class="text-[11.5px]" style="color:var(--green)">▲ 4.1% MoM</div>
+    </div>
+    <div class="panel p-4">
+      <div class="text-[12px]" style="color:var(--muted)">성약 건수</div>
+      <div class="num text-[22px] mt-1">187</div>
+      <div class="text-[11.5px]" style="color:var(--green)">▲ 6.1% MoM</div>
+    </div>
+    <div class="panel p-4">
+      <div class="text-[12px]" style="color:var(--muted)">이탈률</div>
+      <div class="num text-[22px] mt-1">3.2%</div>
+      <div class="text-[11.5px]" style="color:var(--red)">▼ 0.4%p</div>
+    </div>
+    <div class="panel p-4">
+      <div class="text-[12px]" style="color:var(--muted)">광고 ROAS</div>
+      <div class="num text-[22px] mt-1">412%</div>
+      <div class="text-[11.5px]" style="color:var(--amber)">▲ 3.0% MoM</div>
+    </div>
+  </section>
+
+  <!-- Row: line chart + donut -->
+  <section class="grid grid-cols-3 gap-4 mb-5">
+    <div class="panel p-5 col-span-2">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-[12px]" style="color:var(--muted)">인바운드 · 아웃바운드 추이</div>
+          <div class="text-[14px] font-semibold">최근 12주</div>
+        </div>
+        <div class="flex gap-2">
+          <span class="sub-tab active">전체</span>
+          <span class="sub-tab">IB</span>
+          <span class="sub-tab">OB</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 600 220" width="100%" height="220">
+        <g stroke="#eef0f3" stroke-width="1">
+          <line x1="0" y1="40" x2="600" y2="40"/>
+          <line x1="0" y1="90" x2="600" y2="90"/>
+          <line x1="0" y1="140" x2="600" y2="140"/>
+          <line x1="0" y1="190" x2="600" y2="190"/>
+        </g>
+        <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30" fill="none" stroke="#1f6feb" stroke-width="2"/>
+        <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30 L600,220 L0,220 Z" fill="rgba(31,111,235,.08)"/>
+        <path d="M0,180 C50,175 100,170 150,160 C200,155 250,145 300,140 C350,135 400,125 450,115 C500,110 550,100 600,95" fill="none" stroke="#16a34a" stroke-width="2"/>
+      </svg>
+      <div class="flex gap-4 text-[12px] mt-2">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:#1f6feb"></span>인바운드</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:#16a34a"></span>아웃바운드</span>
+      </div>
+    </div>
+
+    <div class="panel p-5">
+      <div class="text-[12px]" style="color:var(--muted)">유입 채널 비중</div>
+      <div class="text-[14px] font-semibold mb-4">IB / OB 종합</div>
+      <div class="flex items-center gap-4">
+        <div class="donut w-[120px] h-[120px] rounded-full" style="position:relative">
+          <div class="absolute inset-3 bg-white rounded-full flex flex-col items-center justify-center">
+            <div class="text-[11px]" style="color:var(--muted)">전체</div>
+            <div class="num text-[16px]">3,325</div>
+          </div>
+        </div>
+        <div class="space-y-1.5 text-[12.5px]">
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#1f6feb"></span>웹 폼 · 62%</div>
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#16a34a"></span>전화 인입 · 20%</div>
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#d97706"></span>제휴점 · 13%</div>
+          <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:#e6e8ec"></span>기타 · 5%</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Row: 고객사 표 + 광고/제휴 -->
+  <section class="grid grid-cols-3 gap-4 mb-5">
+    <div class="panel col-span-2 overflow-hidden">
+      <div class="px-5 pt-4 pb-2 flex items-center justify-between">
+        <div class="text-[14px] font-semibold">고객사 관리 · 최근 활동</div>
+        <div class="flex gap-2">
+          <span class="sub-tab active">성약</span>
+          <span class="sub-tab">이탈</span>
+        </div>
+      </div>
+      <table class="w-full">
+        <thead>
+          <tr><th>고객사</th><th>담당</th><th>채널</th><th>금액</th><th>상태</th><th>최근 갱신</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>(주)그린리프</td><td>김현우</td><td>IB · 웹폼</td><td class="num">12,400,000</td><td><span class="pill" style="background:#dcfce7;color:#166534">성약</span></td><td>05/09</td></tr>
+          <tr><td>알파비전</td><td>이수진</td><td>OB · 콜드콜</td><td class="num">5,800,000</td><td><span class="pill" style="background:#dcfce7;color:#166534">성약</span></td><td>05/08</td></tr>
+          <tr><td>네오테크</td><td>박정민</td><td>제휴점</td><td class="num">3,200,000</td><td><span class="pill" style="background:#fef3c7;color:#92400e">검토</span></td><td>05/08</td></tr>
+          <tr><td>썬라이즈리테일</td><td>최영희</td><td>IB · 전화</td><td class="num">9,750,000</td><td><span class="pill" style="background:#fee2e2;color:#991b1b">이탈위험</span></td><td>05/07</td></tr>
+          <tr><td>코스모스이노</td><td>장민석</td><td>OB · 메일</td><td class="num">4,500,000</td><td><span class="pill" style="background:#dcfce7;color:#166534">성약</span></td><td>05/07</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="space-y-4">
+      <div class="panel p-5">
+        <div class="text-[14px] font-semibold mb-3">제휴점 현황</div>
+        <div class="grid grid-cols-2 gap-3 text-[13px]">
+          <div><div class="text-[11.5px]" style="color:var(--muted)">총 제휴점</div><div class="num text-[20px]">348</div></div>
+          <div><div class="text-[11.5px]" style="color:var(--muted)">신규</div><div class="num text-[20px]" style="color:var(--green)">+12</div></div>
+          <div><div class="text-[11.5px]" style="color:var(--muted)">활성</div><div class="num text-[20px]">312</div></div>
+          <div><div class="text-[11.5px]" style="color:var(--muted)">중단</div><div class="num text-[20px]" style="color:var(--red)">14</div></div>
+        </div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[14px] font-semibold mb-3">광고 성과</div>
+        <div class="space-y-2.5">
+          <div>
+            <div class="flex justify-between text-[12.5px]"><span>인앱</span><span class="num">ROAS 380%</span></div>
+            <div class="h-1.5 bg-[#eef0f3] rounded mt-1"><div class="h-1.5 rounded" style="width:78%; background:#1f6feb"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12.5px]"><span>CORP</span><span class="num">ROAS 442%</span></div>
+            <div class="h-1.5 bg-[#eef0f3] rounded mt-1"><div class="h-1.5 rounded" style="width:90%; background:#16a34a"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SNS row -->
+  <section class="panel p-5 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="text-[14px] font-semibold">SNS 미리보기</div>
+      <div class="flex gap-2">
+        <span class="sub-tab active">전체</span>
+        <span class="sub-tab">블로그</span>
+        <span class="sub-tab">인스타그램</span>
+        <span class="sub-tab">링크드인</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-4 gap-3">
+      <div class="border border-[var(--line)] rounded-lg p-3">
+        <div class="aspect-video rounded bg-[#eef0f3] mb-2"></div>
+        <div class="text-[12.5px] font-medium">블로그 · 신규 캠페인 회고</div>
+        <div class="text-[11.5px]" style="color:var(--muted)">조회 12,431 · 5/8</div>
+      </div>
+      <div class="border border-[var(--line)] rounded-lg p-3">
+        <div class="aspect-video rounded bg-[#eef0f3] mb-2"></div>
+        <div class="text-[12.5px] font-medium">인스타 · 봄 프로모션 릴스</div>
+        <div class="text-[11.5px]" style="color:var(--muted)">좋아요 3,210 · 5/7</div>
+      </div>
+      <div class="border border-[var(--line)] rounded-lg p-3">
+        <div class="aspect-video rounded bg-[#eef0f3] mb-2"></div>
+        <div class="text-[12.5px] font-medium">링크드인 · B2B 케이스</div>
+        <div class="text-[11.5px]" style="color:var(--muted)">반응 412 · 5/6</div>
+      </div>
+      <div class="border border-[var(--line)] rounded-lg p-3">
+        <div class="aspect-video rounded bg-[#eef0f3] mb-2"></div>
+        <div class="text-[12.5px] font-medium">블로그 · 분기 리포트</div>
+        <div class="text-[11.5px]" style="color:var(--muted)">조회 8,720 · 5/3</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="text-center text-[11.5px]" style="color:var(--muted)">시안 B · Light BI Analytics · 마케팅 CRM 와이어프레임</div>
+</main>
+</body>
+</html>
