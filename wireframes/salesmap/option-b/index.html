@@ -214,7 +214,7 @@
   let PAGE = 1;
   const PAGE_SIZE = 30;
   let ACTIVE_RANGE = '';
-  let SORT = null; // null | 'asc' | 'desc' (제출 날짜 기준)
+  let SORT = 'desc'; // null | 'asc' | 'desc' — 기본 제출날짜 내림차순(최신순)
   const APPLIED = {
     services: [],     // [] = 전체
     channels: [],     // [] = 전체
@@ -513,7 +513,7 @@
     tbody.innerHTML = slice.map((r, idx) => {
       const i = start + idx;
       return '<tr data-i="'+i+'">' + COLS.map(c => {
-        let v = c.key === '_no' ? (i+1) : r[c.key];
+        let v = c.key === '_no' ? (r._no != null ? r._no : (i+1)) : r[c.key];
         let html;
         if (c.render) html = c.render(v, r, i);
         else if (c.bold) html = `<span style="font-weight:600">${esc(v||'-')}</span>`;
@@ -551,7 +551,7 @@
     const headers = COLS.map(c => c.label);
     const csv = [headers.join(',')].concat(rows.map((r, i) => {
       return COLS.map(c => {
-        const v = c.key === '_no' ? (i+1) : (r[c.key] == null ? '' : r[c.key]);
+        const v = c.key === '_no' ? (r._no != null ? r._no : (i+1)) : (r[c.key] == null ? '' : r[c.key]);
         const s = String(v).replace(/"/g, '""');
         return /[",\n]/.test(s) ? '"'+s+'"' : s;
       }).join(',');
