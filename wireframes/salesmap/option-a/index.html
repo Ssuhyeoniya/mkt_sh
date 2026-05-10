@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>세일즈맵 시안 A · Power Table · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  /* Option A: Power Table — 운영 콘솔, 컬럼 리사이즈 자유 */
+  .table-wrap{ overflow:auto; max-height:calc(100vh - 320px); }
+  .table-wrap::-webkit-scrollbar{ height:10px; width:10px; }
+  .table-wrap::-webkit-scrollbar-thumb{ background:#262c35; border-radius:99px; }
+  .smap-table tbody tr.selected td{ background:rgba(124,92,255,.07); }
+  .row-action{ width:24px; height:24px; border:1px solid var(--line); border-radius:6px; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+  .row-action:hover{ color:var(--accent); border-color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item active" href="../">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item" href="../../blog/option-c/">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+        <h1>세일즈맵 · 리드 로우테이블</h1>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 표시 중</span>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL을 붙여넣고 [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-sub">전체 합계</div></div>
+      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
+      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
+      <div class="kpi"><div class="kpi-label">서비스 종류</div><div class="kpi-value" id="kpi-svc">0</div><div class="kpi-sub">관심 서비스</div></div>
+      <div class="kpi"><div class="kpi-label">마케팅 동의</div><div class="kpi-value" id="kpi-mkt">0</div><div class="kpi-sub" id="kpi-mkt-sub">동의율 -</div></div>
+    </section>
+
+    <!-- Filter -->
+    <div class="filter">
+      <div class="search">
+        <span style="color:var(--muted)">⌕</span>
+        <input id="q" type="text" placeholder="기업명 / 담당자 / 이메일 검색..."/>
+      </div>
+      <select id="svc"><option value="">전체 서비스</option></select>
+      <select id="ch"><option value="">전체 유입경로</option></select>
+      <input id="from" type="date"/>
+      <span class="muted text-[12px]">~</span>
+      <input id="to" type="date"/>
+      <button id="btn-refresh">↻ 새로고침</button>
+      <button id="btn-export">⇩ CSV</button>
+      <button id="btn-reset-w" title="컬럼 너비 초기화">↔ 너비 초기화</button>
+    </div>
+
+    <!-- Table -->
+    <div class="panel" style="overflow:hidden">
+      <div class="toolbar">
+        <div class="left">
+          <span class="text-[13px] font-medium">전체 리드 목록</span>
+          <span class="chip" id="result-count">0건</span>
+          <span class="text-[11.5px] muted ml-2">⇆ 헤더 우측을 드래그해 컬럼 너비를 조절하세요</span>
+        </div>
+        <div class="right">
+          <div class="pager">
+            <button id="pg-prev" disabled>‹</button>
+            <span id="pg-info" class="text-[12px] muted px-2">1 / 1</span>
+            <button id="pg-next">›</button>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="smap-table" id="tbl">
+          <colgroup id="cg"></colgroup>
+          <thead>
+            <tr id="th-row"></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="text-center muted py-4" style="font-size:11.5px;">시안 A · Power Table · 운영 콘솔 · 컬럼 너비 자유 조절</div>
+  </main>
+</div>
+
+<!-- 상세 드로어 -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <div class="eyebrow">리드 상세</div>
+      <h3 id="drawer-title">-</h3>
+    </div>
+    <button class="drawer-close" id="drawer-close">×</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<script src="../proxy-client.js"></script>
+<script>
+  // 컬럼 정의: 키, 라벨, 기본너비, 정렬타입(text|num|date), 렌더러
+  const COLS = [
+    { key:'_no',             label:'NO',           w: 56,  align:'right' },
+    { key:'submittedAt',     label:'제출 날짜',    w:148,  type:'date' },
+    { key:'service',         label:'서비스',       w:120,  render: v => v ? `<span class="tag-mini tag-svc">${esc(v)}</span>` : '-' },
+    { key:'company',         label:'기업명',       w:170,  bold:true },
+    { key:'employeeCount',   label:'임직원 수',    w:110 },
+    { key:'address',         label:'기업 주소',    w:240 },
+    { key:'manager',         label:'담당자',       w: 96 },
+    { key:'phone',           label:'전화번호',     w:140,  mono:true },
+    { key:'email',           label:'이메일',       w:200,  mono:true },
+    { key:'channel',         label:'유입경로',     w:120,  render: v => v ? `<span class="tag-mini tag-ch">${esc(v)}</span>` : '-' },
+    { key:'privacyAgreed',   label:'개인정보 동의', w: 96, render: v => ynTag(v) },
+    { key:'marketingAgreed', label:'마케팅 동의',   w: 96, render: v => ynTag(v) },
+    { key:'utm_source',      label:'utm_source',   w:120,  mono:true },
+    { key:'utm_medium',      label:'utm_medium',   w:120,  mono:true },
+    { key:'utm_campaign',    label:'utm_campaign', w:160,  mono:true },
+    { key:'utm_content',     label:'utm_content',  w:140,  mono:true },
+    { key:'utm_term',        label:'utm_term',     w:140,  mono:true },
+    { key:'_action',         label:'',             w: 60,  render: (_,r,i) => `<button class="row-action" data-i="${i}" title="상세">↗</button>` }
+  ];
+
+  let CURRENT = [];
+  let PAGE = 1;
+  const PAGE_SIZE = 20;
+  const W_KEY = 'smap_col_widths_v1';
+
+  // ── helpers ───────────────────────────────────────────
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
+  function ynTag(v){
+    const s = String(v||'').trim();
+    if (!s) return '-';
+    if (/(미동의|N|no|false|0)/i.test(s)) return `<span class="tag-mini tag-n">${esc(s)}</span>`;
+    return `<span class="tag-mini tag-y">${esc(s)}</span>`;
+  }
+  function setStatus(text, kind){ const el=$('status'); el.className='status '+(kind||''); el.textContent=text; }
+  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  // ── colgroup + th 빌드 (1회) ──────────────────────────
+  function buildHeader(){
+    const saved = loadWidths();
+    const cg = $('cg'); const th = $('th-row');
+    cg.innerHTML = COLS.map((c,i) => `<col data-i="${i}" style="width:${(saved[c.key]||c.w)}px"/>`).join('');
+    th.innerHTML = COLS.map((c,i) => `<th data-i="${i}" data-key="${c.key}" class="${c.align==='right'?'num-cell':''}" style="text-align:${c.align==='right'?'right':'left'}">${esc(c.label)}<span class="resizer" data-i="${i}"></span></th>`).join('');
+    bindResizers();
+  }
+
+  // 컬럼 리사이즈
+  function bindResizers(){
+    const handlers = document.querySelectorAll('#th-row .resizer');
+    handlers.forEach(h => {
+      h.addEventListener('mousedown', startResize);
+    });
+  }
+  let resizeState = null;
+  function startResize(e){
+    e.preventDefault();
+    const i = Number(e.target.dataset.i);
+    const col = document.querySelectorAll('#cg col')[i];
+    const startW = col.getBoundingClientRect().width;
+    resizeState = { i, col, startX: e.clientX, startW };
+    e.target.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('mousemove', onResize);
+    window.addEventListener('mouseup', endResize);
+  }
+  function onResize(e){
+    if (!resizeState) return;
+    const dx = e.clientX - resizeState.startX;
+    const w = Math.max(40, resizeState.startW + dx);
+    resizeState.col.style.width = w + 'px';
+  }
+  function endResize(){
+    if (!resizeState) return;
+    document.querySelectorAll('#th-row .resizer.dragging').forEach(el=>el.classList.remove('dragging'));
+    document.body.style.cursor = '';
+    saveWidths();
+    resizeState = null;
+    window.removeEventListener('mousemove', onResize);
+    window.removeEventListener('mouseup', endResize);
+  }
+  function saveWidths(){
+    const obj = {};
+    document.querySelectorAll('#cg col').forEach((c,i) => {
+      obj[COLS[i].key] = Math.round(c.getBoundingClientRect().width);
+    });
+    try { localStorage.setItem(W_KEY, JSON.stringify(obj)); } catch(_){}
+  }
+  function loadWidths(){
+    try { return JSON.parse(localStorage.getItem(W_KEY) || '{}'); } catch(_) { return {}; }
+  }
+  function resetWidths(){
+    try { localStorage.removeItem(W_KEY); } catch(_){}
+    document.querySelectorAll('#cg col').forEach((c,i) => { c.style.width = COLS[i].w + 'px'; });
+  }
+
+  // ── filter & render ───────────────────────────────────
+  function applyFilter(rows){
+    const q = ($('q').value||'').toLowerCase().trim();
+    const sv = $('svc').value;
+    const ch = $('ch').value;
+    const from = $('from').value; const to = $('to').value;
+    return rows.filter(r => {
+      if (sv && String(r.service||'') !== sv) return false;
+      if (ch && String(r.channel||'') !== ch) return false;
+      if (q){
+        const hay = (r.company+' '+r.manager+' '+r.email).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      const d = String(r.submittedAt||'').slice(0,10);
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+  }
+
+  function renderKPI(rows){
+    $('kpi-count').textContent = fmt(rows.length);
+    const td = todayStr();
+    const wk = daysAgo(7);
+    const todayCnt = rows.filter(r => String(r.submittedAt||'').slice(0,10) === td).length;
+    const weekCnt  = rows.filter(r => String(r.submittedAt||'').slice(0,10) >= wk).length;
+    const svcs = new Set(rows.map(r => r.service||'미지정'));
+    const mktAgreed = rows.filter(r => /동의/.test(String(r.marketingAgreed||'')) && !/미동의/.test(String(r.marketingAgreed||''))).length;
+    $('kpi-today').textContent = fmt(todayCnt);
+    $('kpi-week').textContent  = fmt(weekCnt);
+    $('kpi-svc').textContent   = fmt(svcs.size);
+    $('kpi-mkt').textContent   = fmt(mktAgreed);
+    $('kpi-mkt-sub').textContent = '동의율 ' + (rows.length ? Math.round(mktAgreed*100/rows.length) : 0) + '%';
+  }
+
+  function fillSelects(rows){
+    const fill = (id, key) => {
+      const sel = $(id);
+      const cur = sel.value;
+      const opts = Array.from(new Set(rows.map(r => r[key]).filter(Boolean))).sort();
+      const head = sel.querySelector('option').outerHTML;
+      sel.innerHTML = head + opts.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+      sel.value = cur;
+    };
+    fill('svc','service');
+    fill('ch','channel');
+  }
+
+  function renderTable(rows){
+    const filtered = applyFilter(rows);
+    $('result-count').textContent = filtered.length + '건';
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (PAGE > totalPages) PAGE = totalPages;
+    $('pg-info').textContent = PAGE + ' / ' + totalPages;
+    $('pg-prev').disabled = PAGE <= 1;
+    $('pg-next').disabled = PAGE >= totalPages;
+
+    const start = (PAGE-1) * PAGE_SIZE;
+    const slice = filtered.slice(start, start + PAGE_SIZE);
+
+    const tbody = $('rows');
+    if (!slice.length){
+      tbody.innerHTML = `<tr><td colspan="${COLS.length}"><div class="empty">조건에 맞는 리드가 없습니다.</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = slice.map((r, idx) => {
+      return '<tr data-i="'+(start+idx)+'">' + COLS.map(c => {
+        let v = c.key === '_no' ? (start + idx + 1) : r[c.key];
+        let html;
+        if (c.render) html = c.render(v, r, start+idx);
+        else if (c.bold) html = `<span style="font-weight:600">${esc(v||'-')}</span>`;
+        else html = esc(v == null || v === '' ? '-' : v);
+        const cls = (c.mono ? 'num-cell ' : '') + (c.key==='_no' ? 'col-no ' : '');
+        const align = c.align === 'right' ? 'text-align:right' : '';
+        return `<td class="${cls}" style="${align}" title="${esc(typeof v==='string' ? v : '')}">${html}</td>`;
+      }).join('') + '</tr>';
+    }).join('');
+    // bind row click → drawer
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => openDrawer(filtered[Number(tr.dataset.i)]));
+    });
+  }
+
+  function render(rows){
+    CURRENT = rows;
+    renderKPI(rows);
+    fillSelects(rows);
+    renderTable(rows);
+  }
+
+  // ── drawer ────────────────────────────────────────────
+  function openDrawer(r){
+    if (!r) return;
+    $('drawer-title').textContent = r.company || '(이름 없음)';
+    const fields = [
+      ['제출 날짜', r.submittedAt],
+      ['관심 서비스', r.service],
+      ['기업명', r.company],
+      ['임직원 수', r.employeeCount],
+      ['기업 주소', r.address],
+      ['담당자', r.manager],
+      ['전화번호', r.phone],
+      ['이메일', r.email],
+      ['유입경로', r.channel],
+      ['문의내용', r.message],
+      ['개인정보 동의', r.privacyAgreed],
+      ['마케팅 동의', r.marketingAgreed],
+      ['utm_source', r.utm_source],
+      ['utm_medium', r.utm_medium],
+      ['utm_campaign', r.utm_campaign],
+      ['utm_content', r.utm_content],
+      ['utm_term', r.utm_term],
+      ['WebFormID', r.webFormId]
+    ];
+    $('drawer-body').innerHTML = fields.map(([k,v]) =>
+      `<div class="field"><div class="k">${k}</div><div class="v">${esc(v == null || v === '' ? '-' : v)}</div></div>`).join('');
+    $('drawer').classList.add('open');
+    $('drawer-back').classList.add('open');
+  }
+  function closeDrawer(){ $('drawer').classList.remove('open'); $('drawer-back').classList.remove('open'); }
+
+  // ── data load ─────────────────────────────────────────
+  async function load(){
+    const url = MktProxy.getUrl();
+    $('gas-url').value = url;
+    $('btn-disconnect').style.display = url ? '' : 'none';
+    if (!url){
+      setStatus('데모 데이터 표시 중', 'demo');
+      render(SAMPLE_SALESMAP);
+      return;
+    }
+    try{
+      setStatus('연결 중...');
+      const data = await MktProxy.salesmapList();
+      render(data.rows || []);
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+    }catch(err){
+      setStatus('연결 실패: '+err.message, 'err');
+      render(SAMPLE_SALESMAP);
+    }
+  }
+
+  function exportCSV(){
+    const rows = applyFilter(CURRENT);
+    const headers = COLS.filter(c => c.key !== '_action').map(c => c.label);
+    const csv = [headers.join(',')].concat(rows.map((r, i) => {
+      return COLS.filter(c => c.key !== '_action').map(c => {
+        const v = c.key === '_no' ? (i+1) : (r[c.key] == null ? '' : r[c.key]);
+        const s = String(v).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? '"'+s+'"' : s;
+      }).join(',');
+    })).join('\n');
+    const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'salesmap_'+todayStr()+'.csv';
+    a.click();
+  }
+
+  // ── events ────────────────────────────────────────────
+  buildHeader();
+  $('btn-connect').addEventListener('click', () => {
+    const v = $('gas-url').value.trim(); if (!v) return;
+    MktProxy.setUrl(v); load();
+  });
+  $('btn-disconnect').addEventListener('click', () => {
+    MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
+  });
+  $('btn-refresh').addEventListener('click', load);
+  $('btn-export').addEventListener('click', exportCSV);
+  $('btn-reset-w').addEventListener('click', resetWidths);
+  ['q','svc','ch','from','to'].forEach(id => {
+    $(id).addEventListener('input',  () => { PAGE = 1; renderTable(CURRENT); });
+    $(id).addEventListener('change', () => { PAGE = 1; renderTable(CURRENT); });
+  });
+  $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); renderTable(CURRENT); });
+  $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; renderTable(CURRENT); });
+  $('drawer-close').addEventListener('click', closeDrawer);
+  $('drawer-back').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+  window.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>

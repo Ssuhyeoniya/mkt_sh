@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>세일즈맵 페이지 시안 비교 · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{ font-family:'Pretendard', sans-serif; background:#0b0d10; color:#e6e8eb; }
+  .card{ background:#12151a; border:1px solid #1f242c; border-radius:16px; overflow:hidden; transition:all .2s; }
+  .card:hover{ box-shadow:0 12px 40px rgba(124,92,255,.18); transform:translateY(-2px); border-color:#7c5cff; }
+  .frame-wrap{ aspect-ratio:16/10; width:100%; background:#0b0d10; border-bottom:1px solid #1f242c; overflow:hidden; position:relative; }
+  .frame-wrap iframe{ position:absolute; inset:0; width:200%; height:200%; transform:scale(.5); transform-origin:top left; border:0; pointer-events:none; }
+  .tag{ font-size:11px; padding:2px 8px; border-radius:999px; background:#1a1e25; color:#c4c9d3; display:inline-block; }
+  .btn{ font-size:13px; padding:8px 14px; border-radius:8px; border:1px solid #1f242c; background:transparent; color:#e6e8eb; }
+  .btn:hover{ border-color:#7c5cff; color:#fff; }
+  .btn-primary{ background:#7c5cff; color:#fff; border-color:#7c5cff; }
+  .btn-primary:hover{ background:#9c83ff; border-color:#9c83ff; }
+  .muted{ color:#7a8290; }
+  code{ background:#1a1e25; padding:1px 6px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="max-w-[1320px] mx-auto px-8 py-10">
+  <div class="mb-8">
+    <div class="text-[12.5px] muted">인바운드 · 세일즈맵</div>
+    <h1 class="text-[28px] font-semibold tracking-tight mt-1">세일즈맵 페이지 시안 비교</h1>
+    <p class="text-[13.5px] muted mt-2 leading-relaxed">
+      <code>Data_Result_Final</code> 시트 (제출 날짜, 관심 서비스, 기업명, 기업주소, 담당자명, 휴대전화번호, 회사 이메일, 임직원수, 유입경로, 문의내용, 개인정보/마케팅 동의, utm_source/medium/campaign/content/term, WebFormID) 를 기반으로 한 세일즈맵 CRM 보드 와이어프레임 3종.<br/>
+      모든 시안의 테이블은 <strong>헤더 우측을 드래그</strong>하면 컬럼 너비를 자유롭게 조절할 수 있고, 설정한 너비는 브라우저에 저장됩니다.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-3 gap-5">
+    <!-- A -->
+    <div class="card">
+      <div class="frame-wrap"><iframe src="./option-a/"></iframe></div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="tag">시안 A</span>
+          <span class="tag" style="background:rgba(124,92,255,.2); color:#b8a6ff">Power Table</span>
+        </div>
+        <div class="text-[16px] font-semibold">대용량 표 · 운영 콘솔</div>
+        <p class="text-[12.5px] muted mt-2 leading-relaxed">
+          17개 컬럼 풀 표 + 검색·서비스/유입경로 필터·기간 필터·CSV 내보내기·페이지네이션. 컬럼 너비 자유 조절 + 행 클릭 시 우측 드로어로 전체 정보 확인. 리드가 많을 때 한눈에 관리·조회·일괄 처리하기 최적.
+        </p>
+        <div class="mt-4 flex gap-2">
+          <a href="./option-a/" class="btn">전체보기</a>
+          <a href="./option-a/" target="_blank" class="btn btn-primary">새 창 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="card">
+      <div class="frame-wrap"><iframe src="./option-b/"></iframe></div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="tag">시안 B</span>
+          <span class="tag" style="background:rgba(61,220,151,.2); color:#a3edcc">CRM Pipeline</span>
+        </div>
+        <div class="text-[16px] font-semibold">칸반 보드 · CRM 파이프라인</div>
+        <p class="text-[12.5px] muted mt-2 leading-relaxed">
+          리드를 <strong>관심 서비스 / 유입경로 / UTM 소스</strong> 기준으로 그룹핑한 칸반 보드. 카드별 핵심 정보(담당자·규모·유입·태그) 즉시 노출. <strong>보드↔테이블</strong> 토글로 같은 데이터를 두 가지 뷰로 전환, 테이블 뷰에서도 컬럼 너비 자유 조절.
+        </p>
+        <div class="mt-4 flex gap-2">
+          <a href="./option-b/" class="btn">전체보기</a>
+          <a href="./option-b/" target="_blank" class="btn btn-primary">새 창 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="card">
+      <div class="frame-wrap"><iframe src="./option-c/"></iframe></div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="tag">시안 C</span>
+          <span class="tag" style="background:rgba(255,182,72,.2); color:#ffd99a">Analytics Hybrid</span>
+        </div>
+        <div class="text-[16px] font-semibold">분석 위젯 + 표</div>
+        <p class="text-[12.5px] muted mt-2 leading-relaxed">
+          5개 KPI · 월/주/일별 추이 차트 · 서비스 도넛 · 유입경로 TOP 7 · UTM 소스/캠페인 랭킹 · 임직원 규모 분포 + 컴팩트 리사이즈 테이블. 데이터 인사이트와 상세 행 데이터를 한 화면에서.
+        </p>
+        <div class="mt-4 flex gap-2">
+          <a href="./option-c/" class="btn">전체보기</a>
+          <a href="./option-c/" target="_blank" class="btn btn-primary">새 창 ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-10 grid grid-cols-2 gap-5">
+    <div class="card p-5">
+      <div class="text-[13px] font-semibold mb-3">3개 시안 공통 기능</div>
+      <ul class="text-[12.5px] muted list-disc pl-4 space-y-1.5 leading-relaxed">
+        <li>상단 <code>GAS 프록시 URL</code> 입력창 → 연결 시 실시간 데이터 반영, localStorage 저장</li>
+        <li>5개 KPI: 총 리드 / 금일 신규 / 최근 7일 / 서비스 종류(or UTM 추적) / 마케팅 동의(율)</li>
+        <li>기업명·담당자·이메일 통합 검색 + 서비스·유입경로·기간 필터</li>
+        <li><strong>표시 컬럼 17개</strong>: NO, 제출 날짜, 서비스, 기업명, 임직원 수, 기업 주소, 담당자, 전화번호, 이메일, 유입경로, 개인정보/마케팅 동의, utm_source, utm_medium, utm_campaign, utm_content, utm_term</li>
+        <li>헤더 우측 그립 핸들 드래그로 <strong>컬럼 너비 자유 조절</strong> · 너비 설정은 브라우저 저장</li>
+        <li>행 클릭 → 우측 드로어로 문의내용·WebFormID 포함 18개 필드 전체 확인</li>
+      </ul>
+    </div>
+    <div class="card p-5">
+      <div class="text-[13px] font-semibold mb-3">GAS 프록시 연결 방법</div>
+      <ol class="text-[12.5px] muted list-decimal pl-4 space-y-1.5 leading-relaxed">
+        <li><code>gas/proxy.gs</code> + <code>gas/modules/salesmap.gs</code> 를 GAS 프로젝트에 붙여넣기</li>
+        <li>배포 → 새 배포 → 웹 앱 → 액세스: <strong>모든 사용자</strong></li>
+        <li>발급된 웹 앱 URL 복사 → 시안 페이지 상단 입력창에 붙여넣고 [연결]</li>
+        <li>라우트: <code>?action=salesmap.list</code> · <code>?action=salesmap.summary</code></li>
+        <li>자세한 가이드: <code>gas/README.md</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="text-center muted py-6 mt-6" style="font-size:12px">선택하신 시안을 베이스로 본 페이지를 확정하고, 동일한 패턴으로 IB/OB 분석·고객사·제휴점 등으로 확장합니다.</div>
+</div>
+</body>
+</html>

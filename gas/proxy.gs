@@ -24,9 +24,11 @@ function handle_(e) {
   }
 
   const ROUTES = {
-    'health':        function () { return { ok: true, ts: new Date().toISOString() }; },
-    'blog.list':     Blog_list,
-    'blog.summary':  Blog_summary,
+    'health':           function () { return { ok: true, ts: new Date().toISOString() }; },
+    'blog.list':        Blog_list,
+    'blog.summary':     Blog_summary,
+    'salesmap.list':    Salesmap_list,
+    'salesmap.summary': Salesmap_summary,
     // 추후 추가: 'partner.list': Partner_list, 'ads.inapp': Ads_inapp, ...
   };
 
