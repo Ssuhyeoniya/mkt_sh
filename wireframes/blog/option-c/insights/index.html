@@ -307,21 +307,14 @@
         <div class="label">종합 성과 점수</div>
         <h2 id="score-title">데이터 분석 중…</h2>
         <div class="desc" id="score-desc">BLOG_RAW_DATA 시트의 데이터를 기반으로 자동 산출.</div>
-        <div class="deltas">
-          <div class="delta"><div class="l">조회 기간</div><div class="v" id="score-range" style="font-size:12px">–</div></div>
-          <div class="delta"><div class="l">분석 글</div><div class="v" id="score-count">–</div></div>
-          <div class="delta"><div class="l">총 누적 방문</div><div class="v" id="score-total">–</div></div>
-          <div class="delta"><div class="l">인바운드 전환율</div><div class="v" id="score-cvr">–</div></div>
-          <div class="delta"><div class="l">카테고리</div><div class="v" id="score-cats">–</div></div>
-        </div>
         <!-- 전월/전년 비교 버튼 -->
-        <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap;">
+        <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
           <span style="font-size:11px; color:var(--muted);">기준 비교</span>
           <button class="cmp-btn" data-cmp="mom">전월 대비</button>
           <button class="cmp-btn" data-cmp="yoy">전년 대비</button>
         </div>
-        <!-- 비교 테이블 -->
-        <div class="cmp-table-wrap" id="cmp-table-wrap" hidden>
+        <!-- 비교 테이블 (항상 표시) -->
+        <div class="cmp-table-wrap" id="cmp-table-wrap">
           <table class="cmp-table">
             <thead>
               <tr>
@@ -444,7 +437,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-5"></script>
+<script src="../../proxy-client.js?v=20260510-6"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -468,7 +461,7 @@
   let ACTIVE_RANGE = '';
   let INBOUND_COUNTS = {};       // utm_term → 실제 인바운드 인입 건수 (세일즈맵 매칭)
   let SCOPED_ROWS_GLOBAL = [];   // 카테고리 모달 등에서 사용
-  let COMPARE_MODE = '';         // '' | 'mom' | 'yoy'
+  let COMPARE_MODE = 'mom';      // 기본값: 전월 대비
   function ymdStr(d){
     const y = d.getFullYear();
     const m = String(d.getMonth()+1).padStart(2,'0');
@@ -778,33 +771,31 @@
   function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
   function escAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
 
+  // 안전 setter — 요소가 제거된 경우에도 에러 없이 무시
+  function safeSet(id, text){ const el = $(id); if (el) el.textContent = text; }
+  function safeHtml(id, html){ const el = $(id); if (el) el.innerHTML = html; }
+
   function renderHero(d){
     if (!d){
-      $('score-val').textContent = '–';
-      $('score-title').textContent = '데이터 없음';
-      $('score-desc').textContent = 'BLOG_RAW_DATA 시트에 데이터를 추가하거나 GAS 프록시를 연결해주세요.';
-      $('score-ring').style.background = 'conic-gradient(#1f242c 0 100%)';
-      ['score-count','score-total','score-cvr','score-cats','score-range'].forEach(id => $(id).textContent = '–');
+      safeSet('score-val', '–');
+      safeSet('score-title', '데이터 없음');
+      safeSet('score-desc', 'BLOG_RAW_DATA 시트에 데이터를 추가하거나 GAS 프록시를 연결해주세요.');
+      const ring = $('score-ring'); if (ring) ring.style.background = 'conic-gradient(#1f242c 0 100%)';
+      ['kpi-count','kpi-total','kpi-cvr','kpi-cat-sub'].forEach(id => safeSet(id, '–'));
       return;
     }
-    $('score-val').textContent = d.score;
+    safeSet('score-val', d.score);
     const tier = d.score >= 80 ? '상위 18%' : d.score >= 65 ? '평균 이상' : '개선 필요';
     const tierColor = d.score >= 80 ? 'var(--green)' : d.score >= 65 ? 'var(--amber)' : 'var(--red)';
-    $('score-title').innerHTML = `전체 평균 대비 <span style="color:${tierColor}">${tier}</span>`;
-    $('score-desc').textContent = `최근 발행 ${d.rows.length}건 기준 · 누적 방문 / 인바운드 전환 / 카테고리 다양성 / 발행 빈도 4개 축 가중 평균.`;
-    $('score-ring').style.background = `conic-gradient(#7c5cff 0 ${d.score}%, #1f242c ${d.score}% 100%)`;
-    $('score-count').textContent = fmt(d.rows.length);
-    $('score-total').textContent = fmtK(d.totalVisit);
-    $('score-cvr').textContent   = pct(d.overallCV);
-    $('score-cats').textContent  = d.catList.length + '개';
-    // 조회 기간 — 항상 실제 날짜 범위로 표시 (최근 N일 형식 X)
-    const cur = getCurrentRange();
-    $('score-range').textContent = cur ? (cur.start + ' ~ ' + cur.end) : '전체 기간';
+    safeHtml('score-title', '전체 평균 대비 <span style="color:'+tierColor+'">'+tier+'</span>');
+    safeSet('score-desc', '최근 발행 '+d.rows.length+'건 기준 · 누적 방문 / 인바운드 전환 / 카테고리 다양성 / 발행 빈도 4개 축 가중 평균.');
+    const ring = $('score-ring');
+    if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 '+d.score+'%, #1f242c '+d.score+'% 100%)';
 
-    $('kpi-count').textContent  = fmt(d.rows.length);
-    $('kpi-total').textContent  = fmtK(d.totalVisit);
-    $('kpi-cvr').textContent    = pct(d.overallCV);
-    $('kpi-cat-sub').textContent = '카테고리 ' + d.catList.length + '개';
+    safeSet('kpi-count',  fmt(d.rows.length));
+    safeSet('kpi-total',  fmtK(d.totalVisit));
+    safeSet('kpi-cvr',    pct(d.overallCV));
+    safeSet('kpi-cat-sub','카테고리 ' + d.catList.length + '개');
   }
 
   let CURRENT_INSIGHT_CARDS = [];
@@ -1084,22 +1075,27 @@
     document.querySelectorAll('.cmp-btn').forEach(function(b){
       b.classList.toggle('active', b.dataset.cmp === COMPARE_MODE);
     });
-    const wrap = $('cmp-table-wrap');
     const tbody = $('cmp-tbody');
 
-    if (!COMPARE_MODE){
-      // 비교 비활성 — 테이블 숨김, 점수는 현재 점수 유지
-      wrap.hidden = true;
-      tbody.innerHTML = '';
+    const cur = getCurrentRange();
+    if (!cur || !curD){
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">데이터 없음</td></tr>';
       return;
     }
 
-    const cur = getCurrentRange();
-    if (!cur){
-      wrap.hidden = false;
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">기준 기간 없음</td></tr>';
+    // 비교 모드 비활성 — 현재 행만 표시
+    if (!COMPARE_MODE){
+      tbody.innerHTML =
+        '<tr>'
+          + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
+          + '<td class="num">'+fmt(curD.rows.length)+'</td>'
+          + '<td class="num">'+fmtK(curD.totalVisit)+'</td>'
+          + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
+          + '<td class="num">'+pct(curD.overallCV)+'</td>'
+        + '</tr>';
       return;
     }
+
     let prevStart, prevEnd;
     if (COMPARE_MODE === 'mom'){
       prevStart = shiftDateStr(cur.start, 0, -1, 0);
@@ -1110,7 +1106,7 @@
     }
 
     const prevRows = rowsInRange(prevStart, prevEnd);
-    wrap.hidden = false;
+    const cmpLabel = COMPARE_MODE === 'mom' ? '전월' : '전년';
 
     if (!prevRows.length){
       tbody.innerHTML =
@@ -1121,21 +1117,23 @@
           + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
           + '<td class="num">'+pct(curD.overallCV)+'</td>'
         + '</tr>'
-        + '<tr><td colspan="5" style="text-align:center;color:var(--muted);font-size:11.5px;">비교 기간 ('+prevStart+' ~ '+prevEnd+') 에 데이터가 없습니다.</td></tr>';
+        + '<tr>'
+          + '<td>'+prevStart+' ~ '+prevEnd+' <span class="badge cmp">'+cmpLabel+'</span></td>'
+          + '<td colspan="4" style="text-align:center;color:var(--muted);font-size:11.5px;">비교 기간 데이터 없음</td>'
+        + '</tr>';
       return;
     }
 
     const prevD = derive(prevRows);
 
-    // 점수 자동 변경 — 비교 모드 활성 시 비교 기간의 점수로 score 표시
+    // 점수 자동 변경 — 비교 기간의 점수로 표시
     $('score-val').textContent = prevD.score;
     const tier = prevD.score >= 80 ? '상위 18%' : prevD.score >= 65 ? '평균 이상' : '개선 필요';
     const tierColor = prevD.score >= 80 ? 'var(--green)' : prevD.score >= 65 ? 'var(--amber)' : 'var(--red)';
-    $('score-title').innerHTML = '비교 기간 점수 (' + (COMPARE_MODE==='mom'?'전월':'전년') + ' 대비) — <span style="color:'+tierColor+'">'+tier+'</span>';
+    $('score-title').innerHTML = '비교 기간 점수 (' + cmpLabel + ' 대비) — <span style="color:'+tierColor+'">'+tier+'</span>';
     $('score-ring').style.background = 'conic-gradient(#7c5cff 0 ' + prevD.score + '%, #1f242c ' + prevD.score + '% 100%)';
 
     tbody.innerHTML =
-      // 현재
       '<tr>'
         + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
         + '<td class="num">'+fmt(curD.rows.length)+'</td>'
@@ -1143,15 +1141,13 @@
         + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
         + '<td class="num">'+pct(curD.overallCV)+'</td>'
       + '</tr>'
-      // 비교
       + '<tr>'
-        + '<td>'+prevStart+' ~ '+prevEnd+' <span class="badge cmp">'+(COMPARE_MODE==='mom'?'전월':'전년')+'</span></td>'
+        + '<td>'+prevStart+' ~ '+prevEnd+' <span class="badge cmp">'+cmpLabel+'</span></td>'
         + '<td class="num">'+fmt(prevD.rows.length)+'</td>'
         + '<td class="num">'+fmtK(prevD.totalVisit)+'</td>'
         + '<td class="num">'+fmt(prevD.totalInbound)+'</td>'
         + '<td class="num">'+pct(prevD.overallCV)+'</td>'
       + '</tr>'
-      // 증감률
       + '<tr class="diff-row">'
         + '<td class="label">증감률 · 점수 ' + diffScoreHtml(curD.score, prevD.score) + '</td>'
         + '<td class="num">'+diffPctHtml(curD.rows.length, prevD.rows.length)+'</td>'
