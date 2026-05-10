@@ -92,6 +92,20 @@
       <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
     </section>
 
+    <!-- 기간 조회 -->
+    <div class="date-filter">
+      <span class="lbl">기간</span>
+      <input type="date" id="date-start" />
+      <span class="sep">~</span>
+      <input type="date" id="date-end" />
+      <button class="qbtn" data-range="7">7일</button>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <button class="clear" id="btn-clear-date">초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
     <!-- Filter -->
     <div class="filter">
       <div class="search">
@@ -100,9 +114,6 @@
       </div>
       <select id="svc"><option value="">전체 서비스</option></select>
       <select id="ch"><option value="">전체 유입경로</option></select>
-      <input id="from" type="date"/>
-      <span class="muted text-[12px]">~</span>
-      <input id="to" type="date"/>
       <button id="btn-refresh">↻ 새로고침</button>
     </div>
 
@@ -171,6 +182,7 @@
 
   let CURRENT = [];
   let TREND_RANGE = 'month';
+  let ACTIVE_RANGE = '';
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -185,10 +197,41 @@
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
+  // ── date helpers (블로그 페이지와 동일) ─────────────
+  function ymdStr(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  function yesterday(){ const d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
+  function setQuickRange(days){
+    const end = yesterday();
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
+    $('date-start').value = ymdStr(start);
+    $('date-end').value   = ymdStr(end);
+    ACTIVE_RANGE = String(days);
+    rerender();
+  }
+  function clearDateRange(){
+    $('date-start').value = '';
+    $('date-end').value = '';
+    ACTIVE_RANGE = '';
+    rerender();
+  }
+  function updateRangeInfo(){
+    const ds = $('date-start').value, de = $('date-end').value;
+    document.querySelectorAll('.qbtn').forEach(b => {
+      b.classList.toggle('active', b.dataset.range === ACTIVE_RANGE);
+    });
+    $('range-info').textContent = (!ds && !de) ? '전체 기간' : `${ds||'...'} ~ ${de||'...'}`;
+  }
+
   function applyFilter(rows){
     const q = ($('q').value||'').toLowerCase().trim();
     const sv = $('svc').value, ch = $('ch').value;
-    const from = $('from').value, to = $('to').value;
+    const ds = $('date-start').value, de = $('date-end').value;
     return rows.filter(r => {
       if (sv && String(r.service||'') !== sv) return false;
       if (ch && String(r.channel||'') !== ch) return false;
@@ -197,8 +240,8 @@
         if (hay.indexOf(q) < 0) return false;
       }
       const d = String(r.submittedAt||'').slice(0,10);
-      if (from && d < from) return false;
-      if (to && d > to) return false;
+      if (ds && d < ds) return false;
+      if (de && d > de) return false;
       return true;
     });
   }
@@ -301,6 +344,7 @@
   }
 
   function rerender(){
+    updateRangeInfo();
     const filtered = applyFilter(CURRENT);
     renderKPI(filtered);
     renderTrend(filtered);
@@ -338,8 +382,16 @@
   $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); load(); });
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load(); });
   $('btn-refresh').addEventListener('click', load);
-  ['q','svc','ch','from','to'].forEach(id => $(id).addEventListener('input', rerender));
-  ['svc','ch','from','to'].forEach(id => $(id).addEventListener('change', rerender));
+  ['q','svc','ch'].forEach(id => $(id).addEventListener('input', rerender));
+  ['svc','ch'].forEach(id => $(id).addEventListener('change', rerender));
+
+  // 기간 조회
+  document.querySelectorAll('.qbtn').forEach(b => {
+    b.addEventListener('click', () => setQuickRange(Number(b.dataset.range)));
+  });
+  $('date-start').addEventListener('change', () => { ACTIVE_RANGE=''; rerender(); });
+  $('date-end').addEventListener('change',   () => { ACTIVE_RANGE=''; rerender(); });
+  $('btn-clear-date').addEventListener('click', clearDateRange);
   $('trend-seg').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     $('trend-seg').querySelectorAll('button').forEach(x => x.classList.remove('active'));
