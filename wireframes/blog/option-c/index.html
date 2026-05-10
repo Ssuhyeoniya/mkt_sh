@@ -88,8 +88,13 @@
   /* ── Bottom table ───────────────────────────────── */
   .table-head, .post-row{
     display:grid;
-    grid-template-columns:36px 64px 1fr 100px 90px 80px 80px 80px 80px 36px;
+    grid-template-columns:36px 64px 1fr 80px 100px 90px 80px 80px 80px 80px 36px;
     gap:10px; align-items:center;
+  }
+  .post-row .svc-tag{
+    font-size:10.5px; padding:2px 7px; border-radius:4px;
+    background:rgba(78,163,255,.15); color:#a3cdff;
+    border:1px solid rgba(78,163,255,.3); display:inline-block;
   }
   .table-head{
     padding:10px 14px; background:var(--panel-2); color:var(--muted);
@@ -122,12 +127,9 @@
   .table-body::-webkit-scrollbar{ width:8px; }
   .table-body::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
 
-  .pager-bar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:12px 16px; border-top:1px solid var(--line); font-size:12px;
-  }
-  .pager-info{ color:var(--muted); }
-  .pager{ display:inline-flex; gap:4px; flex-wrap:wrap; }
+  /* pager: 필터 바에 인라인 배치 */
+  .pager-info{ color:var(--muted); white-space:nowrap; }
+  .pager{ display:inline-flex; gap:4px; flex-wrap:nowrap; }
   .pager button{
     background:transparent; border:1px solid var(--line); color:var(--text-2);
     font-size:12px; padding:5px 10px; min-width:30px; border-radius:6px; cursor:pointer;
@@ -247,14 +249,16 @@
       </div>
       <select id="cat"><option value="">전체 카테고리</option></select>
       <select id="sort">
-        <option value="visit_desc">누적 방문 많은 순</option>
         <option value="date_desc">최신순</option>
+        <option value="visit_desc">누적 방문 많은 순</option>
         <option value="weekly_desc">주간 방문 많은 순</option>
         <option value="inbound_desc">유입 많은 순</option>
       </select>
       <button id="btn-refresh">↻ 새로고침</button>
       <span style="flex:1"></span>
       <span class="chip" id="result-count">0건</span>
+      <span class="pager-info" id="pager-info" style="font-size:11.5px;color:var(--muted);"></span>
+      <div class="pager" id="pager"></div>
     </div>
 
     <!-- Compact post list -->
@@ -263,6 +267,7 @@
         <div>NO</div>
         <div>썸네일</div>
         <div>제목</div>
+        <div>서비스</div>
         <div>카테고리</div>
         <div>발행일</div>
         <div class="num-cell">누적방문</div>
@@ -272,10 +277,6 @@
         <div></div>
       </div>
       <div class="table-body" id="rows"></div>
-      <div class="pager-bar">
-        <div class="pager-info" id="pager-info">0건</div>
-        <div class="pager" id="pager"></div>
-      </div>
     </div>
 
     <div class="text-center muted py-6" style="font-size:11.5px;">시안 C · Analytics Hybrid · 분석 위젯 + 콤팩트 표 (페이지당 30건, 한 화면 10건 스크롤)</div>
@@ -499,8 +500,9 @@
           + '<div><div class="thumb-cell">'+thumb+'</div></div>'
           + '<div class="title-wrap">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-            + '<div class="meta-line">'+escHtml(r.service||'')+(r.postid?' · '+escHtml(r.postid):'')+'</div>'
+            + '<div class="meta-line">'+(r.postid ? escHtml(r.postid) : '-')+'</div>'
           + '</div>'
+          + '<div>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</div>'
           + '<div>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</div>'
           + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
           + '<div class="num-cell">'+fmt(r.totalVisit)+'</div>'
