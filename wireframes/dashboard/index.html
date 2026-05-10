@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>마케팅 CRM · 종합 대시보드</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0b0d10; --panel:#12151a; --line:#1f242c; --line-2:#262c35;
+    --muted:#7a8290; --text:#e6e8eb; --text-2:#c4c9d3;
+    --accent:#7c5cff; --green:#3ddc97; --red:#ff5d73; --amber:#ffb648; --blue:#4ea3ff;
+  }
+  html,body{ background:var(--bg); color:var(--text); font-family:'Pretendard',sans-serif; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+  .muted{ color:var(--muted); }
+  .num{ font-family:'JetBrains Mono', monospace; }
+  .chip{ font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
+  .nav-section{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:18px 0 6px; padding:0 8px; }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; color:#c4c9d3; font-size:13.5px; cursor:pointer; }
+  .nav-item:hover{ background:#1a1e25; color:#fff; }
+  .nav-item.active{ background:#1a1e25; color:#fff; }
+  .nav-item.active::before{ content:""; width:3px; height:14px; background:var(--accent); border-radius:2px; margin-right:-4px; }
+  .dot{ width:6px; height:6px; border-radius:999px; display:inline-block; }
+  .pill{ font-size:11px; padding:2px 8px; border-radius:999px; }
+  .sub-tab{ font-size:12.5px; padding:6px 10px; border-radius:6px; color:#9aa3b1; cursor:pointer; }
+  .sub-tab.active{ background:#1a1e25; color:#fff; }
+  .grid-bg{
+    background-image:
+      linear-gradient(transparent 95%, rgba(255,255,255,.04) 95%),
+      linear-gradient(90deg, transparent 95%, rgba(255,255,255,.04) 95%);
+    background-size: 24px 24px;
+  }
+  /* Korea region map */
+  .kmap{ position:relative; height:280px; }
+  .region{ position:absolute; border-radius:8px; padding:8px 10px; font-size:11.5px; color:#fff; background:#1a1e25; border:1px solid var(--line-2); transition:all .2s; cursor:default; }
+  .region:hover{ transform:translateY(-2px); border-color:var(--accent); }
+  .region .v{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; }
+  .heat-1{ background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(124,92,255,.08)); border-color:rgba(124,92,255,.35); }
+  .heat-2{ background:linear-gradient(135deg, rgba(124,92,255,.32), rgba(124,92,255,.14)); border-color:rgba(124,92,255,.5); }
+  .heat-3{ background:linear-gradient(135deg, rgba(124,92,255,.55), rgba(124,92,255,.25)); border-color:rgba(124,92,255,.7); }
+  .heat-4{ background:linear-gradient(135deg, rgba(124,92,255,.85), rgba(124,92,255,.45)); border-color:rgba(124,92,255,.9); }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="flex">
+  <!-- Sidebar (시안 A 목차) -->
+  <aside class="w-[240px] min-h-screen border-r border-[var(--line)] p-4 sticky top-0 bg-[var(--bg)]">
+    <div class="flex items-center gap-2 mb-2 px-2">
+      <div class="w-7 h-7 rounded-md" style="background:linear-gradient(135deg,#7c5cff,#3ddc97)"></div>
+      <div class="font-semibold">Marketing CRM</div>
+    </div>
+    <div class="text-[11px] muted px-2 mb-4">2026.05 · v1.0</div>
+
+    <div class="nav-section">Overview</div>
+    <a class="nav-item active">대시보드</a>
+
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item">세일즈맵</a>
+
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-7">
+      <div>
+        <div class="text-[12px] muted">Overview · 종합</div>
+        <h1 class="text-[26px] font-semibold tracking-tight">마케팅 종합 현황</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 text-[12px] muted">
+          <span class="dot" style="background:var(--green); box-shadow:0 0 0 3px rgba(61,220,151,.15)"></span>
+          GAS 프록시 동기화 정상 · 마지막 갱신 2분 전
+        </div>
+        <div class="panel px-3 py-1.5 text-[12.5px]">기간 · 최근 30일 ▾</div>
+        <div class="panel px-3 py-1.5 text-[12.5px]">새로고침</div>
+      </div>
+    </div>
+
+    <!-- KPI strip (5개) -->
+    <section class="grid grid-cols-5 gap-4 mb-5">
+      <div class="panel p-5">
+        <div class="text-[12px] muted">신규 인바운드</div>
+        <div class="num text-[26px] mt-1">1,284</div>
+        <div class="text-[11.5px] mt-1" style="color:var(--green)">▲ 12.4% MoM</div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">아웃바운드 컨택</div>
+        <div class="num text-[26px] mt-1">2,041</div>
+        <div class="text-[11.5px] mt-1" style="color:var(--green)">▲ 4.1% MoM</div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">성약 건수</div>
+        <div class="num text-[26px] mt-1">187</div>
+        <div class="text-[11.5px] mt-1" style="color:var(--green)">▲ 6.1% MoM</div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">이탈률</div>
+        <div class="num text-[26px] mt-1">3.2%</div>
+        <div class="text-[11.5px] mt-1" style="color:var(--red)">▼ 0.4%p</div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">광고 ROAS</div>
+        <div class="num text-[26px] mt-1">412%</div>
+        <div class="text-[11.5px] mt-1" style="color:var(--amber)">▲ 3.0% MoM</div>
+      </div>
+    </section>
+
+    <!-- Row: line chart + donut -->
+    <section class="grid grid-cols-3 gap-4 mb-5">
+      <div class="panel p-5 col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-[12px] muted">인바운드 · 아웃바운드 추이</div>
+            <div class="text-[15px] font-semibold mt-0.5">최근 12주</div>
+          </div>
+          <div class="flex gap-1">
+            <span class="sub-tab active">전체</span>
+            <span class="sub-tab">IB</span>
+            <span class="sub-tab">OB</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 600 220" width="100%" height="220">
+          <g stroke="rgba(255,255,255,.05)" stroke-width="1">
+            <line x1="0" y1="40" x2="600" y2="40"/>
+            <line x1="0" y1="90" x2="600" y2="90"/>
+            <line x1="0" y1="140" x2="600" y2="140"/>
+            <line x1="0" y1="190" x2="600" y2="190"/>
+          </g>
+          <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30 L600,220 L0,220 Z" fill="rgba(78,163,255,.12)"/>
+          <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30" fill="none" stroke="#4ea3ff" stroke-width="2"/>
+          <path d="M0,180 C50,175 100,170 150,160 C200,155 250,145 300,140 C350,135 400,125 450,115 C500,110 550,100 600,95" fill="none" stroke="#3ddc97" stroke-width="2"/>
+        </svg>
+        <div class="flex gap-4 text-[12px] mt-2">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#4ea3ff"></span>인바운드</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#3ddc97"></span>아웃바운드</span>
+        </div>
+      </div>
+
+      <div class="panel p-5">
+        <div class="text-[12px] muted">유입 채널 비중</div>
+        <div class="text-[15px] font-semibold mt-0.5 mb-4">IB / OB 종합</div>
+        <div class="flex items-center gap-5">
+          <div class="relative w-[130px] h-[130px] rounded-full"
+               style="background:conic-gradient(#4ea3ff 0 62%, #3ddc97 62% 82%, #ffb648 82% 95%, #2a2f38 95% 100%)">
+            <div class="absolute inset-3 rounded-full flex flex-col items-center justify-center" style="background:var(--panel)">
+              <div class="text-[11px] muted">전체</div>
+              <div class="num text-[18px] font-semibold">3,325</div>
+            </div>
+          </div>
+          <div class="space-y-2 text-[12.5px]">
+            <div class="flex items-center gap-2"><span class="dot" style="background:#4ea3ff"></span>웹 폼 · 62%</div>
+            <div class="flex items-center gap-2"><span class="dot" style="background:#3ddc97"></span>전화 인입 · 20%</div>
+            <div class="flex items-center gap-2"><span class="dot" style="background:#ffb648"></span>제휴점 · 13%</div>
+            <div class="flex items-center gap-2"><span class="dot" style="background:#2a2f38"></span>기타 · 5%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 지역구 분포도 -->
+    <section class="panel p-5 mb-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <div class="text-[12px] muted">지역구 분포도</div>
+          <div class="text-[15px] font-semibold mt-0.5">전국 인바운드 · 성약 분포</div>
+        </div>
+        <div class="flex gap-2 items-center">
+          <div class="flex gap-1 items-center text-[11px] muted">
+            <span>적음</span>
+            <span class="w-4 h-3 rounded-sm heat-1"></span>
+            <span class="w-4 h-3 rounded-sm heat-2"></span>
+            <span class="w-4 h-3 rounded-sm heat-3"></span>
+            <span class="w-4 h-3 rounded-sm heat-4"></span>
+            <span>많음</span>
+          </div>
+          <div class="flex gap-1 ml-2">
+            <span class="sub-tab active">인바운드</span>
+            <span class="sub-tab">성약</span>
+            <span class="sub-tab">제휴점</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <!-- Korea regional map (stylized boxes) -->
+        <div class="kmap col-span-2 grid-bg rounded-lg p-3">
+          <!-- 강원 -->
+          <div class="region heat-1" style="left:62%; top:10%">강원<div class="v">98</div></div>
+          <!-- 경기 -->
+          <div class="region heat-3" style="left:46%; top:14%">경기<div class="v">287</div></div>
+          <!-- 서울 -->
+          <div class="region heat-4" style="left:36%; top:20%">서울<div class="v">412</div></div>
+          <!-- 인천 -->
+          <div class="region heat-2" style="left:24%; top:24%">인천<div class="v">142</div></div>
+          <!-- 충북 -->
+          <div class="region heat-1" style="left:56%; top:36%">충북<div class="v">62</div></div>
+          <!-- 충남 -->
+          <div class="region heat-2" style="left:34%; top:42%">충남<div class="v">118</div></div>
+          <!-- 대전 -->
+          <div class="region heat-2" style="left:48%; top:50%">대전<div class="v">96</div></div>
+          <!-- 경북 -->
+          <div class="region heat-2" style="left:68%; top:46%">경북<div class="v">131</div></div>
+          <!-- 전북 -->
+          <div class="region heat-1" style="left:32%; top:58%">전북<div class="v">74</div></div>
+          <!-- 대구 -->
+          <div class="region heat-3" style="left:60%; top:60%">대구<div class="v">187</div></div>
+          <!-- 울산 -->
+          <div class="region heat-1" style="left:78%; top:60%">울산<div class="v">52</div></div>
+          <!-- 광주 -->
+          <div class="region heat-2" style="left:30%; top:74%">광주<div class="v">88</div></div>
+          <!-- 전남 -->
+          <div class="region heat-1" style="left:18%; top:80%">전남<div class="v">69</div></div>
+          <!-- 부산 -->
+          <div class="region heat-3" style="left:68%; top:78%">부산<div class="v">152</div></div>
+          <!-- 경남 -->
+          <div class="region heat-2" style="left:50%; top:78%">경남<div class="v">109</div></div>
+          <!-- 제주 -->
+          <div class="region heat-1" style="left:22%; top:92%">제주<div class="v">23</div></div>
+        </div>
+
+        <!-- Top regions list -->
+        <div>
+          <div class="text-[12px] muted mb-2">상위 지역</div>
+          <div class="space-y-2.5">
+            <div class="flex items-center gap-3">
+              <div class="w-5 text-[11px] muted num">1</div>
+              <div class="flex-1">
+                <div class="flex justify-between text-[13px]"><span>서울</span><span class="num">412</span></div>
+                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:100%; background:var(--accent)"></div></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-5 text-[11px] muted num">2</div>
+              <div class="flex-1">
+                <div class="flex justify-between text-[13px]"><span>경기</span><span class="num">287</span></div>
+                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:70%; background:var(--accent)"></div></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-5 text-[11px] muted num">3</div>
+              <div class="flex-1">
+                <div class="flex justify-between text-[13px]"><span>대구</span><span class="num">187</span></div>
+                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:46%; background:var(--accent)"></div></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-5 text-[11px] muted num">4</div>
+              <div class="flex-1">
+                <div class="flex justify-between text-[13px]"><span>부산</span><span class="num">152</span></div>
+                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:38%; background:var(--accent)"></div></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-5 text-[11px] muted num">5</div>
+              <div class="flex-1">
+                <div class="flex justify-between text-[13px]"><span>인천</span><span class="num">142</span></div>
+                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:35%; background:var(--accent)"></div></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-5 text-[11px] muted num">6</div>
+              <div class="flex-1">
+                <div class="flex justify-between text-[13px]"><span>경북</span><span class="num">131</span></div>
+                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:32%; background:var(--accent)"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="text-[11.5px] muted mt-3 pt-3 border-t border-[var(--line)]">
+            전국 17개 시·도 · 총 <span class="num text-[var(--text)]">2,210</span> 건
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row: 고객사 / 제휴점 / 광고 -->
+    <section class="grid grid-cols-3 gap-4 mb-5">
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[15px] font-semibold">고객사 관리</div>
+          <span class="chip muted">최근 7일</span>
+        </div>
+        <div class="space-y-2.5">
+          <div class="flex justify-between text-[13px]"><span class="muted">신규 성약</span><span class="num" style="color:var(--green)">+24</span></div>
+          <div class="flex justify-between text-[13px]"><span class="muted">활성 고객사</span><span class="num">1,082</span></div>
+          <div class="flex justify-between text-[13px]"><span class="muted">이탈 위험</span><span class="num" style="color:var(--red)">17</span></div>
+        </div>
+        <svg class="mt-3" viewBox="0 0 200 50" width="100%" height="50">
+          <path fill="rgba(124,92,255,.15)" d="M0,40 L20,30 L40,35 L60,25 L80,28 L100,15 L120,20 L140,12 L160,18 L180,8 L200,14 L200,50 L0,50 Z"/>
+          <path fill="none" stroke="#7c5cff" stroke-width="1.6" d="M0,40 L20,30 L40,35 L60,25 L80,28 L100,15 L120,20 L140,12 L160,18 L180,8 L200,14"/>
+        </svg>
+      </div>
+
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[15px] font-semibold">제휴점</div>
+          <span class="chip muted">총 348곳</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-[11.5px] muted">신규</div><div class="num text-[20px]" style="color:var(--green)">+12</div></div>
+          <div><div class="text-[11.5px] muted">활성</div><div class="num text-[20px]">312</div></div>
+          <div><div class="text-[11.5px] muted">대기</div><div class="num text-[20px]">22</div></div>
+          <div><div class="text-[11.5px] muted">중단</div><div class="num text-[20px]" style="color:var(--red)">14</div></div>
+        </div>
+      </div>
+
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[15px] font-semibold">광고 성과</div>
+          <span class="chip muted">인앱 · CORP</span>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-[12.5px]"><span class="muted">인앱</span><span class="num">ROAS 380%</span></div>
+            <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:78%; background:var(--accent)"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12.5px]"><span class="muted">CORP</span><span class="num">ROAS 442%</span></div>
+            <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:90%; background:var(--green)"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SNS preview -->
+    <section class="panel p-5 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-[15px] font-semibold">SNS 미리보기</div>
+        <div class="flex gap-1">
+          <span class="sub-tab active">전체</span>
+          <span class="sub-tab">블로그</span>
+          <span class="sub-tab">인스타그램</span>
+          <span class="sub-tab">링크드인</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-4 gap-3">
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="text-[12.5px] font-medium">블로그 · 신규 캠페인 회고</div>
+          <div class="text-[11px] muted mt-1">조회 12,431 · 5/8</div>
+        </div>
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="text-[12.5px] font-medium">인스타 · 봄 프로모션 릴스</div>
+          <div class="text-[11px] muted mt-1">좋아요 3,210 · 5/7</div>
+        </div>
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="text-[12.5px] font-medium">링크드인 · B2B 케이스</div>
+          <div class="text-[11px] muted mt-1">반응 412 · 5/6</div>
+        </div>
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="text-[12.5px] font-medium">블로그 · 분기 리포트</div>
+          <div class="text-[11px] muted mt-1">조회 8,720 · 5/3</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center text-[11.5px] muted py-4">마케팅 CRM · 종합 대시보드 · 와이어프레임 v2</div>
+  </main>
+</div>
+</body>
+</html>
