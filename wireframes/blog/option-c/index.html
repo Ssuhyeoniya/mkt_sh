@@ -41,12 +41,12 @@
   .kpi .kpi-value{ font-size:18px; margin-top:2px; line-height:1.2; }
   .kpi .kpi-sub{ font-size:10.5px; margin-top:2px; line-height:1.3; }
 
-  /* ── Analytics row: 3개 패널 동일 높이 ─────────────────
+  /* ── Analytics row: 4개 패널 동일 높이 ─────────────────
      ※ 부모 그리드에 명시 높이가 없을 때 flex:1 만으로는
         하위 아이템이 0으로 붕괴하므로 패널/아이템 양쪽에
         min-height 앵커를 둠 */
   .analytics-row{
-    display:grid; grid-template-columns:repeat(3, 1fr);
+    display:grid; grid-template-columns:repeat(4, 1fr);
     gap:14px; margin-bottom:18px; align-items:stretch;
   }
   .a-panel{
@@ -179,13 +179,16 @@
   .trend-svg{ flex:1 1 auto; width:100%; min-height:160px; display:block; }
   .trend-legend{ display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--muted); flex-shrink:0; }
 
-  /* ── 반응형: 모바일 1열 3행 ── */
+  /* ── 반응형: width 축소에 따라 칸수 단계적 축소 ── */
+  @media (max-width: 1280px){
+    .analytics-row{ grid-template-columns:repeat(2, 1fr); }
+  }
   @media (max-width: 900px){
-    .analytics-row{ grid-template-columns:1fr; }
     .a-panel{ min-height:240px; }
     .kpi-grid{ grid-template-columns:repeat(2, 1fr); }
   }
   @media (max-width: 640px){
+    .analytics-row{ grid-template-columns:1fr; }
     .kpi-grid{ grid-template-columns:1fr; }
     .sidebar{ width:64px; padding:10px 6px; }
     .sidebar .brand-name, .sidebar .brand-ver, .sidebar .nav-section, .sidebar .nav-item{ display:none; }
@@ -320,7 +323,7 @@
             <div class="eyebrow">상위 5개</div>
             <h2>발행글 TOP 5 (누적 방문)</h2>
           </div>
-          <button class="more-btn" id="btn-top-more">더보기 →</button>
+          <button class="more-btn" data-more="visit">더보기 →</button>
         </div>
         <div class="pb">
           <div class="top-list" id="top-list"></div>
@@ -328,8 +331,22 @@
       </div>
       <div class="a-panel">
         <div class="ph">
-          <div class="eyebrow">카테고리별</div>
-          <h2>발행 분포</h2>
+          <div class="ph-text">
+            <div class="eyebrow">상위 5개</div>
+            <h2>인바운드 TOP 5</h2>
+          </div>
+          <button class="more-btn" data-more="inbound">더보기 →</button>
+        </div>
+        <div class="pb">
+          <div class="top-list" id="inbound-list"></div>
+        </div>
+      </div>
+      <div class="a-panel">
+        <div class="ph">
+          <div class="ph-text">
+            <div class="eyebrow">카테고리별</div>
+            <h2>발행 분포</h2>
+          </div>
         </div>
         <div class="pb">
           <div class="cat-bars" id="cat-bars"></div>
@@ -511,21 +528,24 @@
   }
 
   // ── analytics renderers ──────────────────────────
-  function renderTop(rows){
-    const top = rows.slice().sort((a,b)=>Number(b.totalVisit||0)-Number(a.totalVisit||0)).slice(0,5);
-    if (!top.length){ $('top-list').innerHTML = '<div class="empty" style="margin:auto">데이터 없음</div>'; return; }
-    // 5개 미만이면 빈 슬롯으로 채워 균등 높이 유지
-    const items = top.slice();
+  function renderTopList(rows, key, listEl){
+    const sorted = rows.slice()
+      .sort((a,b)=>Number(b[key]||0)-Number(a[key]||0))
+      .slice(0,5);
+    if (!sorted.length){ listEl.innerHTML = '<div class="empty" style="margin:auto">데이터 없음</div>'; return; }
+    const items = sorted.slice();
     while (items.length < 5) items.push(null);
-    $('top-list').innerHTML = items.map(function(r,i){
+    listEl.innerHTML = items.map(function(r,i){
       if (!r) return '<div class="item" style="opacity:.25"><div class="rk">'+(i+1)+'</div><div class="tt">-</div><div class="vv">-</div></div>';
       return '<div class="item">'
         + '<div class="rk">'+(i+1)+'</div>'
         + '<div class="tt" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-        + '<div class="vv">'+fmt(r.totalVisit)+'</div>'
+        + '<div class="vv">'+fmt(r[key])+'</div>'
       + '</div>';
     }).join('');
   }
+  function renderTop(rows){        renderTopList(rows, 'totalVisit', $('top-list')); }
+  function renderInboundTop(rows){ renderTopList(rows, 'inbound',    $('inbound-list')); }
 
   function renderCatBars(rows){
     const map = {};
@@ -747,6 +767,7 @@
     sel.value = cur;
 
     renderTop(rows);
+    renderInboundTop(rows);
     renderCatBars(rows);
     renderTrend(rows);
     renderTable();
@@ -808,11 +829,18 @@
   $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; refreshAll(); });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
-  // ── 더보기 모달: 전체 발행글 랭킹 ──────────────────
-  function showTopAll(){
+  // ── 더보기 모달: 전체 발행글 랭킹 (방문 / 인바운드) ──
+  function showTopAll(mode){
+    const isInbound = mode === 'inbound';
+    const key = isInbound ? 'inbound' : 'totalVisit';
     const sorted = SCOPED_ROWS.slice().sort(function(a,b){
-      return Number(b.totalVisit||0) - Number(a.totalVisit||0);
+      return Number(b[key]||0) - Number(a[key]||0);
     });
+    document.querySelector('#top-modal .eyebrow').textContent =
+      isInbound ? '전체 발행글 인바운드 랭킹' : '전체 발행글 랭킹';
+    document.querySelector('#top-modal h3').textContent =
+      isInbound ? '인바운드 많은 순' : '방문 많은 순';
+
     const body = $('top-modal-body');
     if (!sorted.length){
       body.innerHTML = '<div class="empty" style="margin:20px">데이터가 없습니다.</div>';
@@ -828,7 +856,7 @@
               + (r['날짜'] ? '<span>·</span><span>'+fmtDate(r['날짜'])+'</span>' : '')
             + '</div>'
           + '</div>'
-          + '<div class="v">'+fmt(r.totalVisit)+'</div>'
+          + '<div class="v">'+fmt(r[key])+'</div>'
         + '</div>';
       }).join('');
     }
@@ -836,7 +864,9 @@
     $('top-modal').hidden = false;
   }
   function hideTopAll(){ $('top-modal').hidden = true; }
-  $('btn-top-more').addEventListener('click', showTopAll);
+  document.querySelectorAll('.more-btn[data-more]').forEach(function(btn){
+    btn.addEventListener('click', function(){ showTopAll(btn.dataset.more); });
+  });
   $('top-modal-close').addEventListener('click', hideTopAll);
   $('top-modal').addEventListener('click', function(e){
     if (e.target === $('top-modal')) hideTopAll();
