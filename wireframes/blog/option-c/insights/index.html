@@ -42,6 +42,31 @@
   .cmp-btn:hover{ border-color:var(--accent); color:#fff; }
   .cmp-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
 
+  /* 비교 테이블 */
+  .cmp-table-wrap{ margin-top:12px; border:1px solid rgba(255,255,255,.1); border-radius:10px; overflow:hidden; }
+  .cmp-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .cmp-table th, .cmp-table td{
+    padding:10px 12px; text-align:left;
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .cmp-table th{
+    background:rgba(255,255,255,.04); color:var(--muted);
+    font-size:10.5px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .cmp-table th.num, .cmp-table td.num{ text-align:right; font-family:'JetBrains Mono', monospace; }
+  .cmp-table tbody tr:last-child td{ border-bottom:0; }
+  .cmp-table .badge{
+    display:inline-block; font-size:10px; padding:1px 6px; border-radius:4px; margin-left:6px;
+    font-family:'Pretendard', sans-serif;
+  }
+  .cmp-table .badge.cur{ background:rgba(124,92,255,.2); color:#b8a6ff; }
+  .cmp-table .badge.cmp{ background:rgba(255,255,255,.06); color:var(--muted); }
+  .cmp-table .diff-row td{ background:rgba(255,255,255,.03); font-weight:600; }
+  .cmp-table .diff-row .label{ color:var(--text-2); }
+  .cmp-table .pos{ color:var(--green); }
+  .cmp-table .neg{ color:var(--red); }
+  .cmp-table .neu{ color:var(--muted); }
+
   /* 카테고리 막대그래프 — 세로형 (X: 카테고리, Y: 값) */
   .cat-chart-card{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
@@ -271,7 +296,6 @@
       <button class="qbtn" data-range="90">90일</button>
       <button class="qbtn" data-range="365">1년</button>
       <button class="clear" id="btn-clear-date">초기화</button>
-      <span class="range-info" id="range-info"></span>
     </div>
 
     <!-- Hero score -->
@@ -290,12 +314,26 @@
           <div class="delta"><div class="l">인바운드 전환율</div><div class="v" id="score-cvr">–</div></div>
           <div class="delta"><div class="l">카테고리</div><div class="v" id="score-cats">–</div></div>
         </div>
-        <!-- 전월/전년 비교 -->
+        <!-- 전월/전년 비교 버튼 -->
         <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap;">
           <span style="font-size:11px; color:var(--muted);">기준 비교</span>
           <button class="cmp-btn" data-cmp="mom">전월 대비</button>
           <button class="cmp-btn" data-cmp="yoy">전년 대비</button>
-          <span id="cmp-result" style="font-size:12px; color:var(--text-2); margin-left:auto; line-height:1.4;"></span>
+        </div>
+        <!-- 비교 테이블 -->
+        <div class="cmp-table-wrap" id="cmp-table-wrap" hidden>
+          <table class="cmp-table">
+            <thead>
+              <tr>
+                <th>조회 기간</th>
+                <th class="num">발행글</th>
+                <th class="num">총 방문 수</th>
+                <th class="num">인바운드 수</th>
+                <th class="num">전환율</th>
+              </tr>
+            </thead>
+            <tbody id="cmp-tbody"></tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -357,18 +395,34 @@
   }
   .cat-modal-head .eyebrow{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
   .cat-modal-head h3{ font-size:15px; font-weight:600; margin:2px 0 0; }
-  .cat-modal-body{ flex:1; overflow-y:auto; padding:0; }
+  .cat-modal-body{ flex:1; overflow-y:auto; overflow-x:hidden; padding:0; }
+  .cat-modal-content{ overflow:hidden; }   /* 컨텐츠 박스 자체도 가로 오버플로우 차단 */
   .cat-modal-foot{ padding:12px 20px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; }
-  .cm-row{ display:grid; grid-template-columns:32px 1fr 80px 90px 80px; gap:10px; align-items:center; padding:10px 20px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  /* 카테고리 모달 게시글 로우 — 헤더와 데이터 행이 같은 그리드 (정렬 일관) */
+  .cm-row{
+    display:grid;
+    grid-template-columns:
+      32px               /* NO */
+      minmax(0, 1fr)     /* 제목 (minmax(0,..) 로 축소 허용 → 오버플로우 방지) */
+      72px 80px 70px;    /* 방문 / 인바운드 / 전환율 */
+    gap:12px; align-items:center;
+    padding:10px 18px;
+    border-bottom:1px solid var(--line);
+    font-size:12.5px;
+    box-sizing:border-box;
+  }
+  .cm-row > *{ min-width:0; }   /* 모든 셀이 그리드 셀 안에서 축소 가능 */
   .cm-row:last-child{ border-bottom:0; }
   .cm-row .no{ font-family:'JetBrains Mono', monospace; color:var(--muted); font-size:11.5px; text-align:center; }
   .cm-row .ttl{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
-  .cm-row .meta{ font-size:11px; color:var(--muted); margin-top:2px; }
-  .cm-row .num{ font-family:'JetBrains Mono', monospace; text-align:right; font-size:12px; }
+  .cm-row .meta{ font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cm-row .num{ font-family:'JetBrains Mono', monospace; text-align:right; font-size:12px; white-space:nowrap; }
   .cm-row .num.green{ color:var(--green); }
-  .cm-row .info-cell .meta{ display:flex; gap:6px; flex-wrap:wrap; }
+  .cm-row .info-cell{ overflow:hidden; }
+  .cm-row .info-cell .meta{ display:block; }   /* flex-wrap 으로 행 높이 부풀던 문제 해결 */
   .cm-head{ background:#171b22; color:var(--muted); font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em; }
   .cm-head .num{ color:var(--muted); }
+  .cm-modal-body-inner{ overflow-x:hidden; }
   .vgroup{ cursor:pointer; }
   .vgroup:hover .vbar{ filter:brightness(1.2); }
 </style>
@@ -390,7 +444,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-4"></script>
+<script src="../../proxy-client.js?v=20260510-5"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -451,11 +505,9 @@
     refresh();
   }
   function updateRangeInfo(){
-    const ds = $('date-start').value, de = $('date-end').value;
     document.querySelectorAll('.qbtn').forEach(function(b){
       b.classList.toggle('active', b.dataset.range === ACTIVE_RANGE);
     });
-    $('range-info').textContent = (!ds && !de) ? '전체 기간' : `${ds||'...'} ~ ${de||'...'}`;
   }
 
   // ── 인사이트 도출 로직 ───────────────────────────
@@ -578,102 +630,144 @@
     const reco  = [];
     if (!d) return { cards, reco };
 
-    // 1) Top category
+    // 1) 누적 방문 — 서비스 비교
+    if (d.svcList.length >= 2){
+      const a = d.svcList[0], b = d.svcList[d.svcList.length-1];
+      const ratio = a.avgVisit / Math.max(b.avgVisit, 1);
+      if (ratio > 1.3){
+        const usedRows = d.rows.filter(function(r){ return r.service === a.name || r.service === b.name; });
+        cards.push({
+          key:'svc',
+          icon:'⚡', tone:'',
+          score: Math.min(85, 65 + Math.round(ratio*5)),
+          title:'누적 방문 — 서비스 비교',
+          statement:`<b>${escapeHtml(a.name)}</b> 서비스 평균 누적 방문이 ${escapeHtml(b.name)} 대비 <b class="green">${ratio.toFixed(1)}배</b>`,
+          detail:`${a.name} ${a.count}글 합계 ${fmtK(a.totalVisit)} vs ${b.name} ${b.count}글 합계 ${fmtK(b.totalVisit)}. 발행 우선순위 재조정 권장.`,
+          miniLabel:`${escapeHtml(a.name)} 우위`,
+          miniPct: Math.min(100, ratio*30),
+          miniNum: ratio.toFixed(1)+'×',
+          criteria:[
+            '서비스별 글 단위 누적 방문 평균을 비교',
+            `최상위 서비스(${a.name}) 평균: ${fmtK(a.avgVisit)} / 글`,
+            `최하위 서비스(${b.name}) 평균: ${fmtK(b.avgVisit)} / 글`,
+            `비율 = 최상위 평균 / 최하위 평균 = ${ratio.toFixed(2)}배`
+          ],
+          rows: usedRows
+        });
+      }
+    }
+
+    // 2) 주간 방문 — 요일별
+    if (d.bestDOW2 && d.bestDOW2.length){
+      const days = d.bestDOW2.map(x=>DOW[x.dow]+'요일').join('·');
+      const avgBest = d.bestDOW2.reduce((s,x)=>s+x.avgWeekly,0) / d.bestDOW2.length;
+      const lift = (avgBest / Math.max(d.overallAvgWeekly,1) - 1) * 100;
+      if (lift > 5){
+        const dowSet = new Set(d.bestDOW2.map(function(x){ return x.dow; }));
+        const usedRows = d.rows.filter(function(r){
+          const dt = new Date(String(r['날짜']||'').slice(0,10));
+          return !isNaN(dt) && dowSet.has(dt.getDay());
+        });
+        cards.push({
+          key:'dow',
+          icon:'📈', tone:'green',
+          score: Math.min(92, 70 + Math.round(lift*0.5)),
+          title:'주간 방문 — 발행 요일',
+          statement:`<b>${days}</b> 발행 글의 주간 방문이 <b class="green">+${lift.toFixed(0)}%</b> 더 높음`,
+          detail:`전체 평균 ${fmt(Math.round(d.overallAvgWeekly))} → 해당 요일 ${fmt(Math.round(avgBest))}. 발행 캘린더 조정 권장.`,
+          miniLabel: days+' 평균',
+          miniPct: Math.min(100, 60 + lift),
+          miniNum: Math.round(avgBest),
+          criteria:[
+            `발행일 요일별 글의 주간 방문 평균을 집계`,
+            `상위 요일: ${days}`,
+            `해당 요일 평균: ${fmt(Math.round(avgBest))}`,
+            `전체 평균: ${fmt(Math.round(d.overallAvgWeekly))}`,
+            `상승률 = (${Math.round(avgBest)} / ${Math.round(d.overallAvgWeekly)} - 1) × 100 = +${lift.toFixed(1)}%`
+          ],
+          rows: usedRows
+        });
+        reco.push({ text:`발행 요일을 <strong>${days}</strong> 중심으로 이동`, sub:`주간 방문 평균 +${lift.toFixed(0)}% 예상` });
+      }
+    }
+
+    // 3) 키워드
+    if (d.topKeyword){
+      const lift = (d.topKeyword.lift - 1) * 100;
+      const kw = d.topKeyword.word;
+      const usedRows = d.rows.filter(function(r){ return String(r['제목']||'').indexOf(kw) >= 0; });
+      cards.push({
+        key:'kw',
+        icon:'🔍', tone:'blue',
+        score: Math.min(85, 65 + Math.round(lift*0.4)),
+        title:'키워드',
+        statement:`<b>'${escapeHtml(kw)}' 키워드</b> 포함 글의 평균 조회수가 <b class="green">+${lift.toFixed(0)}%</b>`,
+        detail:`해당 키워드 ${d.topKeyword.count}개 글 평균 ${fmtK(d.topKeyword.avgVisit)} 방문. 관련 토픽 시리즈 기획 추천.`,
+        miniLabel: `'${escapeHtml(kw)}' 키워드`,
+        miniPct: Math.min(100, 50 + lift*0.5),
+        miniNum: fmtK(d.topKeyword.avgVisit),
+        criteria:[
+          `제목에서 등장 빈도 ≥2 인 단어 추출 후 평균 조회수 계산`,
+          `최상위 키워드: '${kw}'`,
+          `해당 키워드 글 평균 조회수: ${fmtK(d.topKeyword.avgVisit)}`,
+          `전체 평균 조회수: ${fmtK(d.totalVisit / d.rows.length)}`,
+          `lift = ${d.topKeyword.lift.toFixed(2)}배 (+${lift.toFixed(0)}%)`
+        ],
+        rows: usedRows
+      });
+    }
+
+    // 4) 카테고리 인바운드 — 최상위
     if (d.topCat && d.topCat.count >= 2){
       const lift = d.topCat.avgInbound / Math.max(d.avgInbound, 0.001);
+      const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.topCat.name; });
       cards.push({
+        key:'cat-top',
         icon:'🏆', tone:'',
         score: Math.min(95, 70 + Math.round(lift*5)),
+        title:'카테고리 인바운드 — 최상위',
         statement:`<b>${escapeHtml(d.topCat.name)}</b> 카테고리가 평균 인바운드 <b class="green">${fmt(Math.round(d.topCat.avgInbound))}건</b> — 전체 평균 대비 <b class="green">${lift.toFixed(1)}배</b>`,
         detail:`${d.topCat.count}개 발행글 합산 인바운드 ${fmt(d.topCat.inbound)}건. 다음 분기 발행 비중 확대 검토.`,
         miniLabel:`${escapeHtml(d.topCat.name)} vs 평균`,
         miniPct: Math.min(100, lift*40),
-        miniNum: Math.round(d.topCat.avgInbound)
+        miniNum: Math.round(d.topCat.avgInbound),
+        criteria:[
+          `카테고리별 글 단위 인바운드 평균을 비교 (utm_term 매칭)`,
+          `최상위 카테고리: ${d.topCat.name}`,
+          `평균 인바운드: ${fmt(Math.round(d.topCat.avgInbound))} 건/글 (글수 ${d.topCat.count})`,
+          `전체 평균: ${fmt(Math.round(d.avgInbound))} 건/글`,
+          `lift = ${d.topCat.avgInbound.toFixed(1)} / ${d.avgInbound.toFixed(1)} = ${lift.toFixed(2)}배`
+        ],
+        rows: usedRows
       });
       if (lift >= 1.3){
         reco.push({ text:`<strong>${escapeHtml(d.topCat.name)}</strong> 카테고리 발행량 +50% 확대`, sub:`예상 추가 인바운드 약 ${Math.round(d.topCat.avgInbound*0.5*4)}건/월` });
       }
     }
 
-    // 2) Best day-of-week
-    if (d.bestDOW2 && d.bestDOW2.length){
-      const days = d.bestDOW2.map(x=>DOW[x.dow]+'요일').join('·');
-      const avgBest = d.bestDOW2.reduce((s,x)=>s+x.avgWeekly,0) / d.bestDOW2.length;
-      const lift = (avgBest / Math.max(d.overallAvgWeekly,1) - 1) * 100;
-      if (lift > 5){
-        cards.push({
-          icon:'📈', tone:'green',
-          score: Math.min(92, 70 + Math.round(lift*0.5)),
-          statement:`<b>${days}</b> 발행 글의 주간 방문이 <b class="green">+${lift.toFixed(0)}%</b> 더 높음`,
-          detail:`전체 평균 ${fmt(Math.round(d.overallAvgWeekly))} → 해당 요일 ${fmt(Math.round(avgBest))}. 발행 캘린더 조정 권장.`,
-          miniLabel: days+' 평균',
-          miniPct: Math.min(100, 60 + lift),
-          miniNum: Math.round(avgBest)
-        });
-        reco.push({ text:`발행 요일을 <strong>${days}</strong> 중심으로 이동`, sub:`주간 방문 평균 +${lift.toFixed(0)}% 예상` });
-      }
-    }
-
-    // 3) High-traffic conversion
-    if (d.highT.length >= 2 && d.lowT.length >= 2 && d.highCV > 0 && d.lowCV > 0){
-      const lift = d.highCV / d.lowCV;
-      if (lift > 1.2){
-        cards.push({
-          icon:'🎯', tone:'amber',
-          score: Math.min(90, 65 + Math.round(lift*8)),
-          statement:`누적 방문 <b>5,000+</b> 글의 인바운드 전환율이 평균 <b class="green">${lift.toFixed(1)}배</b>`,
-          detail:`고트래픽 ${d.highT.length}글 평균 ${pct(d.highCV)} vs 저트래픽 ${d.lowT.length}글 평균 ${pct(d.lowCV)}.`,
-          miniLabel:'고트래픽 전환율',
-          miniPct: Math.min(100, lift*30),
-          miniNum: pct(d.highCV)
-        });
-        reco.push({ text:`상위 노출 글에 <strong>CTA 강화 A/B 테스트</strong>`, sub:`인바운드 전환율 ${pct(d.lowCV,1)} → ${pct(d.highCV,1)} 목표` });
-      }
-    }
-
-    // 4) Top keyword
-    if (d.topKeyword){
-      const lift = (d.topKeyword.lift - 1) * 100;
-      cards.push({
-        icon:'🔍', tone:'blue',
-        score: Math.min(85, 65 + Math.round(lift*0.4)),
-        statement:`<b>'${escapeHtml(d.topKeyword.word)}' 키워드</b> 포함 글의 평균 조회수가 <b class="green">+${lift.toFixed(0)}%</b>`,
-        detail:`해당 키워드 ${d.topKeyword.count}개 글 평균 ${fmtK(d.topKeyword.avgVisit)} 방문. 관련 토픽 시리즈 기획 추천.`,
-        miniLabel: `'${escapeHtml(d.topKeyword.word)}' 키워드`,
-        miniPct: Math.min(100, 50 + lift*0.5),
-        miniNum: fmtK(d.topKeyword.avgVisit)
-      });
-    }
-
-    // 5) Service comparison
-    if (d.svcList.length >= 2){
-      const a = d.svcList[0], b = d.svcList[d.svcList.length-1];
-      const ratio = a.avgVisit / Math.max(b.avgVisit, 1);
-      if (ratio > 1.3){
-        cards.push({
-          icon:'⚡', tone:'',
-          score: Math.min(85, 65 + Math.round(ratio*5)),
-          statement:`<b>${escapeHtml(a.name)}</b> 서비스 평균 누적 방문이 ${escapeHtml(b.name)} 대비 <b class="green">${ratio.toFixed(1)}배</b>`,
-          detail:`${a.name} ${a.count}글 합계 ${fmtK(a.totalVisit)} vs ${b.name} ${b.count}글 합계 ${fmtK(b.totalVisit)}. 발행 우선순위 재조정 권장.`,
-          miniLabel:`${escapeHtml(a.name)} 우위`,
-          miniPct: Math.min(100, ratio*30),
-          miniNum: ratio.toFixed(1)+'×'
-        });
-      }
-    }
-
-    // 6) Worst category
+    // 5) 카테고리 인바운드 — 최하위
     if (d.worstCat && d.worstCat.avgInbound < d.avgInbound * 0.7){
       const drop = (1 - d.worstCat.avgInbound / Math.max(d.avgInbound, 0.001)) * 100;
+      const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.worstCat.name; });
       cards.push({
+        key:'cat-worst',
         icon:'⚠️', tone:'red',
         score: 70,
+        title:'카테고리 인바운드 — 최하위',
         statement:`<b>'${escapeHtml(d.worstCat.name)}'</b> 카테고리는 발행 대비 인바운드 효율 <b class="red">-${drop.toFixed(0)}%</b>`,
         detail:`평균 ${fmt(Math.round(d.worstCat.avgInbound))}건 (전체 평균 ${fmt(Math.round(d.avgInbound))}건). 콘텐츠 방향 재검토 필요.`,
         miniLabel:`${escapeHtml(d.worstCat.name)} 효율`,
         miniPct: Math.max(15, 100-drop),
         miniNum:'-'+drop.toFixed(0)+'%',
-        miniBg:'red'
+        miniBg:'red',
+        criteria:[
+          `최소 2개 이상 글이 있는 카테고리 중 평균 인바운드 최하위`,
+          `해당 카테고리: ${d.worstCat.name}`,
+          `평균 인바운드: ${fmt(Math.round(d.worstCat.avgInbound))} 건/글 (글수 ${d.worstCat.count})`,
+          `전체 평균: ${fmt(Math.round(d.avgInbound))} 건/글`,
+          `효율 차이 = -${drop.toFixed(1)}%`
+        ],
+        rows: usedRows
       });
       reco.push({ text:`<strong>${escapeHtml(d.worstCat.name)}</strong> 카테고리 콘텐츠 방향 재검토`, sub:`현재 효율 -${drop.toFixed(0)}% (개선 또는 축소)` });
     }
@@ -703,14 +797,9 @@
     $('score-total').textContent = fmtK(d.totalVisit);
     $('score-cvr').textContent   = pct(d.overallCV);
     $('score-cats').textContent  = d.catList.length + '개';
-    // 조회 기간 표시
-    const ds = $('date-start').value, de = $('date-end').value;
-    let rangeTxt = '전체 기간';
-    if (ACTIVE_RANGE) rangeTxt = '최근 ' + ACTIVE_RANGE + '일';
-    else if (ds && de) rangeTxt = ds + ' ~ ' + de;
-    else if (ds) rangeTxt = ds + ' ~';
-    else if (de) rangeTxt = '~ ' + de;
-    $('score-range').textContent = rangeTxt;
+    // 조회 기간 — 항상 실제 날짜 범위로 표시 (최근 N일 형식 X)
+    const cur = getCurrentRange();
+    $('score-range').textContent = cur ? (cur.start + ' ~ ' + cur.end) : '전체 기간';
 
     $('kpi-count').textContent  = fmt(d.rows.length);
     $('kpi-total').textContent  = fmtK(d.totalVisit);
@@ -718,20 +807,22 @@
     $('kpi-cat-sub').textContent = '카테고리 ' + d.catList.length + '개';
   }
 
+  let CURRENT_INSIGHT_CARDS = [];
   function renderCards(items){
+    CURRENT_INSIGHT_CARDS = items;
     $('kpi-insights').textContent = items.length;
     if (!items.length){
       $('insights-grid').innerHTML = '<div style="grid-column:1/-1"><div class="empty">도출 가능한 인사이트가 없습니다. 더 많은 데이터가 필요합니다.</div></div>';
       return;
     }
-    $('insights-grid').innerHTML = items.map(c => {
+    $('insights-grid').innerHTML = items.map((c, idx) => {
       const bg = c.miniBg === 'red'
         ? 'background:linear-gradient(90deg,#ff5d73,#ff8a9b)'
         : c.tone === 'green' ? 'background:linear-gradient(90deg,#3ddc97,#76eaba)'
         : c.tone === 'amber' ? 'background:linear-gradient(90deg,#ffb648,#ffd99a)'
         : c.tone === 'blue'  ? 'background:linear-gradient(90deg,#4ea3ff,#a3cdff)'
         : '';
-      return `<div class="insight-card">
+      return `<div class="insight-card" data-idx="${idx}" style="cursor:pointer" title="클릭하여 산출 근거 보기">
         <div class="insight-head">
           <div class="insight-icon ${c.tone||''}">${c.icon}</div>
           <span class="score-pill">신뢰도 <span class="v">${c.score}%</span></span>
@@ -745,6 +836,70 @@
         </div>
       </div>`;
     }).join('');
+    // 카드 클릭 → 산출 근거 모달
+    document.querySelectorAll('.insight-card[data-idx]').forEach(function(el){
+      el.addEventListener('click', function(){
+        const idx = parseInt(el.dataset.idx, 10);
+        openInsightDetail(CURRENT_INSIGHT_CARDS[idx]);
+      });
+    });
+  }
+
+  // 인사이트 상세 모달 — cat-modal 인프라 재사용
+  function openInsightDetail(card){
+    if (!card) return;
+    const inbOf = function(r){
+      const u = String(r.utm_term || '').trim();
+      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) return Number(INBOUND_COUNTS[u]) || 0;
+      return Number(r.inbound) || 0;
+    };
+    const rows = (card.rows || []).slice().sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
+
+    $('cat-modal-title').innerHTML = (card.title || '인사이트') + ' <span style="font-size:11.5px; color:var(--muted); font-weight:400;">신뢰도 ' + card.score + '%</span>';
+    document.querySelector('#cat-modal .eyebrow').textContent = '산출 근거';
+
+    const sumV = rows.reduce(function(s,r){ return s + Number(r.totalVisit||0); }, 0);
+    const sumI = rows.reduce(function(s,r){ return s + inbOf(r); }, 0);
+    $('cat-modal-info').textContent = '참고 ' + rows.length + '건 · 누적 방문 ' + fmt(sumV) + ' · 인바운드 ' + fmt(sumI);
+
+    const body = $('cat-modal-body');
+    let html = '';
+    // 산출 기준
+    if (card.criteria && card.criteria.length){
+      html += '<div style="padding:14px 18px; background:rgba(124,92,255,.08); border-bottom:1px solid var(--line);">'
+        + '<div style="font-size:11px; color:#b8a6ff; text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;">산출 기준</div>'
+        + '<ul style="font-size:12px; color:var(--text-2); list-style:disc; padding-left:18px; line-height:1.7; margin:0;">'
+        + card.criteria.map(function(c){ return '<li>'+escapeHtml(c)+'</li>'; }).join('')
+        + '</ul></div>';
+    }
+    // 헤더
+    html += '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div><div class="num">인바운드</div><div class="num">전환율</div></div>';
+    // 행
+    if (!rows.length){
+      html += '<div class="empty" style="margin:24px;">참고된 게시글 없음</div>';
+    } else {
+      html += rows.map(function(r,i){
+        const tv = Number(r.totalVisit||0);
+        const ib = inbOf(r);
+        const cv = tv > 0 ? (ib/tv*100).toFixed(2)+'%' : '-';
+        return '<div class="cm-row">'
+          + '<div class="no">'+(i+1)+'</div>'
+          + '<div class="info-cell">'
+            + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escapeHtml(r['제목']||'-')+'</div>'
+            + '<div class="meta">'
+              + (r.category ? escapeHtml(r.category)+' · ' : '')
+              + (r.service ? escapeHtml(r.service)+' · ' : '')
+              + escapeHtml(String(r['날짜']||'').slice(0,10))
+            + '</div>'
+          + '</div>'
+          + '<div class="num">'+fmt(tv)+'</div>'
+          + '<div class="num green">'+fmt(ib)+'</div>'
+          + '<div class="num">'+cv+'</div>'
+        + '</div>';
+      }).join('');
+    }
+    body.innerHTML = html;
+    $('cat-modal').classList.add('open');
   }
 
   function renderReco(items){
@@ -904,14 +1059,47 @@
       return d && d >= start && d <= end;
     });
   }
-  function applyCompare(currentScore){
-    const result = $('cmp-result');
+  function diffPctHtml(now, prev){
+    if (!prev) return '<span class="neu">–</span>';
+    const r = (now - prev) / prev * 100;
+    const cls = r > 0.05 ? 'pos' : (r < -0.05 ? 'neg' : 'neu');
+    const sign = r > 0 ? '+' : '';
+    return '<span class="'+cls+'">'+sign+r.toFixed(1)+'%</span>';
+  }
+  function diffPpHtml(now, prev){
+    // 비율(소수)에 대한 % 포인트 차이
+    const diff = (now - prev) * 100;
+    const cls = diff > 0.005 ? 'pos' : (diff < -0.005 ? 'neg' : 'neu');
+    const sign = diff > 0 ? '+' : '';
+    return '<span class="'+cls+'">'+sign+diff.toFixed(2)+'%p</span>';
+  }
+  function diffScoreHtml(now, prev){
+    const d = now - prev;
+    const cls = d > 0 ? 'pos' : (d < 0 ? 'neg' : 'neu');
+    const sign = d > 0 ? '+' : '';
+    return '<span class="'+cls+'">'+sign+d+'점</span>';
+  }
+
+  function applyCompare(curD){
     document.querySelectorAll('.cmp-btn').forEach(function(b){
       b.classList.toggle('active', b.dataset.cmp === COMPARE_MODE);
     });
-    if (!COMPARE_MODE){ result.innerHTML = ''; return; }
+    const wrap = $('cmp-table-wrap');
+    const tbody = $('cmp-tbody');
+
+    if (!COMPARE_MODE){
+      // 비교 비활성 — 테이블 숨김, 점수는 현재 점수 유지
+      wrap.hidden = true;
+      tbody.innerHTML = '';
+      return;
+    }
+
     const cur = getCurrentRange();
-    if (!cur){ result.innerHTML = '<span style="color:var(--muted)">기준 기간 없음</span>'; return; }
+    if (!cur){
+      wrap.hidden = false;
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">기준 기간 없음</td></tr>';
+      return;
+    }
     let prevStart, prevEnd;
     if (COMPARE_MODE === 'mom'){
       prevStart = shiftDateStr(cur.start, 0, -1, 0);
@@ -920,18 +1108,57 @@
       prevStart = shiftDateStr(cur.start, 0, 0, -1);
       prevEnd   = shiftDateStr(cur.end,   0, 0, -1);
     }
+
     const prevRows = rowsInRange(prevStart, prevEnd);
+    wrap.hidden = false;
+
     if (!prevRows.length){
-      result.innerHTML = '<span style="color:var(--muted)">비교 기간 데이터 없음 ('+prevStart+' ~ '+prevEnd+')</span>';
+      tbody.innerHTML =
+        '<tr>'
+          + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
+          + '<td class="num">'+fmt(curD.rows.length)+'</td>'
+          + '<td class="num">'+fmtK(curD.totalVisit)+'</td>'
+          + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
+          + '<td class="num">'+pct(curD.overallCV)+'</td>'
+        + '</tr>'
+        + '<tr><td colspan="5" style="text-align:center;color:var(--muted);font-size:11.5px;">비교 기간 ('+prevStart+' ~ '+prevEnd+') 에 데이터가 없습니다.</td></tr>';
       return;
     }
+
     const prevD = derive(prevRows);
-    const diff = currentScore - prevD.score;
-    const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '–';
-    const color = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--muted)';
-    result.innerHTML =
-      '<span style="color:'+color+'; font-weight:600; font-family:JetBrains Mono,monospace;">'+arrow+' '+Math.abs(diff)+'점</span>'
-      + ' <span style="color:var(--muted)">vs 비교 기간 '+prevStart+' ~ '+prevEnd+' ('+prevD.score+'점)</span>';
+
+    // 점수 자동 변경 — 비교 모드 활성 시 비교 기간의 점수로 score 표시
+    $('score-val').textContent = prevD.score;
+    const tier = prevD.score >= 80 ? '상위 18%' : prevD.score >= 65 ? '평균 이상' : '개선 필요';
+    const tierColor = prevD.score >= 80 ? 'var(--green)' : prevD.score >= 65 ? 'var(--amber)' : 'var(--red)';
+    $('score-title').innerHTML = '비교 기간 점수 (' + (COMPARE_MODE==='mom'?'전월':'전년') + ' 대비) — <span style="color:'+tierColor+'">'+tier+'</span>';
+    $('score-ring').style.background = 'conic-gradient(#7c5cff 0 ' + prevD.score + '%, #1f242c ' + prevD.score + '% 100%)';
+
+    tbody.innerHTML =
+      // 현재
+      '<tr>'
+        + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
+        + '<td class="num">'+fmt(curD.rows.length)+'</td>'
+        + '<td class="num">'+fmtK(curD.totalVisit)+'</td>'
+        + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
+        + '<td class="num">'+pct(curD.overallCV)+'</td>'
+      + '</tr>'
+      // 비교
+      + '<tr>'
+        + '<td>'+prevStart+' ~ '+prevEnd+' <span class="badge cmp">'+(COMPARE_MODE==='mom'?'전월':'전년')+'</span></td>'
+        + '<td class="num">'+fmt(prevD.rows.length)+'</td>'
+        + '<td class="num">'+fmtK(prevD.totalVisit)+'</td>'
+        + '<td class="num">'+fmt(prevD.totalInbound)+'</td>'
+        + '<td class="num">'+pct(prevD.overallCV)+'</td>'
+      + '</tr>'
+      // 증감률
+      + '<tr class="diff-row">'
+        + '<td class="label">증감률 · 점수 ' + diffScoreHtml(curD.score, prevD.score) + '</td>'
+        + '<td class="num">'+diffPctHtml(curD.rows.length, prevD.rows.length)+'</td>'
+        + '<td class="num">'+diffPctHtml(curD.totalVisit, prevD.totalVisit)+'</td>'
+        + '<td class="num">'+diffPctHtml(curD.totalInbound, prevD.totalInbound)+'</td>'
+        + '<td class="num">'+diffPpHtml(curD.overallCV, prevD.overallCV)+'</td>'
+      + '</tr>';
   }
 
   function refresh(){
