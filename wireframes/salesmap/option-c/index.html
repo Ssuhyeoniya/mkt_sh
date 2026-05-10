@@ -13,7 +13,14 @@
   .panel-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .panel-title h3{ font-size:14px; font-weight:600; margin:0; }
   .panel-title .sub{ font-size:11.5px; color:var(--muted); }
-  .grid-3{ display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:14px; margin-bottom:16px; }
+  .grid-3{
+    display:flex; gap:14px; margin-bottom:16px;
+    overflow-x:auto; padding-bottom:4px;
+  }
+  .grid-3 > .panel{ flex:1 1 300px; min-width:300px; }
+  .grid-3.lead > .panel:first-child{ flex:1.4 1 380px; min-width:360px; }
+  .grid-3::-webkit-scrollbar{ height:8px; }
+  .grid-3::-webkit-scrollbar-thumb{ background:#262c35; border-radius:99px; }
   .rank-row{ display:flex; align-items:center; gap:10px; padding:6px 0; }
   .rank-row .idx{ width:18px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
   .rank-row .name{ flex:1; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -118,7 +125,7 @@
     </div>
 
     <!-- Charts -->
-    <section class="grid-3">
+    <section class="grid-3 lead">
       <!-- 월별 추이 (라인 + 바) -->
       <div class="panel panel-pad">
         <div class="panel-title">
@@ -151,13 +158,19 @@
 
       <!-- 유입경로 랭킹 -->
       <div class="panel panel-pad">
-        <div class="panel-title"><h3>유입경로 TOP 7</h3><span class="sub" id="ch-total">0개</span></div>
+        <div class="panel-title">
+          <h3>유입경로 TOP 5</h3>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="sub" id="ch-total">0개</span>
+            <button class="ghost-btn" id="btn-ch-more" type="button">더보기 ▸</button>
+          </div>
+        </div>
         <div id="ch-rank"></div>
       </div>
     </section>
 
     <!-- UTM 분석 -->
-    <section class="grid-3" style="grid-template-columns:1fr 1fr 1fr">
+    <section class="grid-3">
       <div class="panel panel-pad">
         <div class="panel-title"><h3>utm_source TOP 6</h3></div>
         <div id="utm-source"></div>
@@ -174,6 +187,16 @@
 
     <div class="text-center muted py-4" style="font-size:11.5px;">세일즈맵 · 인사이트 · 분석 위젯</div>
   </main>
+</div>
+
+<!-- 유입경로 더보기 모달 -->
+<div class="modal-back" id="ch-modal-back"></div>
+<div class="modal" id="ch-modal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <h3>유입경로 전체</h3>
+    <button class="modal-close" id="ch-modal-close" type="button">×</button>
+  </div>
+  <div class="modal-body" id="ch-modal-body"></div>
 </div>
 
 <script src="../proxy-client.js"></script>
@@ -359,7 +382,7 @@
     renderKPI(filtered);
     renderTrend(filtered);
     renderServiceDonut(filtered);
-    renderRank(filtered, 'channel',     'ch-rank',      7);
+    renderRank(filtered, 'channel',     'ch-rank',      5);
     renderRank(filtered, 'utm_source',  'utm-source',   6);
     renderRank(filtered, 'utm_campaign','utm-campaign', 6);
     renderRank(filtered, 'employeeCount','emp-dist',    7);
@@ -409,6 +432,39 @@
     TREND_RANGE = b.dataset.r;
     renderTrend(applyFilter(CURRENT));
   });
+
+  // 유입경로 더보기 모달
+  function openChModal(){
+    const filtered = applyFilter(CURRENT);
+    const map = {};
+    filtered.forEach(r => { const k = r.channel||'(없음)'; map[k]=(map[k]||0)+1; });
+    const arr = Object.entries(map).map(([name,count]) => ({name,count})).sort((a,b)=>b.count-a.count);
+    const total = arr.reduce((s,x)=>s+x.count,0) || 1;
+    const max = arr.length ? arr[0].count : 1;
+    const body = $('ch-modal-body');
+    if (!arr.length){
+      body.innerHTML = '<div class="muted text-[12px] py-4 text-center">데이터 없음</div>';
+    } else {
+      body.innerHTML = arr.map((x,i) => `
+        <div class="rank-row">
+          <span class="idx">${i+1}</span>
+          <span class="name" title="${esc(x.name)}">${esc(x.name)}</span>
+          <span class="bar"><i style="width:${Math.round(x.count*100/max)}%"></i></span>
+          <span class="v">${x.count}</span>
+        </div>`).join('') +
+        `<div class="muted" style="margin-top:14px; font-size:11.5px; text-align:right">총 ${total}건 · ${arr.length}개 채널</div>`;
+    }
+    $('ch-modal').classList.add('open');
+    $('ch-modal-back').classList.add('open');
+  }
+  function closeChModal(){
+    $('ch-modal').classList.remove('open');
+    $('ch-modal-back').classList.remove('open');
+  }
+  $('btn-ch-more').addEventListener('click', openChModal);
+  $('ch-modal-close').addEventListener('click', closeChModal);
+  $('ch-modal-back').addEventListener('click', closeChModal);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChModal(); });
 
   window.addEventListener('DOMContentLoaded', load);
 </script>
