@@ -10,6 +10,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
 <style>
+  /* ── 기간 조회 바 ───────────────────────────────── */
+  .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .date-filter .lbl{ font-size:12px; color:var(--muted); margin-right:2px; }
+  .date-filter input[type="date"]{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 10px; color:var(--text); font-size:12.5px; outline:0;
+    color-scheme:dark; font-family:'JetBrains Mono',monospace;
+  }
+  .date-filter input[type="date"]:focus{ border-color:var(--accent); }
+  .date-filter input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(.7); cursor:pointer; }
+  .date-filter .sep{ color:var(--muted); padding:0 2px; }
+  .date-filter .qbtn{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 12px; color:var(--text-2); font-size:12px; cursor:pointer;
+  }
+  .date-filter .qbtn:hover{ border-color:var(--accent-2); color:#fff; }
+  .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-filter .clear{
+    background:transparent; border:1px solid var(--line); border-radius:8px;
+    padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
+  }
+  .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
+  .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
+
   /* ── KPI: 높이/글자 축소 (option-c 전용 오버라이드) ── */
   .kpi-grid{ gap:10px; margin-bottom:14px; }
   .kpi{ padding:12px 14px; border-radius:10px; }
@@ -156,6 +180,20 @@
       </div>
     </div>
 
+    <!-- 기간 조회 -->
+    <div class="date-filter">
+      <span class="lbl">기간</span>
+      <input type="date" id="date-start" />
+      <span class="sep">~</span>
+      <input type="date" id="date-end" />
+      <button class="qbtn" data-range="7">7일</button>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <button class="clear" id="btn-clear-date">초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
     <!-- KPI -->
     <section class="kpi-grid">
       <div class="kpi"><div class="kpi-label">총 게시물</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat">카테고리 0개</div></div>
@@ -247,8 +285,10 @@
 <script src="../proxy-client.js"></script>
 <script>
   const PAGE_SIZE = 30;
-  let CURRENT_ROWS = [];
+  let CURRENT_ROWS = [];   // 전체
+  let SCOPED_ROWS = [];    // 기간 필터 적용 후
   let CURRENT_PAGE = 1;
+  let ACTIVE_RANGE = '';   // '7' | '30' | '90' | '365' | ''(상세)
 
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
   function fmtDate(d){ if (!d) return '-'; return String(d).slice(0,10); }
@@ -260,6 +300,57 @@
   }
   function escAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
   function escHtml(s){ return String(s||'').replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+  // ── 기간 필터 ────────────────────────────────────
+  function ymd(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function yesterday(){
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function applyDateFilter(rows){
+    const ds = $('date-start').value;
+    const de = $('date-end').value;
+    if (!ds && !de) return rows.slice();
+    return rows.filter(function(r){
+      const d = String(r['날짜']||'').slice(0,10);
+      if (!d) return false;
+      if (ds && d < ds) return false;
+      if (de && d > de) return false;
+      return true;
+    });
+  }
+  function setQuickRange(days){
+    const end = yesterday();
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
+    $('date-start').value = ymd(start);
+    $('date-end').value   = ymd(end);
+    ACTIVE_RANGE = String(days);
+    refreshAll();
+  }
+  function clearDateRange(){
+    $('date-start').value = '';
+    $('date-end').value = '';
+    ACTIVE_RANGE = '';
+    refreshAll();
+  }
+  function updateRangeInfo(){
+    const ds = $('date-start').value;
+    const de = $('date-end').value;
+    document.querySelectorAll('.qbtn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.range === ACTIVE_RANGE);
+    });
+    const info = $('range-info');
+    if (!ds && !de) info.textContent = '전체 기간';
+    else info.textContent = `${ds || '...'} ~ ${de || '...'}`;
+  }
 
   function applyFilter(rows){
     const q   = ($('q').value || '').toLowerCase().trim();
@@ -387,7 +478,7 @@
   }
 
   function renderTable(){
-    const filtered = applyFilter(CURRENT_ROWS);
+    const filtered = applyFilter(SCOPED_ROWS);
     $('result-count').textContent = filtered.length + '건';
 
     const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
@@ -423,10 +514,13 @@
     renderPager(filtered.length);
   }
 
-  function render(rows){
-    CURRENT_ROWS = rows;
+  // 기간 필터를 새로 적용한 뒤 KPI/위젯/표 모두 재렌더
+  function refreshAll(){
     CURRENT_PAGE = 1;
+    SCOPED_ROWS = applyDateFilter(CURRENT_ROWS);
+    updateRangeInfo();
 
+    const rows = SCOPED_ROWS;
     const tot = rows.reduce((s,r)=>s+Number(r.totalVisit||0),0);
     const wk  = rows.reduce((s,r)=>s+Number(r.weeklyVisitor||0),0);
     const ib  = rows.reduce((s,r)=>s+Number(r.inbound||0),0);
@@ -450,6 +544,7 @@
     renderTrend(rows);
     renderTable();
   }
+  function render(rows){ CURRENT_ROWS = rows; refreshAll(); }
 
   async function load(){
     const url = MktProxy.getUrl();
@@ -484,6 +579,17 @@
   $('q').addEventListener('input',     function(){ CURRENT_PAGE=1; renderTable(); });
   $('cat').addEventListener('change',  function(){ CURRENT_PAGE=1; renderTable(); });
   $('sort').addEventListener('change', function(){ CURRENT_PAGE=1; renderTable(); });
+
+  // 기간 조회: 빠른 선택 버튼
+  document.querySelectorAll('.qbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      setQuickRange(parseInt(btn.dataset.range, 10));
+    });
+  });
+  // 기간 조회: 사용자 직접 선택
+  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; refreshAll(); });
+  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; refreshAll(); });
+  $('btn-clear-date').addEventListener('click', clearDateRange);
 
   window.addEventListener('DOMContentLoaded', load);
 </script>
