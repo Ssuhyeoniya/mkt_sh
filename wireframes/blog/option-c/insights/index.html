@@ -33,8 +33,24 @@
   .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
   .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
 
-  /* KPI 축소 (insights 전용 오버라이드) */
-  .kpi-grid{ grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:12px; }
+  /* Hero + KPI 묶음 (wide: side-by-side, narrow: 위아래) */
+  .hero-row{
+    display:grid; grid-template-columns:minmax(0, 1fr) 240px; gap:14px;
+    margin-bottom:12px; align-items:stretch;
+  }
+  @media (max-width:1100px){ .hero-row{ grid-template-columns:1fr; } }
+  .hero-row .hero{ margin-bottom:0; }
+  .hero-row .kpi-grid{
+    grid-template-columns:1fr;          /* 1열 3행 */
+    gap:10px; margin-bottom:0;
+    display:grid;
+  }
+  @media (max-width:1100px){
+    .hero-row .kpi-grid{ grid-template-columns:repeat(3, 1fr); }
+  }
+  @media (max-width:640px){
+    .hero-row .kpi-grid{ grid-template-columns:1fr; }
+  }
   .kpi{ padding:10px 14px; border-radius:10px; }
   .kpi .kpi-label{ font-size:11px; color:var(--muted); }
   .kpi .kpi-value{ font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:600; margin-top:2px; line-height:1.2; }
@@ -186,7 +202,9 @@
   .hero .info .deltas .delta .l{ font-size:11px; color:var(--muted); }
   .hero .info .deltas .delta .v{ font-family:'JetBrains Mono', monospace; font-size:13.5px; font-weight:600; }
 
-  .insights-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:14px; }
+  /* 인사이트 카드: wide 5열 1행 → 좁아지면 단계적 축소 */
+  .insights-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:14px; }
+  @media (max-width:1500px){ .insights-grid{ grid-template-columns:repeat(3, 1fr); } }
   @media (max-width:1100px){ .insights-grid{ grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:640px){ .insights-grid{ grid-template-columns:1fr; } }
 
@@ -235,7 +253,9 @@
     font-size:10px; padding:2px 8px; border-radius:4px;
     background:rgba(124,92,255,.15); color:#b8a6ff; border:1px solid rgba(124,92,255,.3);
   }
-  .reco-list{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  /* 추천 액션 리스트: wide 4열 1행 */
+  .reco-list{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  @media (max-width:1280px){ .reco-list{ grid-template-columns:repeat(2,1fr); } }
   @media (max-width:640px){ .reco-list{ grid-template-columns:1fr; } }
   .reco-item{
     background:#1a1e25; border:1px solid var(--line); border-radius:10px;
@@ -310,7 +330,8 @@
       <button class="clear" id="btn-clear-date">초기화</button>
     </div>
 
-    <!-- Hero score -->
+    <!-- Hero score + KPI 3개 (wide: side-by-side) -->
+    <div class="hero-row">
     <section class="hero">
       <div class="score-side">
         <div class="score-circle" id="score-ring">
@@ -353,6 +374,7 @@
       <div class="kpi"><div class="kpi-label">총 방문 수</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">합계</div></div>
       <div class="kpi"><div class="kpi-label">전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">유입 / 누적</div></div>
     </section>
+    </div>
 
     <!-- 카테고리별 방문자 + 인바운드 막대그래프 -->
     <section class="cat-chart-card">
@@ -452,7 +474,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-10"></script>
+<script src="../../proxy-client.js?v=20260510-11"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }

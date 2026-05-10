@@ -726,7 +726,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-10"></script>
+<script src="../proxy-client.js?v=20260510-11"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -950,18 +950,21 @@
 
         // 날짜 라벨 — 일별이면 요일 함께, 월별이면 'YYYY년 M월'
         const dowKR = ['일','월','화','수','목','금','토'];
-        let dateLabel = keys[i];
+        const rawKey = String(keys[i] == null ? '' : keys[i]);
+        let dateLabel = rawKey || '날짜 없음';
         let dateExtra = '';
-        if (TREND_MODE === 'monthly'){
-          const m = keys[i].split('-');
-          dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
-        } else {
-          const d = new Date(keys[i]);
-          if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
+        if (rawKey){
+          if (TREND_MODE === 'monthly'){
+            const m = rawKey.split('-');
+            if (m.length >= 2) dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
+          } else {
+            const d = new Date(rawKey);
+            if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
+          }
         }
 
         tip.innerHTML =
-          '<div class="tt-date">📅 '+dateLabel+' '+dateExtra+'</div>'
+          '<div class="tt-date">📅 <span>'+dateLabel+'</span> '+dateExtra+'</div>'
           + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
           + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
       });
