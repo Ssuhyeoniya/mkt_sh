@@ -197,8 +197,8 @@
   .hero .info .deltas .delta .l{ font-size:11px; color:var(--muted); }
   .hero .info .deltas .delta .v{ font-family:'JetBrains Mono', monospace; font-size:13.5px; font-weight:600; }
 
-  /* 인사이트 카드: wide 5열 1행 → 좁아지면 단계적 축소 */
-  .insights-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:14px; }
+  /* 인사이트 카드: wide 6열 1행 → 좁아지면 단계적 축소 */
+  .insights-grid{ display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin-bottom:14px; }
   @media (max-width:1500px){ .insights-grid{ grid-template-columns:repeat(3, 1fr); } }
   @media (max-width:1100px){ .insights-grid{ grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:640px){ .insights-grid{ grid-template-columns:1fr; } }
@@ -469,7 +469,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-13"></script>
+<script src="../../proxy-client.js?v=20260510-14"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -742,7 +742,40 @@
       });
     }
 
-    // 4) 카테고리 인바운드 — 최상위
+    // 4) 카테고리 조회수 — 최상위
+    if (d.catList.length >= 2){
+      const topByVisit = d.catList.slice().sort(function(a,b){ return b.totalVisit - a.totalVisit; })[0];
+      if (topByVisit && topByVisit.count >= 2){
+        const usedRows = d.rows.filter(function(r){ return (r.category||'미분류') === topByVisit.name; });
+        const avgVisit = topByVisit.totalVisit / topByVisit.count;
+        const overallAvg = d.totalVisit / d.rows.length;
+        const lift = avgVisit / Math.max(overallAvg, 1);
+        cards.push({
+          key:'cat-view',
+          icon:'👁️', tone:'amber',
+          score: Math.min(92, 70 + Math.round(lift*8)),
+          title:'카테고리 조회수 — 최상위',
+          statement:'<b>'+escapeHtml(topByVisit.name)+'</b> 카테고리가 평균 조회수 <b class="green">'+fmtK(avgVisit)+'</b> — 전체 평균 대비 <b class="green">'+lift.toFixed(1)+'배</b>',
+          detail:topByVisit.count+'개 발행글 합계 '+fmtK(topByVisit.totalVisit)+' 방문. 트래픽 강세 카테고리.',
+          miniLabel:escapeHtml(topByVisit.name)+' 평균',
+          miniPct: Math.min(100, lift*35),
+          miniNum: fmtK(avgVisit),
+          criteria:[
+            '카테고리별 글 단위 누적 방문 평균(조회수) 비교',
+            '최상위 카테고리: '+topByVisit.name,
+            '평균 조회수: '+fmtK(avgVisit)+' / 글 (글수 '+topByVisit.count+')',
+            '전체 평균: '+fmtK(overallAvg)+' / 글',
+            'lift = '+Math.round(avgVisit)+' / '+Math.round(overallAvg)+' = '+lift.toFixed(2)+'배'
+          ],
+          rows: usedRows
+        });
+        if (lift >= 1.5){
+          reco.push({ text:'<strong>'+escapeHtml(topByVisit.name)+'</strong> 카테고리 발행 비중 확대 검토', sub:'평균 조회수 '+fmtK(avgVisit)+' (전체 평균의 '+lift.toFixed(1)+'배)' });
+        }
+      }
+    }
+
+    // 5) 카테고리 인바운드 — 최상위
     if (d.topCat && d.topCat.count >= 2){
       const lift = d.topCat.avgInbound / Math.max(d.avgInbound, 0.001);
       const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.topCat.name; });
@@ -770,7 +803,7 @@
       }
     }
 
-    // 5) 카테고리 인바운드 — 최하위
+    // 6) 카테고리 인바운드 — 최하위
     if (d.worstCat && d.worstCat.avgInbound < d.avgInbound * 0.7){
       const drop = (1 - d.worstCat.avgInbound / Math.max(d.avgInbound, 0.001)) * 100;
       const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.worstCat.name; });
