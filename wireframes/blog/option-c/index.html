@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>블로그 시안 C · Analytics Hybrid · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  /* Option C: Analytics Hybrid — 분석 + 콤팩트 표 */
+  .analytics-row{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:18px; }
+  .a-panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .a-panel h2{ font-size:13.5px; font-weight:600; margin:0 0 12px; }
+  .a-panel .eyebrow{ font-size:11.5px; color:var(--muted); }
+
+  /* top performer list */
+  .top-list .item{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .top-list .item:last-child{ border-bottom:0; }
+  .top-list .rk{ width:18px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--muted); text-align:center; }
+  .top-list .tt{ flex:1; min-width:0; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .top-list .vv{ font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--text-2); }
+
+  /* category bar list */
+  .cat-bar{ margin-bottom:11px; }
+  .cat-bar .label{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+  .cat-bar .label .name{ color:var(--text-2); }
+  .cat-bar .label .v{ font-family:'JetBrains Mono',monospace; color:var(--muted); }
+  .cat-bar .track{ height:6px; background:#1a1e25; border-radius:99px; overflow:hidden; }
+  .cat-bar .fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),#9c83ff); }
+
+  /* trend line */
+  .trend-svg{ width:100%; height:120px; }
+
+  /* compact post row */
+  .post-row{ display:grid; grid-template-columns:36px 64px 1fr 100px 90px 80px 80px 80px 80px 36px; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .post-row:last-child{ border-bottom:0; }
+  .post-row:hover{ background:rgba(255,255,255,.02); }
+  .post-row .no{ font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:11.5px; text-align:center; }
+  .post-row .thumb{ width:56px; height:42px; border-radius:6px; background:#1a1e25 center/cover no-repeat; }
+  .post-row .title-wrap{ min-width:0; }
+  .post-row .title-wrap .ttl{ font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .post-row .title-wrap .meta-line{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .post-row .num-cell{ font-family:'JetBrains Mono',monospace; text-align:right; }
+  .post-row .cat-tag{ font-size:10.5px; padding:2px 7px; border-radius:4px; background:rgba(124,92,255,.15); color:#b8a6ff; border:1px solid rgba(124,92,255,.3); display:inline-block; }
+  .post-row .date-cell{ color:var(--muted); font-size:11.5px; }
+  .post-row .lk{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; border:1px solid var(--line); color:var(--muted); }
+  .post-row .lk:hover{ color:var(--accent); border-color:var(--accent); }
+
+  /* spark mini */
+  .spark{ display:inline-block; width:60px; height:18px; vertical-align:middle; margin-right:6px; }
+
+  .table-head{ display:grid; grid-template-columns:36px 64px 1fr 100px 90px 80px 80px 80px 80px 36px; gap:10px; padding:10px 14px; background:var(--panel-2); color:var(--muted); font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line); }
+  .table-head .num-cell{ text-align:right; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item active">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">SNS · 블로그</div>
+        <h1>블로그 성과 분석</h1>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 표시 중</span>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL을 붙여넣고 [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">총 게시물</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat">카테고리 0개</div></div>
+      <div class="kpi"><div class="kpi-label">누적 방문</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">평균 <span id="kpi-avg">0</span>/글</div></div>
+      <div class="kpi"><div class="kpi-label">주간 방문</div><div class="kpi-value" id="kpi-weekly">0</div><div class="kpi-sub">최근 7일 합계</div></div>
+      <div class="kpi"><div class="kpi-label">유입 전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">유입 / 누적 방문</div></div>
+    </section>
+
+    <!-- Analytics row: Top + Category + Trend -->
+    <section class="analytics-row">
+      <div class="a-panel">
+        <div class="eyebrow">상위 5개</div>
+        <h2>방문 많은 글 TOP 5</h2>
+        <div class="top-list" id="top-list"></div>
+      </div>
+      <div class="a-panel">
+        <div class="eyebrow">카테고리별</div>
+        <h2>발행 분포</h2>
+        <div id="cat-bars"></div>
+      </div>
+      <div class="a-panel">
+        <div class="eyebrow">시간 추이</div>
+        <h2>월별 발행 / 누적 방문</h2>
+        <svg class="trend-svg" id="trend" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
+        <div class="flex gap-3 text-[11px] mt-2" style="color:var(--muted)">
+          <span><span class="dot" style="background:var(--accent)"></span> 발행수</span>
+          <span><span class="dot" style="background:var(--green)"></span> 누적방문</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filter -->
+    <div class="filter">
+      <div class="search">
+        <span style="color:var(--muted)">⌕</span>
+        <input id="q" type="text" placeholder="제목으로 검색..."/>
+      </div>
+      <select id="cat"><option value="">전체 카테고리</option></select>
+      <select id="sort">
+        <option value="visit_desc">누적 방문 많은 순</option>
+        <option value="date_desc">최신순</option>
+        <option value="weekly_desc">주간 방문 많은 순</option>
+        <option value="inbound_desc">유입 많은 순</option>
+      </select>
+      <button id="btn-refresh">↻ 새로고침</button>
+      <span style="flex:1"></span>
+      <span class="chip" id="result-count">0건</span>
+    </div>
+
+    <!-- Compact post list -->
+    <div class="panel" style="overflow:hidden">
+      <div class="table-head">
+        <div>NO</div>
+        <div>썸네일</div>
+        <div>제목</div>
+        <div>카테고리</div>
+        <div>발행일</div>
+        <div class="num-cell">누적방문</div>
+        <div class="num-cell">주간</div>
+        <div class="num-cell">월간</div>
+        <div class="num-cell">유입</div>
+        <div></div>
+      </div>
+      <div id="rows"></div>
+    </div>
+
+    <div class="text-center muted py-6" style="font-size:11.5px;">시안 C · Analytics Hybrid · 분석 위젯 + 콤팩트 표</div>
+  </main>
+</div>
+
+<script src="../proxy-client.js"></script>
+<script>
+  let CURRENT_ROWS = [];
+
+  function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
+  function fmtDate(d){ if (!d) return '-'; return String(d).slice(0,10); }
+  function $(id){ return document.getElementById(id); }
+  function setStatus(text, kind){
+    const el = $('status');
+    el.className = 'status ' + (kind || '');
+    el.textContent = text;
+  }
+
+  function applyFilter(rows){
+    const q   = ($('q').value || '').toLowerCase().trim();
+    const cat = $('cat').value;
+    let out = rows.filter(function(r){
+      if (cat && String(r.category||'') !== cat) return false;
+      if (q && String(r['제목']||'').toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+    const sort = $('sort').value;
+    out.sort(function(a,b){
+      if (sort === 'date_desc')    return String(b['날짜']||'').localeCompare(String(a['날짜']||''));
+      if (sort === 'visit_desc')   return Number(b.totalVisit||0) - Number(a.totalVisit||0);
+      if (sort === 'weekly_desc')  return Number(b.weeklyVisitor||0) - Number(a.weeklyVisitor||0);
+      if (sort === 'inbound_desc') return Number(b.inbound||0) - Number(a.inbound||0);
+      return 0;
+    });
+    return out;
+  }
+
+  function renderTop(rows){
+    const top = rows.slice().sort((a,b)=>Number(b.totalVisit||0)-Number(a.totalVisit||0)).slice(0,5);
+    $('top-list').innerHTML = top.map(function(r,i){
+      return `<div class="item"><div class="rk">${i+1}</div><div class="tt" title="${(r['제목']||'').replace(/"/g,'&quot;')}">${r['제목']||'-'}</div><div class="vv">${fmt(r.totalVisit)}</div></div>`;
+    }).join('') || '<div class="empty">데이터 없음</div>';
+  }
+
+  function renderCatBars(rows){
+    const map = {};
+    rows.forEach(function(r){
+      const c = r.category||'미분류';
+      if (!map[c]) map[c] = { count:0, totalVisit:0 };
+      map[c].count++;
+      map[c].totalVisit += Number(r.totalVisit||0);
+    });
+    const arr = Object.entries(map).sort((a,b)=>b[1].count-a[1].count);
+    const max = Math.max.apply(null, arr.map(([,v])=>v.count).concat([1]));
+    $('cat-bars').innerHTML = arr.map(function(e){
+      const pct = (e[1].count/max*100).toFixed(0);
+      return `<div class="cat-bar">
+        <div class="label"><span class="name">${e[0]}</span><span class="v">${e[1].count}건 · ${fmt(e[1].totalVisit)} 방문</span></div>
+        <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('') || '<div class="empty">데이터 없음</div>';
+  }
+
+  function renderTrend(rows){
+    // 월별 집계
+    const map = {};
+    rows.forEach(function(r){
+      const m = String(r['날짜']||'').slice(0,7);
+      if (!m) return;
+      if (!map[m]) map[m] = { count:0, totalVisit:0 };
+      map[m].count++;
+      map[m].totalVisit += Number(r.totalVisit||0);
+    });
+    const months = Object.keys(map).sort();
+    if (!months.length){ $('trend').innerHTML = ''; return; }
+    const counts = months.map(m=>map[m].count);
+    const visits = months.map(m=>map[m].totalVisit);
+    const W = 300, H = 120, P = 8;
+    const maxC = Math.max.apply(null, counts.concat([1]));
+    const maxV = Math.max.apply(null, visits.concat([1]));
+    const x = i => P + i * ((W-2*P)/Math.max(months.length-1,1));
+    const yC = v => H - P - v/maxC * (H-2*P);
+    const yV = v => H - P - v/maxV * (H-2*P);
+
+    const pathC = months.map((m,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${yC(counts[i]).toFixed(1)}`).join(' ');
+    const pathV = months.map((m,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${yV(visits[i]).toFixed(1)}`).join(' ');
+    const areaC = pathC + ` L${x(months.length-1).toFixed(1)},${H-P} L${x(0).toFixed(1)},${H-P} Z`;
+
+    let html = '';
+    html += `<g stroke="rgba(255,255,255,.04)"><line x1="${P}" y1="${H-P}" x2="${W-P}" y2="${H-P}"/><line x1="${P}" y1="${H/2}" x2="${W-P}" y2="${H/2}"/></g>`;
+    html += `<path d="${areaC}" fill="rgba(124,92,255,.12)"/>`;
+    html += `<path d="${pathC}" fill="none" stroke="#7c5cff" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+    html += `<path d="${pathV}" fill="none" stroke="#3ddc97" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+    months.forEach(function(m,i){
+      html += `<text x="${x(i)}" y="${H-1}" font-size="9" fill="#7a8290" text-anchor="middle">${m.slice(5)}</text>`;
+    });
+    $('trend').innerHTML = html;
+  }
+
+  function sparkSVG(values){
+    const W=60, H=18;
+    const max = Math.max.apply(null, values.concat([1]));
+    const x = i => i * (W/Math.max(values.length-1,1));
+    const y = v => H - (v/max)*H;
+    const d = values.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="#7c5cff" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+
+  function render(rows){
+    CURRENT_ROWS = rows;
+
+    // KPI
+    const tot = rows.reduce((s,r)=>s+Number(r.totalVisit||0),0);
+    const wk  = rows.reduce((s,r)=>s+Number(r.weeklyVisitor||0),0);
+    const ib  = rows.reduce((s,r)=>s+Number(r.inbound||0),0);
+    const cats = Array.from(new Set(rows.map(r=>r.category||'미분류')));
+    const avg = rows.length ? Math.round(tot/rows.length) : 0;
+    const cvr = tot > 0 ? (ib/tot*100).toFixed(2) + '%' : '0%';
+    $('kpi-count').textContent  = fmt(rows.length);
+    $('kpi-total').textContent  = fmt(tot);
+    $('kpi-avg').textContent    = fmt(avg);
+    $('kpi-weekly').textContent = fmt(wk);
+    $('kpi-cvr').textContent    = cvr;
+    $('kpi-cat').textContent    = '카테고리 ' + cats.length + '개';
+
+    // Category dropdown
+    const sel = $('cat');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">전체 카테고리</option>' + cats.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+    sel.value = cur;
+
+    renderTop(rows);
+    renderCatBars(rows);
+    renderTrend(rows);
+
+    const filtered = applyFilter(rows);
+    $('result-count').textContent = filtered.length + '건';
+
+    const list = $('rows');
+    if (!filtered.length){
+      list.innerHTML = '<div class="empty">조건에 맞는 글이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(function(r,i){
+      const thumbStyle = r.thumbnail ? `style="background-image:url('${String(r.thumbnail).replace(/'/g,"&apos;")}')"` : '';
+      const link = r['링크'] ? `<a class="lk" href="${r['링크']}" target="_blank" rel="noopener">↗</a>` : '<span class="lk" style="opacity:.3">-</span>';
+      const trend = sparkSVG([Number(r.weeklyVisitor||0), Number(r.monthlyVisitor||0)/4, Number(r.totalVisit||0)/12]);
+      return `<div class="post-row">
+        <div class="no">${i+1}</div>
+        <div><div class="thumb" ${thumbStyle}></div></div>
+        <div class="title-wrap">
+          <div class="ttl" title="${(r['제목']||'').replace(/"/g,'&quot;')}">${r['제목']||'-'}</div>
+          <div class="meta-line">${r.service||''} ${r.postid?'· '+r.postid:''}</div>
+        </div>
+        <div>${r.category?'<span class="cat-tag">'+r.category+'</span>':'-'}</div>
+        <div class="date-cell">${fmtDate(r['날짜'])}</div>
+        <div class="num-cell">${trend}${fmt(r.totalVisit)}</div>
+        <div class="num-cell">${fmt(r.weeklyVisitor)}</div>
+        <div class="num-cell">${fmt(r.monthlyVisitor)}</div>
+        <div class="num-cell" style="color:${Number(r.inbound)>=20?'var(--green)':'var(--text)'}">${fmt(r.inbound)}</div>
+        <div>${link}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function load(){
+    const url = MktProxy.getUrl();
+    $('gas-url').value = url;
+    $('btn-disconnect').style.display = url ? '' : 'none';
+
+    if (!url){
+      setStatus('데모 데이터 표시 중', 'demo');
+      render(SAMPLE_BLOG);
+      return;
+    }
+    try{
+      setStatus('연결 중...');
+      const data = await MktProxy.blogList();
+      render(data.rows || []);
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+    }catch(err){
+      setStatus('연결 실패: ' + err.message, 'err');
+      render(SAMPLE_BLOG);
+    }
+  }
+
+  $('btn-connect').addEventListener('click', function(){
+    const v = $('gas-url').value.trim();
+    if (!v) return;
+    MktProxy.setUrl(v); load();
+  });
+  $('btn-disconnect').addEventListener('click', function(){
+    MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
+  });
+  $('btn-refresh').addEventListener('click', load);
+  $('q').addEventListener('input',     function(){ render(CURRENT_ROWS); });
+  $('cat').addEventListener('change',  function(){ render(CURRENT_ROWS); });
+  $('sort').addEventListener('change', function(){ render(CURRENT_ROWS); });
+
+  window.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
