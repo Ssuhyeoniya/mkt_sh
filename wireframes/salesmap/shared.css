@@ -114,11 +114,12 @@ a{ color:inherit; text-decoration:none; }
 /* table-layout:fixed + 각 컬럼 width 직접 제어, 헤더에 그립 핸들 부착 */
 .smap-table{ width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }
 .smap-table thead th{
-  position:sticky; top:0; z-index:2;
-  background:var(--panel-2); color:var(--muted);
+  position:sticky; top:0; z-index:3;
+  background:#171b22; color:var(--muted);
   font-size:11.5px; font-weight:500; text-align:left;
-  padding:10px 12px; border-bottom:1px solid var(--line);
-  white-space:nowrap; user-select:none; position:relative;
+  padding:10px 12px;
+  box-shadow:inset 0 -1px 0 var(--line);
+  white-space:nowrap; user-select:none;
 }
 .smap-table thead th .resizer{
   position:absolute; right:-3px; top:0; height:100%; width:6px;
@@ -193,6 +194,6 @@ a{ color:inherit; text-decoration:none; }
 
 /* responsive */
 @media (max-width: 1280px){
-  .kpi-grid{ grid-template-columns:repeat(3, 1fr); }
   .chart-grid{ grid-template-columns:1fr; }
 }
+.kpi{ min-width:0; }
