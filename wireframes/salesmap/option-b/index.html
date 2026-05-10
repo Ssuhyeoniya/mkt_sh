@@ -66,15 +66,6 @@
       <a class="tab" href="../option-c/">인사이트</a>
     </nav>
 
-    <!-- KPI -->
-    <section class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
-      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
-      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
-      <div class="kpi"><div class="kpi-label">서비스 종류</div><div class="kpi-value" id="kpi-svc">0</div><div class="kpi-sub">관심 서비스</div></div>
-      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
-    </section>
-
     <!-- 기간 조회 -->
     <div class="date-filter">
       <span class="lbl">기간</span>
@@ -89,24 +80,58 @@
       <span class="range-info" id="range-info"></span>
     </div>
 
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
+      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
+      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
+      <div class="kpi"><div class="kpi-label">서비스 종류</div><div class="kpi-value" id="kpi-svc">0</div><div class="kpi-sub">관심 서비스</div></div>
+      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
+    </section>
+
     <!-- Filter & view controls -->
     <div class="filter">
-      <div class="search">
-        <span style="color:var(--muted)">⌕</span>
-        <input id="q" type="text" placeholder="기업명 / 담당자 / 이메일 검색..."/>
+      <div class="ms-group">
+        <span class="ms-tag">서비스</span>
+        <div class="ms-dropdown" id="ms-svc">
+          <button class="ms-trigger" type="button">
+            <span class="ms-text">서비스 전체</span>
+            <span class="ms-caret">▾</span>
+          </button>
+          <div class="ms-panel" id="ms-svc-panel"></div>
+        </div>
       </div>
-      <select id="ch"><option value="">전체 유입경로</option></select>
+
+      <div class="ms-group">
+        <span class="ms-tag ch">유입경로</span>
+        <div class="ms-dropdown" id="ms-ch">
+          <button class="ms-trigger" type="button">
+            <span class="ms-text">유입경로 전체</span>
+            <span class="ms-caret">▾</span>
+          </button>
+          <div class="ms-panel" id="ms-ch-panel"></div>
+        </div>
+      </div>
+
+      <div class="ms-group">
+        <select id="search-field" class="search-field">
+          <option value="company">기업명</option>
+          <option value="manager">담당자</option>
+          <option value="email">이메일</option>
+        </select>
+        <div class="search">
+          <span style="color:var(--muted)">⌕</span>
+          <input id="q" type="text" placeholder="검색어 입력..."/>
+        </div>
+      </div>
+
+      <button id="btn-apply" class="btn-apply">조회</button>
 
       <div style="flex:1"></div>
 
-      <div class="seg" id="groupby">
-        <button class="active" data-g="service">서비스 기준</button>
-        <button data-g="channel">유입경로 기준</button>
-        <button data-g="utm_source">UTM 소스 기준</button>
-      </div>
       <div class="view-toggle" id="view-toggle">
-        <button data-v="board">⊞ 보드</button>
         <button class="active" data-v="table">☰ 테이블</button>
+        <button data-v="board">⊞ 보드</button>
       </div>
     </div>
 
@@ -189,15 +214,33 @@
   let PAGE = 1;
   const PAGE_SIZE = 30;
   let ACTIVE_RANGE = '';
+  let SORT = null; // null | 'asc' | 'desc' (제출 날짜 기준)
+  const APPLIED = {
+    services: [],     // [] = 전체
+    channels: [],     // [] = 전체
+    searchField: 'company',
+    searchQuery: ''
+  };
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
-  function ynTag(v){
+  // 동의합니다 → Y, 동의하지 않습니다/미동의 → N
+  function ynLabel(v){
     const s = String(v||'').trim();
-    if (!s) return '-';
-    if (/(미동의|N|no|false|0)/i.test(s)) return `<span class="tag-mini tag-n">${esc(s)}</span>`;
-    return `<span class="tag-mini tag-y">${esc(s)}</span>`;
+    if (!s) return '';
+    if (/(미동의|동의하지|않)/.test(s)) return 'N';
+    if (/동의/.test(s)) return 'Y';
+    if (/^(N|no|false|0)$/i.test(s)) return 'N';
+    if (/^(Y|yes|true|1)$/i.test(s)) return 'Y';
+    return s;
+  }
+  function ynTag(v){
+    const lbl = ynLabel(v);
+    if (!lbl) return '-';
+    if (lbl === 'N') return `<span class="tag-mini tag-n">N</span>`;
+    if (lbl === 'Y') return `<span class="tag-mini tag-y">Y</span>`;
+    return `<span class="tag-mini">${esc(lbl)}</span>`;
   }
   function setStatus(t,k){ const el=$('status'); el.className='status '+(k||''); el.textContent=t; }
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -234,21 +277,31 @@
     $('range-info').textContent = (!ds && !de) ? '전체 기간' : `${ds||'...'} ~ ${de||'...'}`;
   }
 
-  // ── filter ────────────────────────────────────────────
+  // ── filter (APPLIED 스냅샷 기반 — 조회 버튼 클릭 시 갱신) ────
   function applyFilter(rows){
-    const q = ($('q').value||'').toLowerCase().trim();
-    const ch = $('ch').value;
     const ds = $('date-start').value, de = $('date-end').value;
+    const svcSet = APPLIED.services.length ? new Set(APPLIED.services) : null;
+    const chSet  = APPLIED.channels.length ? new Set(APPLIED.channels) : null;
+    const q = APPLIED.searchQuery.toLowerCase();
+    const field = APPLIED.searchField;
     return rows.filter(r => {
-      if (ch && String(r.channel||'') !== ch) return false;
+      if (svcSet && !svcSet.has(String(r.service||''))) return false;
+      if (chSet  && !chSet.has(String(r.channel||''))) return false;
       if (q){
-        const hay = (r.company+' '+r.manager+' '+r.email).toLowerCase();
-        if (hay.indexOf(q) < 0) return false;
+        const v = String(r[field]||'').toLowerCase();
+        if (v.indexOf(q) < 0) return false;
       }
       const d = String(r.submittedAt||'').slice(0,10);
       if (ds && d < ds) return false;
       if (de && d > de) return false;
       return true;
+    });
+  }
+  function sortRows(rows){
+    if (!SORT) return rows;
+    return rows.slice().sort((a,b) => {
+      const av = String(a.submittedAt||''), bv = String(b.submittedAt||'');
+      return SORT === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     });
   }
 
@@ -259,17 +312,58 @@
     $('kpi-week').textContent  = fmt(rows.filter(r => String(r.submittedAt||'').slice(0,10) >= wk).length);
     const svcs = new Set(rows.map(r => r.service||'미지정'));
     $('kpi-svc').textContent   = fmt(svcs.size);
-    const mkt = rows.filter(r => /동의/.test(String(r.marketingAgreed||'')) && !/미동의/.test(String(r.marketingAgreed||''))).length;
+    const mkt = rows.filter(r => ynLabel(r.marketingAgreed) === 'Y').length;
     const rate = rows.length ? Math.round(mkt*100/rows.length) : 0;
     $('kpi-mkt').textContent = rate + '%';
     $('kpi-mkt-sub').textContent = mkt + ' / ' + rows.length;
   }
 
-  function fillSelects(rows){
-    const sel = $('ch'); const cur = sel.value;
-    const opts = Array.from(new Set(rows.map(r => r.channel).filter(Boolean))).sort();
-    sel.innerHTML = '<option value="">전체 유입경로</option>' + opts.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
-    sel.value = cur;
+  // ── multi-select panel ──────────────────────────────
+  function buildMSPanel(panelId, allLabel, items){
+    $(panelId).innerHTML =
+      `<label class="ms-item ms-all"><input type="checkbox" data-all checked /><span>${esc(allLabel)}</span></label>` +
+      `<div class="ms-divider"></div>` +
+      items.map(v => `<label class="ms-item"><input type="checkbox" value="${esc(v)}" /><span>${esc(v)}</span></label>`).join('');
+  }
+  function bindMS(rootId, panelId, triggerLabel){
+    const root = $(rootId);
+    const panel = $(panelId);
+    const triggerText = root.querySelector('.ms-text');
+    root.querySelector('.ms-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.ms-dropdown.open').forEach(d => { if (d !== root) d.classList.remove('open'); });
+      root.classList.toggle('open');
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('change', e => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.type !== 'checkbox') return;
+      const items = panel.querySelectorAll('input[type="checkbox"]:not([data-all])');
+      const allBox = panel.querySelector('input[data-all]');
+      if (t.dataset.all !== undefined) {
+        items.forEach(i => i.checked = false);
+        t.checked = true;
+      } else {
+        const checkedItems = [...items].filter(i => i.checked);
+        allBox.checked = checkedItems.length === 0;
+      }
+      const checkedItems = [...items].filter(i => i.checked);
+      if (checkedItems.length === 0) triggerText.textContent = triggerLabel;
+      else if (checkedItems.length === 1) triggerText.textContent = checkedItems[0].value;
+      else triggerText.textContent = checkedItems.length + '개 선택';
+    });
+  }
+  function fillFilterPanels(rows){
+    const svcs = Array.from(new Set(rows.map(r => String(r.service||'')).filter(Boolean))).sort();
+    const chs  = Array.from(new Set(rows.map(r => String(r.channel||'')).filter(Boolean))).sort();
+    buildMSPanel('ms-svc-panel', '서비스 전체', svcs);
+    buildMSPanel('ms-ch-panel',  '유입경로 전체', chs);
+  }
+  function readApplied(){
+    APPLIED.services = [...document.querySelectorAll('#ms-svc-panel input[type="checkbox"]:not([data-all]):checked')].map(i => i.value);
+    APPLIED.channels = [...document.querySelectorAll('#ms-ch-panel input[type="checkbox"]:not([data-all]):checked')].map(i => i.value);
+    APPLIED.searchField = $('search-field').value;
+    APPLIED.searchQuery = ($('q').value || '').trim();
   }
 
   // ── kanban ────────────────────────────────────────────
@@ -331,10 +425,10 @@
       </div>`;
   }
   function ynBadge(v, label){
-    const s = String(v||'').trim();
-    if (!s) return '';
-    const isN = /(미동의|N|no|false|0)/i.test(s);
-    return `<span class="tag-mini ${isN?'tag-n':'tag-y'}">${label} ${isN?'×':'✓'}</span>`;
+    const lbl = ynLabel(v);
+    if (!lbl) return '';
+    const isN = lbl === 'N';
+    return `<span class="tag-mini ${isN?'tag-n':'tag-y'}">${label} ${lbl}</span>`;
   }
 
   // ── resizable table ──────────────────────────────────
@@ -342,8 +436,26 @@
     const saved = loadWidths();
     const cg = $('cg'); const th = $('th-row');
     cg.innerHTML = COLS.map((c,i) => `<col data-i="${i}" style="width:${(saved[c.key]||c.w)}px"/>`).join('');
-    th.innerHTML = COLS.map((c,i) => `<th data-i="${i}" style="text-align:${c.align==='right'?'right':'left'}">${esc(c.label)}<span class="resizer" data-i="${i}"></span></th>`).join('');
-    document.querySelectorAll('#th-row .resizer').forEach(h => h.addEventListener('mousedown', startResize));
+    th.innerHTML = COLS.map((c,i) => {
+      const isSort = c.key === 'submittedAt';
+      const arrow = isSort ? `<span class="sort-ind ${SORT||''}">${SORT==='asc'?'▲':SORT==='desc'?'▼':'⇅'}</span>` : '';
+      const cls = isSort ? 'sortable' : '';
+      const align = c.align === 'right' ? 'right' : 'left';
+      return `<th data-i="${i}" data-key="${c.key}" class="${cls}" style="text-align:${align}">${esc(c.label)}${arrow}<span class="resizer" data-i="${i}"></span></th>`;
+    }).join('');
+    document.querySelectorAll('#th-row .resizer').forEach(h => {
+      h.addEventListener('mousedown', startResize);
+      h.addEventListener('click', e => e.stopPropagation());
+    });
+    document.querySelectorAll('#th-row th.sortable').forEach(h => {
+      h.addEventListener('click', e => {
+        if (e.target.classList.contains('resizer')) return;
+        SORT = SORT === null ? 'desc' : SORT === 'desc' ? 'asc' : null;
+        PAGE = 1;
+        buildHeader();
+        renderTable(sortRows(applyFilter(CURRENT)));
+      });
+    });
   }
   let resizeState = null;
   function startResize(e){
@@ -424,7 +536,7 @@
       ['제출 날짜', r.submittedAt],['관심 서비스', r.service],['기업명', r.company],
       ['임직원 수', r.employeeCount],['기업 주소', r.address],['담당자', r.manager],
       ['전화번호', r.phone],['이메일', r.email],['유입경로', r.channel],
-      ['문의내용', r.message],['개인정보 동의', r.privacyAgreed],['마케팅 동의', r.marketingAgreed],
+      ['문의내용', r.message],['개인정보 동의', ynLabel(r.privacyAgreed) || r.privacyAgreed],['마케팅 동의', ynLabel(r.marketingAgreed) || r.marketingAgreed],
       ['utm_source', r.utm_source],['utm_medium', r.utm_medium],['utm_campaign', r.utm_campaign],
       ['utm_content', r.utm_content],['utm_term', r.utm_term],['WebFormID', r.webFormId]
     ];
@@ -454,14 +566,15 @@
   function rerender(){
     updateRangeInfo();
     const filtered = applyFilter(CURRENT);
+    const sorted   = sortRows(filtered);
     renderKPI(filtered);
     renderKanban(filtered);
-    renderTable(filtered);
+    renderTable(sorted);
   }
 
   function render(rows){
     CURRENT = rows;
-    fillSelects(rows);
+    fillFilterPanels(rows);
     rerender();
   }
 
@@ -483,12 +596,22 @@
 
   // events
   buildHeader();
+  bindMS('ms-svc', 'ms-svc-panel', '서비스 전체');
+  bindMS('ms-ch',  'ms-ch-panel',  '유입경로 전체');
+  // 외부 클릭 시 드롭다운 닫기
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+  });
+
   $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); load(); });
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load(); });
   $('btn-reset-w').addEventListener('click', resetWidths);
   $('btn-export').addEventListener('click', exportCSV);
-  ['q','ch'].forEach(id => $(id).addEventListener('input', () => { PAGE = 1; rerender(); }));
-  $('ch').addEventListener('change', () => { PAGE = 1; rerender(); });
+
+  // 조회 버튼: 필터 적용
+  function applySearch(){ readApplied(); PAGE = 1; rerender(); }
+  $('btn-apply').addEventListener('click', applySearch);
+  $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
 
   // 기간 조회
   document.querySelectorAll('.qbtn').forEach(b => {
@@ -502,13 +625,6 @@
   $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); rerender(); });
   $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; rerender(); });
 
-  $('groupby').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    $('groupby').querySelectorAll('button').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    GROUP_BY = b.dataset.g;
-    rerender();
-  });
   $('view-toggle').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     $('view-toggle').querySelectorAll('button').forEach(x => x.classList.remove('active'));

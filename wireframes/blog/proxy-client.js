@@ -85,9 +85,14 @@
       return r.data;
     },
     blogUpdate: async function (params) {
-      // params: { postid, service?, category? }
+      // params: { postid, service?, category?, utm_term? }
       if (!params || !params.postid) throw new Error('postid_required');
       const r = await this.call('blog.update', params);
+      return r.data;
+    },
+    blogInboundDates: async function (utm_term) {
+      if (!utm_term) throw new Error('utm_term_required');
+      const r = await this.call('blog.inboundDates', { utm_term: utm_term });
       return r.data;
     },
     health: async function () {
