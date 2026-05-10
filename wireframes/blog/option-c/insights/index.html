@@ -9,6 +9,56 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared.css">
 <style>
+  /* 기간 조회 바 */
+  .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .date-filter .lbl{ font-size:12px; color:var(--muted); margin-right:2px; }
+  .date-filter input[type="date"]{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 10px; color:var(--text); font-size:12.5px; outline:0;
+    color-scheme:dark; font-family:'JetBrains Mono',monospace;
+  }
+  .date-filter input[type="date"]:focus{ border-color:var(--accent); }
+  .date-filter input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(.7); cursor:pointer; }
+  .date-filter .sep{ color:var(--muted); padding:0 2px; }
+  .date-filter .qbtn{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 12px; color:var(--text-2); font-size:12px; cursor:pointer;
+  }
+  .date-filter .qbtn:hover{ border-color:var(--accent-2); color:#fff; }
+  .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-filter .clear{
+    background:transparent; border:1px solid var(--line); border-radius:8px;
+    padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
+  }
+  .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
+  .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
+
+  /* 카테고리 막대그래프 (방문자 + 인바운드) */
+  .cat-chart-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:14px;
+  }
+  .cat-chart-card .ph{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:14px; }
+  .cat-chart-card .eyebrow{ font-size:11.5px; color:var(--muted); }
+  .cat-chart-card h2{ font-size:14px; font-weight:600; margin:2px 0 0; }
+  .cat-chart-card .legend{ display:flex; gap:12px; font-size:11.5px; color:var(--muted); flex-wrap:wrap; }
+  .cat-chart-card .legend .it{ display:inline-flex; align-items:center; gap:5px; }
+
+  .cat-chart{ display:flex; flex-direction:column; gap:10px; }
+  .cat-row{ display:grid; grid-template-columns:84px 1fr 1fr; gap:14px; align-items:center; }
+  @media (max-width:640px){ .cat-row{ grid-template-columns:64px 1fr 1fr; gap:8px; } }
+  .cat-row .name{ font-size:12.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cat-bar-wrap{ position:relative; height:22px; background:#1a1e25; border-radius:6px; overflow:hidden; }
+  .cat-bar-wrap .fill{ position:absolute; left:0; top:0; bottom:0; border-radius:6px; }
+  .cat-bar-wrap .fill.visit{ background:linear-gradient(90deg, var(--accent), #9c83ff); }
+  .cat-bar-wrap .fill.inbound{ background:linear-gradient(90deg, var(--green), #76eaba); }
+  .cat-bar-wrap .v{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:#fff; font-weight:500;
+    text-shadow:0 0 6px rgba(0,0,0,.4);
+  }
+  .cat-bar-wrap .v.outside{ color:var(--text-2); text-shadow:none; right:auto; left:auto; padding-left:8px; }
+
   .hero{
     background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(124,92,255,.04));
     border:1px solid rgba(124,92,255,.3); border-radius:16px;
@@ -135,6 +185,20 @@
       <a class="tab" href="../source/">원본</a>
     </nav>
 
+    <!-- 기간 조회 -->
+    <div class="date-filter">
+      <span class="lbl">기간</span>
+      <input type="date" id="date-start" />
+      <span class="sep">~</span>
+      <input type="date" id="date-end" />
+      <button class="qbtn" data-range="7">7일</button>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <button class="clear" id="btn-clear-date">초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
     <!-- Hero score -->
     <section class="hero">
       <div class="score-circle" id="score-ring">
@@ -159,6 +223,21 @@
       <div class="kpi"><div class="kpi-label">총 누적 방문</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">합계</div></div>
       <div class="kpi"><div class="kpi-label">인바운드 전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">유입 / 누적</div></div>
       <div class="kpi"><div class="kpi-label">도출 인사이트</div><div class="kpi-value" id="kpi-insights">0</div><div class="kpi-sub">데이터 기반</div></div>
+    </section>
+
+    <!-- 카테고리별 방문자 + 인바운드 막대그래프 -->
+    <section class="cat-chart-card">
+      <div class="ph">
+        <div>
+          <div class="eyebrow">기간 추이</div>
+          <h2>카테고리별 방문자 · 인바운드</h2>
+        </div>
+        <div class="legend">
+          <span class="it"><span class="dot" style="background:var(--accent)"></span>방문자</span>
+          <span class="it"><span class="dot" style="background:var(--green)"></span>인바운드</span>
+        </div>
+      </div>
+      <div class="cat-chart" id="cat-chart"></div>
     </section>
 
     <!-- 인사이트 카드 (실데이터 기반 동적 생성) -->
@@ -192,6 +271,53 @@
     el.textContent = text;
   }
   const DOW = ['일','월','화','수','목','금','토'];
+
+  // ── 기간 필터 ─────────────────────────────────────
+  let ALL_ROWS = [];
+  let SOURCE_LABEL = '데모 데이터';
+  let ACTIVE_RANGE = '';
+  function ymdStr(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  function yesterday(){
+    const d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d;
+  }
+  function applyDateFilter(rows){
+    const ds = $('date-start').value, de = $('date-end').value;
+    if (!ds && !de) return rows.slice();
+    return rows.filter(function(r){
+      const d = String(r['날짜']||'').slice(0,10);
+      if (!d) return false;
+      if (ds && d < ds) return false;
+      if (de && d > de) return false;
+      return true;
+    });
+  }
+  function setQuickRange(days){
+    const end = yesterday();
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
+    $('date-start').value = ymdStr(start);
+    $('date-end').value   = ymdStr(end);
+    ACTIVE_RANGE = String(days);
+    refresh();
+  }
+  function clearDateRange(){
+    $('date-start').value = '';
+    $('date-end').value = '';
+    ACTIVE_RANGE = '';
+    refresh();
+  }
+  function updateRangeInfo(){
+    const ds = $('date-start').value, de = $('date-end').value;
+    document.querySelectorAll('.qbtn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.range === ACTIVE_RANGE);
+    });
+    $('range-info').textContent = (!ds && !de) ? '전체 기간' : `${ds||'...'} ~ ${de||'...'}`;
+  }
 
   // ── 인사이트 도출 로직 ───────────────────────────
   function derive(rows){
@@ -476,13 +602,49 @@
     `).join('');
   }
 
-  function renderAll(rows, source){
-    const d = derive(rows);
+  // 카테고리별 방문자 + 인바운드 막대그래프
+  function renderCatChart(d){
+    const wrap = $('cat-chart');
+    if (!d || !d.catList || !d.catList.length){
+      wrap.innerHTML = '<div class="empty">데이터 없음</div>';
+      return;
+    }
+    // 누적 방문 많은 순 TOP 8
+    const arr = d.catList.slice().sort((a,b)=>b.totalVisit-a.totalVisit).slice(0,8);
+    const maxV = Math.max.apply(null, arr.map(c=>c.totalVisit).concat([1]));
+    const maxI = Math.max.apply(null, arr.map(c=>c.inbound).concat([1]));
+    wrap.innerHTML = arr.map(function(c){
+      const wv = Math.max(2, c.totalVisit / maxV * 100);
+      const wi = Math.max(2, c.inbound    / maxI * 100);
+      // 너비가 너무 좁으면 값 라벨이 안에 들어가지 않으므로 바 밖에 표시
+      const visitLabel = wv > 20
+        ? `<span class="v">${fmtK(c.totalVisit)}</span>`
+        : `<span class="v outside" style="left:${wv}%; padding-left:6px; color:var(--text-2);">${fmtK(c.totalVisit)}</span>`;
+      const inboundLabel = wi > 20
+        ? `<span class="v">${fmt(c.inbound)}</span>`
+        : `<span class="v outside" style="left:${wi}%; padding-left:6px; color:var(--text-2);">${fmt(c.inbound)}</span>`;
+      return `<div class="cat-row">
+        <div class="name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
+        <div class="cat-bar-wrap"><div class="fill visit" style="width:${wv}%"></div>${visitLabel}</div>
+        <div class="cat-bar-wrap"><div class="fill inbound" style="width:${wi}%"></div>${inboundLabel}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function refresh(){
+    updateRangeInfo();
+    const filtered = applyDateFilter(ALL_ROWS);
+    const d = derive(filtered);
     renderHero(d);
+    renderCatChart(d);
     const ins = buildInsights(d);
     renderCards(ins.cards);
     renderReco(ins.reco);
-    $('footer-note').textContent = `${source} · ${rows.length}건 분석 · ${ins.cards.length}개 인사이트 · ${ins.reco.length}개 추천 액션`;
+    const range = ACTIVE_RANGE
+      ? `최근 ${ACTIVE_RANGE}일`
+      : (!$('date-start').value && !$('date-end').value ? '전체 기간' : '사용자 지정 기간');
+    $('footer-note').textContent =
+      `${SOURCE_LABEL} · ${range} · ${filtered.length}건 분석 · ${ins.cards.length}개 인사이트 · ${ins.reco.length}개 추천 액션`;
   }
 
   async function load(){
@@ -492,7 +654,9 @@
 
     if (!url){
       setStatus('데모 데이터 분석 중', 'demo');
-      renderAll(SAMPLE_BLOG, '데모 데이터');
+      ALL_ROWS = SAMPLE_BLOG;
+      SOURCE_LABEL = '데모 데이터';
+      refresh();
       return;
     }
     try{
@@ -501,14 +665,20 @@
       const rows = data.rows || [];
       if (!rows.length){
         setStatus('● 연결됨 · 데이터 없음', 'amber');
-        renderAll(SAMPLE_BLOG, '연결됨 · 데이터 없음 → 데모 사용');
+        ALL_ROWS = SAMPLE_BLOG;
+        SOURCE_LABEL = '연결됨 · 데이터 없음 → 데모 사용';
+        refresh();
         return;
       }
-      setStatus('● 연결됨 · ' + rows.length + '건 분석', 'ok');
-      renderAll(rows, 'BLOG_RAW_DATA · ' + rows.length + '건');
+      setStatus('● 연결됨 · ' + rows.length + '건', 'ok');
+      ALL_ROWS = rows;
+      SOURCE_LABEL = 'BLOG_RAW_DATA · ' + rows.length + '건';
+      refresh();
     }catch(err){
       setStatus('연결 실패: ' + err.message, 'err');
-      renderAll(SAMPLE_BLOG, '연결 실패 · 데모 사용');
+      ALL_ROWS = SAMPLE_BLOG;
+      SOURCE_LABEL = '연결 실패 · 데모 사용';
+      refresh();
     }
   }
 
@@ -520,6 +690,16 @@
   $('btn-disconnect').addEventListener('click', () => {
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
+
+  // 기간 조회 핸들러
+  document.querySelectorAll('.qbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      setQuickRange(parseInt(btn.dataset.range, 10));
+    });
+  });
+  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; refresh(); });
+  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; refresh(); });
+  $('btn-clear-date').addEventListener('click', clearDateRange);
 
   window.addEventListener('DOMContentLoaded', load);
 </script>
