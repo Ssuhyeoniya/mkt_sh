@@ -32,15 +32,11 @@
       linear-gradient(90deg, transparent 95%, rgba(255,255,255,.04) 95%);
     background-size: 24px 24px;
   }
-  /* Korea region map */
-  .kmap{ position:relative; height:280px; }
-  .region{ position:absolute; border-radius:8px; padding:8px 10px; font-size:11.5px; color:#fff; background:#1a1e25; border:1px solid var(--line-2); transition:all .2s; cursor:default; }
-  .region:hover{ transform:translateY(-2px); border-color:var(--accent); }
-  .region .v{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; }
-  .heat-1{ background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(124,92,255,.08)); border-color:rgba(124,92,255,.35); }
-  .heat-2{ background:linear-gradient(135deg, rgba(124,92,255,.32), rgba(124,92,255,.14)); border-color:rgba(124,92,255,.5); }
-  .heat-3{ background:linear-gradient(135deg, rgba(124,92,255,.55), rgba(124,92,255,.25)); border-color:rgba(124,92,255,.7); }
-  .heat-4{ background:linear-gradient(135deg, rgba(124,92,255,.85), rgba(124,92,255,.45)); border-color:rgba(124,92,255,.9); }
+  .rank-row{ display:flex; align-items:center; gap:10px; }
+  .rank-row + .rank-row{ margin-top:7px; }
+  .rank-row .idx{ width:14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+  .rank-row .bar{ flex:1; height:5px; background:#1a1e25; border-radius:99px; overflow:hidden; }
+  .rank-row .bar > i{ display:block; height:100%; background:var(--accent); border-radius:99px; }
 </style>
 </head>
 <body class="min-h-screen">
@@ -126,9 +122,10 @@
       </div>
     </section>
 
-    <!-- Row: line chart + donut -->
-    <section class="grid grid-cols-3 gap-4 mb-5">
-      <div class="panel p-5 col-span-2">
+    <!-- Row: 좌측 라인차트 / 우측 (도넛 + 상위 지역 랭킹) -->
+    <section class="grid grid-cols-3 gap-4 mb-5 items-stretch">
+      <!-- 좌측: 라인차트 -->
+      <div class="panel p-5 col-span-2 flex flex-col">
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="text-[12px] muted">인바운드 · 아웃바운드 추이</div>
@@ -140,7 +137,7 @@
             <span class="sub-tab">OB</span>
           </div>
         </div>
-        <svg viewBox="0 0 600 220" width="100%" height="220">
+        <svg viewBox="0 0 600 220" width="100%" height="100%" preserveAspectRatio="none" class="flex-1 min-h-0">
           <g stroke="rgba(255,255,255,.05)" stroke-width="1">
             <line x1="0" y1="40" x2="600" y2="40"/>
             <line x1="0" y1="90" x2="600" y2="90"/>
@@ -148,146 +145,50 @@
             <line x1="0" y1="190" x2="600" y2="190"/>
           </g>
           <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30 L600,220 L0,220 Z" fill="rgba(78,163,255,.12)"/>
-          <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30" fill="none" stroke="#4ea3ff" stroke-width="2"/>
-          <path d="M0,180 C50,175 100,170 150,160 C200,155 250,145 300,140 C350,135 400,125 450,115 C500,110 550,100 600,95" fill="none" stroke="#3ddc97" stroke-width="2"/>
+          <path d="M0,170 C50,160 100,140 150,130 C200,120 250,100 300,95 C350,90 400,70 450,60 C500,50 550,45 600,30" fill="none" stroke="#4ea3ff" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          <path d="M0,180 C50,175 100,170 150,160 C200,155 250,145 300,140 C350,135 400,125 450,115 C500,110 550,100 600,95" fill="none" stroke="#3ddc97" stroke-width="2" vector-effect="non-scaling-stroke"/>
         </svg>
-        <div class="flex gap-4 text-[12px] mt-2">
+        <div class="flex gap-4 text-[12px] mt-3">
           <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#4ea3ff"></span>인바운드</span>
           <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#3ddc97"></span>아웃바운드</span>
         </div>
       </div>
 
-      <div class="panel p-5">
-        <div class="text-[12px] muted">유입 채널 비중</div>
-        <div class="text-[15px] font-semibold mt-0.5 mb-4">IB / OB 종합</div>
-        <div class="flex items-center gap-5">
-          <div class="relative w-[130px] h-[130px] rounded-full"
-               style="background:conic-gradient(#4ea3ff 0 62%, #3ddc97 62% 82%, #ffb648 82% 95%, #2a2f38 95% 100%)">
-            <div class="absolute inset-3 rounded-full flex flex-col items-center justify-center" style="background:var(--panel)">
-              <div class="text-[11px] muted">전체</div>
-              <div class="num text-[18px] font-semibold">3,325</div>
+      <!-- 우측: 도넛 + 상위 지역 랭킹 (상하 2개) -->
+      <div class="flex flex-col gap-4">
+        <!-- 도넛: IB/OB 종합 -->
+        <div class="panel p-5 flex-1">
+          <div class="text-[12px] muted">유입 채널 비중</div>
+          <div class="text-[15px] font-semibold mt-0.5 mb-4">IB / OB 종합</div>
+          <div class="flex items-center gap-5">
+            <div class="relative w-[110px] h-[110px] rounded-full shrink-0"
+                 style="background:conic-gradient(#4ea3ff 0 62%, #3ddc97 62% 82%, #ffb648 82% 95%, #2a2f38 95% 100%)">
+              <div class="absolute inset-3 rounded-full flex flex-col items-center justify-center" style="background:var(--panel)">
+                <div class="text-[11px] muted">전체</div>
+                <div class="num text-[16px] font-semibold">3,325</div>
+              </div>
+            </div>
+            <div class="space-y-1.5 text-[12px]">
+              <div class="flex items-center gap-2"><span class="dot" style="background:#4ea3ff"></span>웹 폼 · 62%</div>
+              <div class="flex items-center gap-2"><span class="dot" style="background:#3ddc97"></span>전화 인입 · 20%</div>
+              <div class="flex items-center gap-2"><span class="dot" style="background:#ffb648"></span>제휴점 · 13%</div>
+              <div class="flex items-center gap-2"><span class="dot" style="background:#2a2f38"></span>기타 · 5%</div>
             </div>
           </div>
-          <div class="space-y-2 text-[12.5px]">
-            <div class="flex items-center gap-2"><span class="dot" style="background:#4ea3ff"></span>웹 폼 · 62%</div>
-            <div class="flex items-center gap-2"><span class="dot" style="background:#3ddc97"></span>전화 인입 · 20%</div>
-            <div class="flex items-center gap-2"><span class="dot" style="background:#ffb648"></span>제휴점 · 13%</div>
-            <div class="flex items-center gap-2"><span class="dot" style="background:#2a2f38"></span>기타 · 5%</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 지역구 분포도 -->
-    <section class="panel p-5 mb-5">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <div class="text-[12px] muted">지역구 분포도</div>
-          <div class="text-[15px] font-semibold mt-0.5">전국 인바운드 · 성약 분포</div>
-        </div>
-        <div class="flex gap-2 items-center">
-          <div class="flex gap-1 items-center text-[11px] muted">
-            <span>적음</span>
-            <span class="w-4 h-3 rounded-sm heat-1"></span>
-            <span class="w-4 h-3 rounded-sm heat-2"></span>
-            <span class="w-4 h-3 rounded-sm heat-3"></span>
-            <span class="w-4 h-3 rounded-sm heat-4"></span>
-            <span>많음</span>
-          </div>
-          <div class="flex gap-1 ml-2">
-            <span class="sub-tab active">인바운드</span>
-            <span class="sub-tab">성약</span>
-            <span class="sub-tab">제휴점</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4">
-        <!-- Korea regional map (stylized boxes) -->
-        <div class="kmap col-span-2 grid-bg rounded-lg p-3">
-          <!-- 강원 -->
-          <div class="region heat-1" style="left:62%; top:10%">강원<div class="v">98</div></div>
-          <!-- 경기 -->
-          <div class="region heat-3" style="left:46%; top:14%">경기<div class="v">287</div></div>
-          <!-- 서울 -->
-          <div class="region heat-4" style="left:36%; top:20%">서울<div class="v">412</div></div>
-          <!-- 인천 -->
-          <div class="region heat-2" style="left:24%; top:24%">인천<div class="v">142</div></div>
-          <!-- 충북 -->
-          <div class="region heat-1" style="left:56%; top:36%">충북<div class="v">62</div></div>
-          <!-- 충남 -->
-          <div class="region heat-2" style="left:34%; top:42%">충남<div class="v">118</div></div>
-          <!-- 대전 -->
-          <div class="region heat-2" style="left:48%; top:50%">대전<div class="v">96</div></div>
-          <!-- 경북 -->
-          <div class="region heat-2" style="left:68%; top:46%">경북<div class="v">131</div></div>
-          <!-- 전북 -->
-          <div class="region heat-1" style="left:32%; top:58%">전북<div class="v">74</div></div>
-          <!-- 대구 -->
-          <div class="region heat-3" style="left:60%; top:60%">대구<div class="v">187</div></div>
-          <!-- 울산 -->
-          <div class="region heat-1" style="left:78%; top:60%">울산<div class="v">52</div></div>
-          <!-- 광주 -->
-          <div class="region heat-2" style="left:30%; top:74%">광주<div class="v">88</div></div>
-          <!-- 전남 -->
-          <div class="region heat-1" style="left:18%; top:80%">전남<div class="v">69</div></div>
-          <!-- 부산 -->
-          <div class="region heat-3" style="left:68%; top:78%">부산<div class="v">152</div></div>
-          <!-- 경남 -->
-          <div class="region heat-2" style="left:50%; top:78%">경남<div class="v">109</div></div>
-          <!-- 제주 -->
-          <div class="region heat-1" style="left:22%; top:92%">제주<div class="v">23</div></div>
         </div>
 
-        <!-- Top regions list -->
-        <div>
-          <div class="text-[12px] muted mb-2">상위 지역</div>
-          <div class="space-y-2.5">
-            <div class="flex items-center gap-3">
-              <div class="w-5 text-[11px] muted num">1</div>
-              <div class="flex-1">
-                <div class="flex justify-between text-[13px]"><span>서울</span><span class="num">412</span></div>
-                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:100%; background:var(--accent)"></div></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-5 text-[11px] muted num">2</div>
-              <div class="flex-1">
-                <div class="flex justify-between text-[13px]"><span>경기</span><span class="num">287</span></div>
-                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:70%; background:var(--accent)"></div></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-5 text-[11px] muted num">3</div>
-              <div class="flex-1">
-                <div class="flex justify-between text-[13px]"><span>대구</span><span class="num">187</span></div>
-                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:46%; background:var(--accent)"></div></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-5 text-[11px] muted num">4</div>
-              <div class="flex-1">
-                <div class="flex justify-between text-[13px]"><span>부산</span><span class="num">152</span></div>
-                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:38%; background:var(--accent)"></div></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-5 text-[11px] muted num">5</div>
-              <div class="flex-1">
-                <div class="flex justify-between text-[13px]"><span>인천</span><span class="num">142</span></div>
-                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:35%; background:var(--accent)"></div></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="w-5 text-[11px] muted num">6</div>
-              <div class="flex-1">
-                <div class="flex justify-between text-[13px]"><span>경북</span><span class="num">131</span></div>
-                <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:32%; background:var(--accent)"></div></div>
-              </div>
-            </div>
+        <!-- 상위 지역 랭킹 (compact) -->
+        <div class="panel p-4 flex-1">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-[12.5px] font-semibold">상위 지역 랭킹</div>
+            <span class="text-[11px] muted">총 2,210건 · 17개 시·도</span>
           </div>
-          <div class="text-[11.5px] muted mt-3 pt-3 border-t border-[var(--line)]">
-            전국 17개 시·도 · 총 <span class="num text-[var(--text)]">2,210</span> 건
+          <div>
+            <div class="rank-row"><span class="idx">1</span><span class="text-[12px] w-9">서울</span><span class="bar"><i style="width:100%"></i></span><span class="num text-[11.5px] w-10 text-right">412</span></div>
+            <div class="rank-row"><span class="idx">2</span><span class="text-[12px] w-9">경기</span><span class="bar"><i style="width:70%"></i></span><span class="num text-[11.5px] w-10 text-right">287</span></div>
+            <div class="rank-row"><span class="idx">3</span><span class="text-[12px] w-9">대구</span><span class="bar"><i style="width:46%"></i></span><span class="num text-[11.5px] w-10 text-right">187</span></div>
+            <div class="rank-row"><span class="idx">4</span><span class="text-[12px] w-9">부산</span><span class="bar"><i style="width:38%"></i></span><span class="num text-[11.5px] w-10 text-right">152</span></div>
+            <div class="rank-row"><span class="idx">5</span><span class="text-[12px] w-9">인천</span><span class="bar"><i style="width:35%"></i></span><span class="num text-[11.5px] w-10 text-right">142</span></div>
           </div>
         </div>
       </div>
