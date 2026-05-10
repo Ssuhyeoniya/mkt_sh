@@ -23,13 +23,21 @@ function handle_(e) {
     try { Object.assign(params, JSON.parse(e.postData.contents)); } catch (_) {}
   }
 
+  // ROUTES — 모듈 함수가 실제 정의되어 있을 때만 등록
+  // (※ 객체 리터럴에서 미정의 식별자를 직접 참조하면 ReferenceError 로
+  //   전체 스크립트가 죽음 → 모든 라우트가 한꺼번에 실패하므로 가드)
   const ROUTES = {
-    'health':        function () { return { ok: true, ts: new Date().toISOString() }; },
-    'blog.list':     Blog_list,
-    'blog.summary':  Blog_summary,
-    'blog.update':   Blog_update,
-    // 추후 추가: 'partner.list': Partner_list, 'ads.inapp': Ads_inapp, ...
+    'health': function () { return { ok: true, ts: new Date().toISOString() }; }
   };
+  function reg_(name, ref){ if (typeof ref === 'function') ROUTES[name] = ref; }
+  // blog
+  try { reg_('blog.list',        Blog_list);        } catch (_) {}
+  try { reg_('blog.summary',     Blog_summary);     } catch (_) {}
+  try { reg_('blog.update',      Blog_update);      } catch (_) {}
+  // salesmap
+  try { reg_('salesmap.list',    Salesmap_list);    } catch (_) {}
+  try { reg_('salesmap.summary', Salesmap_summary); } catch (_) {}
+  // 추후 추가 모듈도 위 패턴으로 등록
 
   const action = String(params.action || '').trim();
   const fn = ROUTES[action];

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>세일즈맵 시안 C · Analytics Hybrid · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<style>
+  /* Option C: Analytics Hybrid — 분석 위젯 + 리사이즈 테이블 */
+  .panel-pad{ padding:18px 20px; }
+  .panel-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .panel-title h3{ font-size:14px; font-weight:600; margin:0; }
+  .panel-title .sub{ font-size:11.5px; color:var(--muted); }
+  .grid-3{ display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:14px; margin-bottom:16px; }
+  .rank-row{ display:flex; align-items:center; gap:10px; padding:6px 0; }
+  .rank-row .idx{ width:18px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+  .rank-row .name{ flex:1; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rank-row .bar{ width:120px; height:5px; background:#1a1e25; border-radius:99px; overflow:hidden; }
+  .rank-row .bar > i{ display:block; height:100%; background:var(--accent); border-radius:99px; }
+  .rank-row .v{ width:42px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-2); }
+  .donut-legend{ display:flex; flex-direction:column; gap:6px; font-size:12px; }
+  .donut-legend .row{ display:flex; align-items:center; gap:8px; }
+  .donut-legend .row .lbl{ flex:1; }
+  .donut-legend .row .pct{ font-family:'JetBrains Mono',monospace; color:var(--muted); }
+  .table-wrap{ overflow:auto; max-height:50vh; }
+  .stat-bar{ display:flex; align-items:flex-end; gap:6px; height:130px; padding:10px 4px 0; }
+  .stat-bar .b{ flex:1; min-width:8px; background:linear-gradient(180deg, var(--accent), rgba(124,92,255,.4)); border-radius:4px 4px 2px 2px; position:relative; }
+  .stat-bar .b:hover{ filter:brightness(1.15); }
+  .stat-bar .b .v{ position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .stat-bar-x{ display:flex; gap:6px; padding:6px 4px 0; }
+  .stat-bar-x .x{ flex:1; text-align:center; font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .seg{ display:inline-flex; background:#1a1e25; border:1px solid var(--line); border-radius:7px; padding:2px; }
+  .seg button{ background:transparent; border:0; color:var(--muted); font-size:11.5px; padding:4px 10px; border-radius:5px; cursor:pointer; }
+  .seg button.active{ background:var(--accent); color:#fff; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item active" href="../">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item" href="../../blog/option-c/">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+        <h1>세일즈맵 · 분석 인사이트</h1>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 표시 중</span>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL을 붙여넣고 [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
+      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
+      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
+      <div class="kpi"><div class="kpi-label">UTM 추적</div><div class="kpi-value" id="kpi-utm">0%</div><div class="kpi-sub" id="kpi-utm-sub">utm_source 보유율</div></div>
+      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
+    </section>
+
+    <!-- Filter -->
+    <div class="filter">
+      <div class="search">
+        <span style="color:var(--muted)">⌕</span>
+        <input id="q" type="text" placeholder="기업명 / 담당자 / 이메일 검색..."/>
+      </div>
+      <select id="svc"><option value="">전체 서비스</option></select>
+      <select id="ch"><option value="">전체 유입경로</option></select>
+      <input id="from" type="date"/>
+      <span class="muted text-[12px]">~</span>
+      <input id="to" type="date"/>
+      <button id="btn-refresh">↻ 새로고침</button>
+    </div>
+
+    <!-- Charts -->
+    <section class="grid-3">
+      <!-- 월별 추이 (라인 + 바) -->
+      <div class="panel panel-pad">
+        <div class="panel-title">
+          <h3>월별 리드 추이</h3>
+          <div class="seg" id="trend-seg">
+            <button class="active" data-r="month">월별</button>
+            <button data-r="week">주별</button>
+            <button data-r="day">일별</button>
+          </div>
+        </div>
+        <div id="trend-chart" style="position:relative">
+          <div class="stat-bar" id="trend-bars"></div>
+          <div class="stat-bar-x" id="trend-x"></div>
+        </div>
+      </div>
+
+      <!-- 서비스 도넛 -->
+      <div class="panel panel-pad">
+        <div class="panel-title"><h3>관심 서비스 비중</h3><span class="sub" id="svc-total">0건</span></div>
+        <div style="display:flex; align-items:center; gap:18px;">
+          <div class="donut" id="svc-donut" style="background:conic-gradient(#262c35 0 100%)">
+            <div class="hole">
+              <div class="text-[11px] muted">서비스</div>
+              <div class="num text-[16px] font-semibold" id="svc-donut-n">0</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="svc-legend" style="flex:1; min-width:0"></div>
+        </div>
+      </div>
+
+      <!-- 유입경로 랭킹 -->
+      <div class="panel panel-pad">
+        <div class="panel-title"><h3>유입경로 TOP 7</h3><span class="sub" id="ch-total">0개</span></div>
+        <div id="ch-rank"></div>
+      </div>
+    </section>
+
+    <!-- UTM 분석 -->
+    <section class="grid-3" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="panel panel-pad">
+        <div class="panel-title"><h3>utm_source TOP 6</h3></div>
+        <div id="utm-source"></div>
+      </div>
+      <div class="panel panel-pad">
+        <div class="panel-title"><h3>utm_campaign TOP 6</h3></div>
+        <div id="utm-campaign"></div>
+      </div>
+      <div class="panel panel-pad">
+        <div class="panel-title"><h3>임직원 규모 분포</h3></div>
+        <div id="emp-dist"></div>
+      </div>
+    </section>
+
+    <!-- Resizable table -->
+    <div class="panel" style="overflow:hidden">
+      <div class="toolbar">
+        <div class="left">
+          <span class="text-[13px] font-medium">리드 로우데이터</span>
+          <span class="chip" id="result-count">0건</span>
+          <span class="text-[11.5px] muted ml-2">⇆ 헤더 우측을 드래그해 너비를 조절하세요</span>
+        </div>
+        <div class="right">
+          <button class="ghost-btn" id="btn-reset-w">↔ 너비 초기화</button>
+          <button class="ghost-btn" id="btn-export">⇩ CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="smap-table" id="tbl">
+          <colgroup id="cg"></colgroup>
+          <thead><tr id="th-row"></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="text-center muted py-4" style="font-size:11.5px;">시안 C · Analytics Hybrid · 분석 위젯 + 리사이즈 테이블</div>
+  </main>
+</div>
+
+<!-- 상세 드로어 -->
+<div class="drawer-back" id="drawer-back"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <div class="eyebrow">리드 상세</div>
+      <h3 id="drawer-title">-</h3>
+    </div>
+    <button class="drawer-close" id="drawer-close">×</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<script src="../proxy-client.js"></script>
+<script>
+  const COLS = [
+    { key:'_no',             label:'NO',           w: 56,  align:'right' },
+    { key:'submittedAt',     label:'제출 날짜',    w:148 },
+    { key:'service',         label:'서비스',       w:120,  render: v => v ? `<span class="tag-mini tag-svc">${esc(v)}</span>` : '-' },
+    { key:'company',         label:'기업명',       w:170,  bold:true },
+    { key:'employeeCount',   label:'임직원 수',    w:110 },
+    { key:'address',         label:'기업 주소',    w:240 },
+    { key:'manager',         label:'담당자',       w: 96 },
+    { key:'phone',           label:'전화번호',     w:140,  mono:true },
+    { key:'email',           label:'이메일',       w:200,  mono:true },
+    { key:'channel',         label:'유입경로',     w:120,  render: v => v ? `<span class="tag-mini tag-ch">${esc(v)}</span>` : '-' },
+    { key:'privacyAgreed',   label:'개인정보 동의', w: 96, render: v => ynTag(v) },
+    { key:'marketingAgreed', label:'마케팅 동의',   w: 96, render: v => ynTag(v) },
+    { key:'utm_source',      label:'utm_source',   w:120,  mono:true },
+    { key:'utm_medium',      label:'utm_medium',   w:120,  mono:true },
+    { key:'utm_campaign',    label:'utm_campaign', w:160,  mono:true },
+    { key:'utm_content',     label:'utm_content',  w:140,  mono:true },
+    { key:'utm_term',        label:'utm_term',     w:140,  mono:true }
+  ];
+  const HUES = ['#7c5cff','#3ddc97','#4ea3ff','#ffb648','#ff7ab6','#ff5d73','#9c83ff','#7ee9bf','#9ccaff','#ffd99a'];
+  const W_KEY = 'smap_col_widths_v1';
+
+  let CURRENT = [];
+  let TREND_RANGE = 'month';
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function fmt(n){ const v=Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
+  function ynTag(v){
+    const s = String(v||'').trim();
+    if (!s) return '-';
+    if (/(미동의|N|no|false|0)/i.test(s)) return `<span class="tag-mini tag-n">${esc(s)}</span>`;
+    return `<span class="tag-mini tag-y">${esc(s)}</span>`;
+  }
+  function setStatus(t,k){ const el=$('status'); el.className='status '+(k||''); el.textContent=t; }
+  function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function daysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  function applyFilter(rows){
+    const q = ($('q').value||'').toLowerCase().trim();
+    const sv = $('svc').value, ch = $('ch').value;
+    const from = $('from').value, to = $('to').value;
+    return rows.filter(r => {
+      if (sv && String(r.service||'') !== sv) return false;
+      if (ch && String(r.channel||'') !== ch) return false;
+      if (q){
+        const hay = (r.company+' '+r.manager+' '+r.email).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      const d = String(r.submittedAt||'').slice(0,10);
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+  }
+
+  function fillSelects(rows){
+    const fill = (id, key, head) => {
+      const sel = $(id); const cur = sel.value;
+      const opts = Array.from(new Set(rows.map(r => r[key]).filter(Boolean))).sort();
+      sel.innerHTML = `<option value="">${head}</option>` + opts.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+      sel.value = cur;
+    };
+    fill('svc','service','전체 서비스');
+    fill('ch','channel','전체 유입경로');
+  }
+
+  function renderKPI(rows){
+    $('kpi-count').textContent = fmt(rows.length);
+    const td = todayStr(), wk = daysAgo(7);
+    $('kpi-today').textContent = fmt(rows.filter(r => String(r.submittedAt||'').slice(0,10) === td).length);
+    $('kpi-week').textContent  = fmt(rows.filter(r => String(r.submittedAt||'').slice(0,10) >= wk).length);
+    const utm = rows.filter(r => String(r.utm_source||'').trim() && r.utm_source !== '(none)').length;
+    $('kpi-utm').textContent = (rows.length ? Math.round(utm*100/rows.length) : 0) + '%';
+    $('kpi-utm-sub').textContent = utm + ' / ' + rows.length;
+    const mkt = rows.filter(r => /동의/.test(String(r.marketingAgreed||'')) && !/미동의/.test(String(r.marketingAgreed||''))).length;
+    const rate = rows.length ? Math.round(mkt*100/rows.length) : 0;
+    $('kpi-mkt').textContent = rate + '%';
+    $('kpi-mkt-sub').textContent = mkt + ' / ' + rows.length;
+  }
+
+  // ── trend chart ──────────────────────────────────────
+  function trendKey(d){
+    if (!d) return '';
+    const s = String(d);
+    if (TREND_RANGE === 'day')   return s.slice(0, 10);
+    if (TREND_RANGE === 'week'){
+      const dt = new Date(s.slice(0,10));
+      if (isNaN(dt)) return '';
+      const day = dt.getDay();
+      dt.setDate(dt.getDate() - day);
+      return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    }
+    return s.slice(0, 7); // month
+  }
+  function renderTrend(rows){
+    const groups = {};
+    rows.forEach(r => { const k = trendKey(r.submittedAt); if (k) groups[k] = (groups[k]||0) + 1; });
+    const keys = Object.keys(groups).sort().slice(-12);
+    const max = Math.max(1, ...keys.map(k => groups[k]));
+    $('trend-bars').innerHTML = keys.map(k => `<div class="b" title="${k}: ${groups[k]}건" style="height:${Math.max(4, groups[k]/max*120)}px"><span class="v">${groups[k]}</span></div>`).join('') || '<div class="empty" style="width:100%">데이터 없음</div>';
+    $('trend-x').innerHTML = keys.map(k => {
+      let lbl = k;
+      if (TREND_RANGE === 'month') lbl = k.slice(2).replace('-','/');
+      else lbl = k.slice(5);
+      return `<div class="x">${lbl}</div>`;
+    }).join('');
+  }
+
+  // ── donut: services ──────────────────────────────────
+  function renderServiceDonut(rows){
+    const map = {};
+    rows.forEach(r => { const k = r.service||'미지정'; map[k]=(map[k]||0)+1; });
+    const arr = Object.entries(map).map(([name,count]) => ({name,count})).sort((a,b)=>b.count-a.count);
+    const total = arr.reduce((s,x)=>s+x.count, 0);
+    $('svc-total').textContent = total + '건';
+    $('svc-donut-n').textContent = arr.length;
+    if (!total){
+      $('svc-donut').style.background = 'conic-gradient(#262c35 0 100%)';
+      $('svc-legend').innerHTML = '<div class="muted text-[12px]">데이터 없음</div>';
+      return;
+    }
+    let acc = 0;
+    const stops = arr.slice(0, HUES.length).map((x, i) => {
+      const start = acc / total * 100;
+      acc += x.count;
+      const end = acc / total * 100;
+      return `${HUES[i]} ${start}% ${end}%`;
+    });
+    $('svc-donut').style.background = 'conic-gradient(' + stops.join(', ') + ', #262c35 ' + (acc/total*100) + '% 100%)';
+    $('svc-legend').innerHTML = arr.slice(0, 6).map((x,i) => `
+      <div class="row">
+        <span class="dot" style="background:${HUES[i % HUES.length]}"></span>
+        <span class="lbl" title="${esc(x.name)}">${esc(x.name)}</span>
+        <span class="pct">${Math.round(x.count*100/total)}% · ${x.count}</span>
+      </div>`).join('');
+  }
+
+  function renderRank(rows, key, target, n){
+    const map = {};
+    rows.forEach(r => { const k = r[key]||'(없음)'; map[k]=(map[k]||0)+1; });
+    const arr = Object.entries(map).map(([name,count]) => ({name,count})).sort((a,b)=>b.count-a.count).slice(0, n);
+    if (!arr.length){ $(target).innerHTML = '<div class="muted text-[12px] py-2">데이터 없음</div>'; return; }
+    const max = arr[0].count;
+    $(target).innerHTML = arr.map((x,i) => `
+      <div class="rank-row">
+        <span class="idx">${i+1}</span>
+        <span class="name" title="${esc(x.name)}">${esc(x.name)}</span>
+        <span class="bar"><i style="width:${Math.round(x.count*100/max)}%"></i></span>
+        <span class="v">${x.count}</span>
+      </div>`).join('');
+  }
+
+  // ── resizable table ──────────────────────────────────
+  function buildHeader(){
+    const saved = loadWidths();
+    const cg = $('cg'); const th = $('th-row');
+    cg.innerHTML = COLS.map((c,i) => `<col data-i="${i}" style="width:${(saved[c.key]||c.w)}px"/>`).join('');
+    th.innerHTML = COLS.map((c,i) => `<th data-i="${i}" style="text-align:${c.align==='right'?'right':'left'}">${esc(c.label)}<span class="resizer" data-i="${i}"></span></th>`).join('');
+    document.querySelectorAll('#th-row .resizer').forEach(h => h.addEventListener('mousedown', startResize));
+  }
+  let resizeState = null;
+  function startResize(e){
+    e.preventDefault();
+    const i = Number(e.target.dataset.i);
+    const col = document.querySelectorAll('#cg col')[i];
+    resizeState = { col, startX: e.clientX, startW: col.getBoundingClientRect().width };
+    e.target.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('mousemove', onResize);
+    window.addEventListener('mouseup', endResize);
+  }
+  function onResize(e){
+    if (!resizeState) return;
+    const w = Math.max(40, resizeState.startW + (e.clientX - resizeState.startX));
+    resizeState.col.style.width = w + 'px';
+  }
+  function endResize(){
+    if (!resizeState) return;
+    document.querySelectorAll('#th-row .resizer.dragging').forEach(el=>el.classList.remove('dragging'));
+    document.body.style.cursor = '';
+    saveWidths();
+    resizeState = null;
+    window.removeEventListener('mousemove', onResize);
+    window.removeEventListener('mouseup', endResize);
+  }
+  function saveWidths(){
+    const obj = {};
+    document.querySelectorAll('#cg col').forEach((c,i) => { obj[COLS[i].key] = Math.round(c.getBoundingClientRect().width); });
+    try { localStorage.setItem(W_KEY, JSON.stringify(obj)); } catch(_){}
+  }
+  function loadWidths(){ try { return JSON.parse(localStorage.getItem(W_KEY)||'{}'); } catch(_){ return {}; } }
+  function resetWidths(){
+    try { localStorage.removeItem(W_KEY); } catch(_){}
+    document.querySelectorAll('#cg col').forEach((c,i)=>{ c.style.width = COLS[i].w + 'px'; });
+  }
+
+  function renderTable(rows){
+    $('result-count').textContent = rows.length + '건';
+    const tbody = $('rows');
+    if (!rows.length){
+      tbody.innerHTML = `<tr><td colspan="${COLS.length}"><div class="empty">조건에 맞는 리드가 없습니다.</div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map((r, i) => {
+      return '<tr data-i="'+i+'">' + COLS.map(c => {
+        let v = c.key === '_no' ? (i+1) : r[c.key];
+        let html;
+        if (c.render) html = c.render(v, r, i);
+        else if (c.bold) html = `<span style="font-weight:600">${esc(v||'-')}</span>`;
+        else html = esc(v == null || v === '' ? '-' : v);
+        const cls = (c.mono?'num-cell ':'') + (c.key==='_no'?'col-no ':'');
+        const align = c.align === 'right' ? 'text-align:right' : '';
+        return `<td class="${cls}" style="${align}" title="${esc(typeof v==='string' ? v : '')}">${html}</td>`;
+      }).join('') + '</tr>';
+    }).join('');
+    tbody.querySelectorAll('tr').forEach(tr => {
+      tr.addEventListener('click', () => openDrawer(rows[Number(tr.dataset.i)]));
+    });
+  }
+
+  function openDrawer(r){
+    if (!r) return;
+    $('drawer-title').textContent = r.company || '(이름 없음)';
+    const fields = [
+      ['제출 날짜', r.submittedAt],['관심 서비스', r.service],['기업명', r.company],
+      ['임직원 수', r.employeeCount],['기업 주소', r.address],['담당자', r.manager],
+      ['전화번호', r.phone],['이메일', r.email],['유입경로', r.channel],
+      ['문의내용', r.message],['개인정보 동의', r.privacyAgreed],['마케팅 동의', r.marketingAgreed],
+      ['utm_source', r.utm_source],['utm_medium', r.utm_medium],['utm_campaign', r.utm_campaign],
+      ['utm_content', r.utm_content],['utm_term', r.utm_term],['WebFormID', r.webFormId]
+    ];
+    $('drawer-body').innerHTML = fields.map(([k,v]) =>
+      `<div class="field"><div class="k">${k}</div><div class="v">${esc(v == null || v === '' ? '-' : v)}</div></div>`).join('');
+    $('drawer').classList.add('open'); $('drawer-back').classList.add('open');
+  }
+  function closeDrawer(){ $('drawer').classList.remove('open'); $('drawer-back').classList.remove('open'); }
+
+  function exportCSV(){
+    const rows = applyFilter(CURRENT);
+    const headers = COLS.map(c => c.label);
+    const csv = [headers.join(',')].concat(rows.map((r, i) => {
+      return COLS.map(c => {
+        const v = c.key === '_no' ? (i+1) : (r[c.key] == null ? '' : r[c.key]);
+        const s = String(v).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? '"'+s+'"' : s;
+      }).join(',');
+    })).join('\n');
+    const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'salesmap_'+todayStr()+'.csv';
+    a.click();
+  }
+
+  function rerender(){
+    const filtered = applyFilter(CURRENT);
+    renderKPI(filtered);
+    renderTrend(filtered);
+    renderServiceDonut(filtered);
+    renderRank(filtered, 'channel',     'ch-rank',      7);
+    renderRank(filtered, 'utm_source',  'utm-source',   6);
+    renderRank(filtered, 'utm_campaign','utm-campaign', 6);
+    renderRank(filtered, 'employeeCount','emp-dist',    7);
+    $('ch-total').textContent = (new Set(filtered.map(r => r.channel||'(없음)'))).size + '개';
+    renderTable(filtered);
+  }
+
+  function render(rows){
+    CURRENT = rows;
+    fillSelects(rows);
+    rerender();
+  }
+
+  async function load(){
+    const url = MktProxy.getUrl();
+    $('gas-url').value = url;
+    $('btn-disconnect').style.display = url ? '' : 'none';
+    if (!url){ setStatus('데모 데이터 표시 중', 'demo'); render(SAMPLE_SALESMAP); return; }
+    try{
+      setStatus('연결 중...');
+      const data = await MktProxy.salesmapList();
+      render(data.rows || []);
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+    }catch(err){
+      setStatus('연결 실패: '+err.message, 'err');
+      render(SAMPLE_SALESMAP);
+    }
+  }
+
+  // events
+  buildHeader();
+  $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); load(); });
+  $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load(); });
+  $('btn-refresh').addEventListener('click', load);
+  $('btn-reset-w').addEventListener('click', resetWidths);
+  $('btn-export').addEventListener('click', exportCSV);
+  ['q','svc','ch','from','to'].forEach(id => $(id).addEventListener('input', rerender));
+  ['svc','ch','from','to'].forEach(id => $(id).addEventListener('change', rerender));
+  $('trend-seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $('trend-seg').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    TREND_RANGE = b.dataset.r;
+    renderTrend(applyFilter(CURRENT));
+  });
+  $('drawer-close').addEventListener('click', closeDrawer);
+  $('drawer-back').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+  window.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>

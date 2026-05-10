@@ -269,6 +269,7 @@
     const el = $('status');
     el.className = 'status ' + (kind || '');
     el.textContent = text;
+    el.title = text;
   }
   const DOW = ['일','월','화','수','목','금','토'];
 
@@ -675,7 +676,15 @@
       SOURCE_LABEL = 'BLOG_RAW_DATA · ' + rows.length + '건';
       refresh();
     }catch(err){
-      setStatus('연결 실패: ' + err.message, 'err');
+      let hint = '';
+      try {
+        await MktProxy.health();
+        hint = ' · ⚠ 프록시는 정상 — blog 모듈 코드/배포 확인 필요';
+      } catch (_) {
+        hint = ' · ⚠ 프록시 자체 응답 없음 — URL/재배포 확인';
+      }
+      setStatus('연결 실패: ' + err.message + hint, 'err');
+      console.error('[MktProxy] blog.list 실패:', err);
       ALL_ROWS = SAMPLE_BLOG;
       SOURCE_LABEL = '연결 실패 · 데모 사용';
       refresh();
