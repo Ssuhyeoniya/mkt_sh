@@ -26,9 +26,18 @@ function Blog_list(params) {
 
   const headers = values[0].map(function (h) { return String(h || '').trim(); });
 
+  // 제목 컬럼 인덱스 (없으면 0번으로 fallback)
+  const titleIdx = headers.indexOf('제목') >= 0 ? headers.indexOf('제목') : 0;
+
   let rows = values.slice(1)
     .filter(function (r) {
-      return r.some(function (c) { return c !== '' && c !== null && c !== undefined; });
+      // 1) 행 전체가 공백이면 제외
+      if (!r.some(function (c) { return c !== '' && c !== null && c !== undefined; })) return false;
+      // 2) 제목 컬럼이 공백이면 제외
+      const title = r[titleIdx];
+      if (title === null || title === undefined) return false;
+      if (typeof title === 'string' && title.trim() === '') return false;
+      return true;
     })
     .map(function (r, i) {
       const o = { _no: i + 1 };
