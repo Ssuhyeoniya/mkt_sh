@@ -27,6 +27,7 @@ function handle_(e) {
     'health':        function () { return { ok: true, ts: new Date().toISOString() }; },
     'blog.list':     Blog_list,
     'blog.summary':  Blog_summary,
+    'blog.update':   Blog_update,
     // 추후 추가: 'partner.list': Partner_list, 'ads.inapp': Ads_inapp, ...
   };
 
