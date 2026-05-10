@@ -90,9 +90,32 @@
       const r = await this.call('blog.update', params);
       return r.data;
     },
+    _inboundCache: new Map(),
+    _inboundCacheTtl: 5 * 60 * 1000, // 5분
     blogInboundDates: async function (utm_term) {
       if (!utm_term) throw new Error('utm_term_required');
+      // 클라이언트 사이드 캐시: 같은 페이지 세션에서 같은 utm_term 재호출 방지
+      const cached = this._inboundCache.get(utm_term);
+      if (cached && (Date.now() - cached.t) < this._inboundCacheTtl) {
+        return cached.d;
+      }
       const r = await this.call('blog.inboundDates', { utm_term: utm_term });
+      this._inboundCache.set(utm_term, { d: r.data, t: Date.now() });
+      return r.data;
+    },
+    invalidateInboundCache: function (utm_term) {
+      if (utm_term) this._inboundCache.delete(utm_term);
+      else this._inboundCache.clear();
+    },
+    _countsCache: null,
+    _countsCacheT: 0,
+    blogInboundCounts: async function () {
+      if (this._countsCache && (Date.now() - this._countsCacheT) < this._inboundCacheTtl) {
+        return this._countsCache;
+      }
+      const r = await this.call('blog.inboundCounts');
+      this._countsCache = r.data;
+      this._countsCacheT = Date.now();
       return r.data;
     },
     health: async function () {

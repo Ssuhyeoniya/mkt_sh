@@ -214,11 +214,27 @@
     .conn{ min-width:0; flex-wrap:wrap; }
   }
 
-  /* ── Bottom table ───────────────────────────────── */
+  /* ── Bottom table — 컨테이너 너비에 따라 균등 축소 + 가로 스크롤 폴백 ── */
+  .table-scroll{ overflow-x:auto; }
+  .table-scroll::-webkit-scrollbar{ height:8px; }
+  .table-scroll::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
   .table-head, .post-row{
     display:grid;
-    grid-template-columns:36px 52px 1fr 80px 100px 90px 80px 80px 80px 80px 36px 60px;
-    gap:10px; align-items:center;
+    grid-template-columns:
+      minmax(28px, 0.45fr)
+      minmax(40px, 0.7fr)
+      minmax(140px, 4fr)
+      minmax(56px, 1fr)
+      minmax(70px, 1.3fr)
+      minmax(72px, 1.1fr)
+      minmax(56px, 1fr)
+      minmax(50px, 0.9fr)
+      minmax(50px, 0.9fr)
+      minmax(50px, 0.9fr)
+      minmax(28px, 0.45fr)
+      minmax(46px, 0.8fr);
+    gap:8px; align-items:center;
+    min-width:760px;
   }
   .post-row .svc-tag{
     font-size:10.5px; padding:2px 7px; border-radius:4px;
@@ -554,6 +570,7 @@
 
     <!-- Compact post list -->
     <div class="panel" style="overflow:hidden">
+     <div class="table-scroll">
       <div class="table-head">
         <div>NO</div>
         <div>썸네일</div>
@@ -569,6 +586,7 @@
         <div>상세</div>
       </div>
       <div class="table-body" id="rows"></div>
+     </div>
     </div>
 
     <div class="text-center muted py-6" style="font-size:11.5px;">시안 C · Analytics Hybrid · 분석 위젯 + 콤팩트 표 (페이지당 30건, 한 화면 10건 스크롤)</div>
@@ -708,7 +726,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-2"></script>
+<script src="../proxy-client.js?v=20260510-4"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체

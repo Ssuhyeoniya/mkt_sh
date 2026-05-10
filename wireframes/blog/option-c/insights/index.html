@@ -33,6 +33,15 @@
   .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
   .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
 
+  /* 비교 버튼 */
+  .cmp-btn{
+    background:transparent; border:1px solid rgba(255,255,255,.15);
+    color:var(--text-2); font-size:11.5px; padding:5px 11px; border-radius:6px;
+    cursor:pointer; line-height:1.3;
+  }
+  .cmp-btn:hover{ border-color:var(--accent); color:#fff; }
+  .cmp-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
   /* 카테고리 막대그래프 — 세로형 (X: 카테고리, Y: 값) */
   .cat-chart-card{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
@@ -275,10 +284,18 @@
         <h2 id="score-title">데이터 분석 중…</h2>
         <div class="desc" id="score-desc">BLOG_RAW_DATA 시트의 데이터를 기반으로 자동 산출.</div>
         <div class="deltas">
+          <div class="delta"><div class="l">조회 기간</div><div class="v" id="score-range" style="font-size:12px">–</div></div>
           <div class="delta"><div class="l">분석 글</div><div class="v" id="score-count">–</div></div>
           <div class="delta"><div class="l">총 누적 방문</div><div class="v" id="score-total">–</div></div>
           <div class="delta"><div class="l">인바운드 전환율</div><div class="v" id="score-cvr">–</div></div>
           <div class="delta"><div class="l">카테고리</div><div class="v" id="score-cats">–</div></div>
+        </div>
+        <!-- 전월/전년 비교 -->
+        <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--muted);">기준 비교</span>
+          <button class="cmp-btn" data-cmp="mom">전월 대비</button>
+          <button class="cmp-btn" data-cmp="yoy">전년 대비</button>
+          <span id="cmp-result" style="font-size:12px; color:var(--text-2); margin-left:auto; line-height:1.4;"></span>
         </div>
       </div>
     </section>
@@ -321,7 +338,59 @@
   </main>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-2"></script>
+<!-- 카테고리 클릭 → 게시글 목록 모달 -->
+<style>
+  .cat-modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; z-index:100;
+    display:none;
+  }
+  .cat-modal-overlay.open{ display:flex; }
+  .cat-modal-content{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    width:680px; max-width:92vw; max-height:80vh;
+    display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,.5);
+  }
+  .cat-modal-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .cat-modal-head .eyebrow{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .cat-modal-head h3{ font-size:15px; font-weight:600; margin:2px 0 0; }
+  .cat-modal-body{ flex:1; overflow-y:auto; padding:0; }
+  .cat-modal-foot{ padding:12px 20px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; }
+  .cm-row{ display:grid; grid-template-columns:32px 1fr 80px 90px 80px; gap:10px; align-items:center; padding:10px 20px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .cm-row:last-child{ border-bottom:0; }
+  .cm-row .no{ font-family:'JetBrains Mono', monospace; color:var(--muted); font-size:11.5px; text-align:center; }
+  .cm-row .ttl{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+  .cm-row .meta{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .cm-row .num{ font-family:'JetBrains Mono', monospace; text-align:right; font-size:12px; }
+  .cm-row .num.green{ color:var(--green); }
+  .cm-row .info-cell .meta{ display:flex; gap:6px; flex-wrap:wrap; }
+  .cm-head{ background:#171b22; color:var(--muted); font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em; }
+  .cm-head .num{ color:var(--muted); }
+  .vgroup{ cursor:pointer; }
+  .vgroup:hover .vbar{ filter:brightness(1.2); }
+</style>
+<div class="cat-modal-overlay" id="cat-modal">
+  <div class="cat-modal-content" role="dialog" aria-modal="true">
+    <div class="cat-modal-head">
+      <div>
+        <div class="eyebrow">카테고리 게시글</div>
+        <h3 id="cat-modal-title">-</h3>
+      </div>
+      <button class="modal-close" id="cat-modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div><div class="num">인바운드</div><div class="num">전환율</div></div>
+    <div class="cat-modal-body" id="cat-modal-body"></div>
+    <div class="cat-modal-foot">
+      <span id="cat-modal-info">-</span>
+      <span>ESC · 바깥 클릭으로 닫기</span>
+    </div>
+  </div>
+</div>
+
+<script src="../../proxy-client.js?v=20260510-4"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -343,6 +412,9 @@
   let ALL_ROWS = [];
   let SOURCE_LABEL = '데모 데이터';
   let ACTIVE_RANGE = '';
+  let INBOUND_COUNTS = {};       // utm_term → 실제 인바운드 인입 건수 (세일즈맵 매칭)
+  let SCOPED_ROWS_GLOBAL = [];   // 카테고리 모달 등에서 사용
+  let COMPARE_MODE = '';         // '' | 'mom' | 'yoy'
   function ymdStr(d){
     const y = d.getFullYear();
     const m = String(d.getMonth()+1).padStart(2,'0');
@@ -390,14 +462,24 @@
   function derive(rows){
     if (!rows || !rows.length) return null;
 
+    // 실제 인바운드 = 세일즈맵에서 utm_term 매칭 건수 (있으면 우선 사용),
+    // 없으면 BLOG_RAW_DATA 의 inbound 컬럼 사용
+    const actualInbound = function(r){
+      const u = String(r.utm_term || '').trim();
+      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) {
+        return Number(INBOUND_COUNTS[u]) || 0;
+      }
+      return Number(r.inbound) || 0;
+    };
+
     const totalVisit   = rows.reduce((s,r)=>s+(+r.totalVisit||0), 0);
     const totalWeekly  = rows.reduce((s,r)=>s+(+r.weeklyVisitor||0), 0);
     const totalMonthly = rows.reduce((s,r)=>s+(+r.monthlyVisitor||0), 0);
-    const totalInbound = rows.reduce((s,r)=>s+(+r.inbound||0), 0);
+    const totalInbound = rows.reduce((s,r)=>s+actualInbound(r), 0);
     const overallCV    = totalVisit > 0 ? totalInbound / totalVisit : 0;
     const avgInbound   = totalInbound / rows.length;
 
-    // 카테고리별 집계
+    // 카테고리별 집계 (인바운드는 actualInbound 사용)
     const byCat = {};
     rows.forEach(r => {
       const c = r.category || '미분류';
@@ -405,7 +487,7 @@
       byCat[c].count++;
       byCat[c].totalVisit += +r.totalVisit||0;
       byCat[c].weekly     += +r.weeklyVisitor||0;
-      byCat[c].inbound    += +r.inbound||0;
+      byCat[c].inbound    += actualInbound(r);
     });
     const catList = Object.entries(byCat).map(([name,v]) => ({
       name, ...v,
@@ -600,6 +682,7 @@
   }
 
   function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function escAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
 
   function renderHero(d){
     if (!d){
@@ -607,7 +690,7 @@
       $('score-title').textContent = '데이터 없음';
       $('score-desc').textContent = 'BLOG_RAW_DATA 시트에 데이터를 추가하거나 GAS 프록시를 연결해주세요.';
       $('score-ring').style.background = 'conic-gradient(#1f242c 0 100%)';
-      ['score-count','score-total','score-cvr','score-cats'].forEach(id => $(id).textContent = '–');
+      ['score-count','score-total','score-cvr','score-cats','score-range'].forEach(id => $(id).textContent = '–');
       return;
     }
     $('score-val').textContent = d.score;
@@ -620,6 +703,14 @@
     $('score-total').textContent = fmtK(d.totalVisit);
     $('score-cvr').textContent   = pct(d.overallCV);
     $('score-cats').textContent  = d.catList.length + '개';
+    // 조회 기간 표시
+    const ds = $('date-start').value, de = $('date-end').value;
+    let rangeTxt = '전체 기간';
+    if (ACTIVE_RANGE) rangeTxt = '최근 ' + ACTIVE_RANGE + '일';
+    else if (ds && de) rangeTxt = ds + ' ~ ' + de;
+    else if (ds) rangeTxt = ds + ' ~';
+    else if (de) rangeTxt = '~ ' + de;
+    $('score-range').textContent = rangeTxt;
 
     $('kpi-count').textContent  = fmt(d.rows.length);
     $('kpi-total').textContent  = fmtK(d.totalVisit);
@@ -692,12 +783,12 @@
       const hv = Math.max(0.5, c.totalVisit / maxAll * 100);
       const hi = Math.max(0.5, c.inbound    / maxAll * 100);
       return ''
-        + '<div class="vgroup">'
+        + '<div class="vgroup" data-cat="'+escAttr(c.name)+'" title="클릭하여 게시글 보기">'
           + '<div class="vbars">'
-            + '<div class="vbar visit" style="height:'+hv.toFixed(2)+'%" title="방문자 '+fmt(c.totalVisit)+'">'
+            + '<div class="vbar visit" style="height:'+hv.toFixed(2)+'%">'
               + '<span class="vlabel">'+fmtK(c.totalVisit)+'</span>'
             + '</div>'
-            + '<div class="vbar inbound" style="height:'+hi.toFixed(2)+'%" title="인바운드 '+fmt(c.inbound)+'">'
+            + '<div class="vbar inbound" style="height:'+hi.toFixed(2)+'%">'
               + '<span class="vlabel">'+fmt(c.inbound)+'</span>'
             + '</div>'
           + '</div>'
@@ -714,13 +805,142 @@
         + '</div>'
       + '</div>'
       + '<div class="vchart-bottom-gap"></div>';
+
+    // 카테고리 막대 클릭 → 게시글 모달
+    wrap.querySelectorAll('.vgroup[data-cat]').forEach(function(el){
+      el.addEventListener('click', function(){ openCategoryModal(el.dataset.cat); });
+    });
+  }
+
+  // ── 카테고리 모달 ─────────────────────────────────
+  function openCategoryModal(catName){
+    if (!catName) return;
+    const posts = SCOPED_ROWS_GLOBAL.filter(function(r){ return (r.category||'미분류') === catName; });
+    // 인바운드 = 세일즈맵 매칭 + fallback
+    const inbOf = function(r){
+      const u = String(r.utm_term || '').trim();
+      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) return Number(INBOUND_COUNTS[u]) || 0;
+      return Number(r.inbound) || 0;
+    };
+    posts.sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
+    const sumV = posts.reduce(function(s,r){ return s + Number(r.totalVisit||0); }, 0);
+    const sumI = posts.reduce(function(s,r){ return s + inbOf(r); }, 0);
+
+    $('cat-modal-title').textContent = catName + ' 카테고리';
+    $('cat-modal-info').textContent = '총 ' + posts.length + '건 · 누적 방문 ' + fmt(sumV) + ' · 인바운드 ' + fmt(sumI);
+
+    const body = $('cat-modal-body');
+    if (!posts.length){
+      body.innerHTML = '<div class="empty" style="margin:24px;">게시글 없음</div>';
+    } else {
+      body.innerHTML = posts.map(function(r,i){
+        const tv = Number(r.totalVisit||0);
+        const ib = inbOf(r);
+        const cv = tv > 0 ? (ib/tv*100).toFixed(2)+'%' : '-';
+        return '<div class="cm-row">'
+          + '<div class="no">'+(i+1)+'</div>'
+          + '<div class="info-cell">'
+            + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escapeHtml(r['제목']||'-')+'</div>'
+            + '<div class="meta">'
+              + (r.service ? '<span>'+escapeHtml(r.service)+'</span>' : '')
+              + (r['날짜'] ? '<span>·</span><span>'+escapeHtml(String(r['날짜']).slice(0,10))+'</span>' : '')
+              + (r.utm_term ? '<span>·</span><span style="font-family:JetBrains Mono,monospace;">'+escapeHtml(r.utm_term)+'</span>' : '')
+            + '</div>'
+          + '</div>'
+          + '<div class="num">'+fmt(tv)+'</div>'
+          + '<div class="num green">'+fmt(ib)+'</div>'
+          + '<div class="num">'+cv+'</div>'
+        + '</div>';
+      }).join('');
+    }
+    $('cat-modal').classList.add('open');
+  }
+  function closeCategoryModal(){ $('cat-modal').classList.remove('open'); }
+  // 즉시 바인딩 (DOM 이미 준비됨 — script 가 body 끝)
+  $('cat-modal-close').addEventListener('click', closeCategoryModal);
+  $('cat-modal').addEventListener('click', function(e){
+    if (e.target === $('cat-modal')) closeCategoryModal();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && $('cat-modal').classList.contains('open')) closeCategoryModal();
+  });
+
+  // 비교 버튼 핸들러
+  document.querySelectorAll('.cmp-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      COMPARE_MODE = (COMPARE_MODE === btn.dataset.cmp) ? '' : btn.dataset.cmp;
+      refresh();
+    });
+  });
+
+  // ── 비교(전월/전년) ────────────────────────────────
+  function shiftDateStr(s, days, months, years){
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    if (days)   d.setDate(d.getDate() + days);
+    if (months) d.setMonth(d.getMonth() + months);
+    if (years)  d.setFullYear(d.getFullYear() + years);
+    return ymdStr(d);
+  }
+  function getCurrentRange(){
+    const ds = $('date-start').value, de = $('date-end').value;
+    if (ds && de) return { start: ds, end: de };
+    if (ACTIVE_RANGE){
+      const end = yesterday();
+      const start = new Date(end);
+      start.setDate(start.getDate() - (parseInt(ACTIVE_RANGE,10) - 1));
+      return { start: ymdStr(start), end: ymdStr(end) };
+    }
+    // 전체 기간 → ALL_ROWS 의 min/max 날짜
+    if (!ALL_ROWS.length) return null;
+    const dates = ALL_ROWS.map(r => String(r['날짜']||'').slice(0,10)).filter(Boolean).sort();
+    if (!dates.length) return null;
+    return { start: dates[0], end: dates[dates.length-1] };
+  }
+  function rowsInRange(start, end){
+    return ALL_ROWS.filter(function(r){
+      const d = String(r['날짜']||'').slice(0,10);
+      return d && d >= start && d <= end;
+    });
+  }
+  function applyCompare(currentScore){
+    const result = $('cmp-result');
+    document.querySelectorAll('.cmp-btn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.cmp === COMPARE_MODE);
+    });
+    if (!COMPARE_MODE){ result.innerHTML = ''; return; }
+    const cur = getCurrentRange();
+    if (!cur){ result.innerHTML = '<span style="color:var(--muted)">기준 기간 없음</span>'; return; }
+    let prevStart, prevEnd;
+    if (COMPARE_MODE === 'mom'){
+      prevStart = shiftDateStr(cur.start, 0, -1, 0);
+      prevEnd   = shiftDateStr(cur.end,   0, -1, 0);
+    } else {
+      prevStart = shiftDateStr(cur.start, 0, 0, -1);
+      prevEnd   = shiftDateStr(cur.end,   0, 0, -1);
+    }
+    const prevRows = rowsInRange(prevStart, prevEnd);
+    if (!prevRows.length){
+      result.innerHTML = '<span style="color:var(--muted)">비교 기간 데이터 없음 ('+prevStart+' ~ '+prevEnd+')</span>';
+      return;
+    }
+    const prevD = derive(prevRows);
+    const diff = currentScore - prevD.score;
+    const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '–';
+    const color = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--muted)';
+    result.innerHTML =
+      '<span style="color:'+color+'; font-weight:600; font-family:JetBrains Mono,monospace;">'+arrow+' '+Math.abs(diff)+'점</span>'
+      + ' <span style="color:var(--muted)">vs 비교 기간 '+prevStart+' ~ '+prevEnd+' ('+prevD.score+'점)</span>';
   }
 
   function refresh(){
     updateRangeInfo();
     const filtered = applyDateFilter(ALL_ROWS);
+    SCOPED_ROWS_GLOBAL = filtered;
     const d = derive(filtered);
     renderHero(d);
+    applyCompare(d ? d.score : 0);
     renderCatChart(d);
     const ins = buildInsights(d);
     renderCards(ins.cards);
@@ -741,13 +961,19 @@
       setStatus('데모 데이터 분석 중', 'demo');
       ALL_ROWS = SAMPLE_BLOG;
       SOURCE_LABEL = '데모 데이터';
+      INBOUND_COUNTS = {};
       refresh();
       return;
     }
     try{
       setStatus('연결 중...');
-      const data = await MktProxy.blogList();
+      // blog.list 와 blog.inboundCounts 를 병렬 호출 (인바운드 정확도용)
+      const [data, counts] = await Promise.all([
+        MktProxy.blogList(),
+        MktProxy.blogInboundCounts().catch(function(e){ console.warn('[insights] inboundCounts 실패:', e); return null; })
+      ]);
       const rows = data.rows || [];
+      INBOUND_COUNTS = (counts && counts.counts) ? counts.counts : {};
       if (!rows.length){
         setStatus('● 연결됨 · 데이터 없음', 'amber');
         ALL_ROWS = SAMPLE_BLOG;
@@ -755,7 +981,8 @@
         refresh();
         return;
       }
-      setStatus('● 연결됨 · ' + rows.length + '건', 'ok');
+      const matched = Object.keys(INBOUND_COUNTS).length;
+      setStatus('● 연결됨 · ' + rows.length + '건 · 세일즈맵 utm ' + matched + '종', 'ok');
       ALL_ROWS = rows;
       SOURCE_LABEL = 'BLOG_RAW_DATA · ' + rows.length + '건';
       refresh();
