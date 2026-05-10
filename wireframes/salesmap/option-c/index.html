@@ -77,6 +77,12 @@
       </div>
     </div>
 
+    <!-- Page tabs -->
+    <nav class="page-tabs">
+      <a class="tab" href="../option-b/">세일즈맵</a>
+      <a class="tab active" href="../option-c/">인사이트</a>
+    </nav>
+
     <!-- KPI -->
     <section class="kpi-grid">
       <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
@@ -155,68 +161,13 @@
       </div>
     </section>
 
-    <!-- Resizable table -->
-    <div class="panel" style="overflow:hidden">
-      <div class="toolbar">
-        <div class="left">
-          <span class="text-[13px] font-medium">리드 로우데이터</span>
-          <span class="chip" id="result-count">0건</span>
-          <span class="text-[11.5px] muted ml-2">⇆ 헤더 우측을 드래그해 너비를 조절하세요</span>
-        </div>
-        <div class="right">
-          <button class="ghost-btn" id="btn-reset-w">↔ 너비 초기화</button>
-          <button class="ghost-btn" id="btn-export">⇩ CSV</button>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="smap-table" id="tbl">
-          <colgroup id="cg"></colgroup>
-          <thead><tr id="th-row"></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="text-center muted py-4" style="font-size:11.5px;">시안 C · Analytics Hybrid · 분석 위젯 + 리사이즈 테이블</div>
+    <div class="text-center muted py-4" style="font-size:11.5px;">세일즈맵 · 인사이트 · 분석 위젯</div>
   </main>
 </div>
 
-<!-- 상세 드로어 -->
-<div class="drawer-back" id="drawer-back"></div>
-<aside class="drawer" id="drawer">
-  <div class="drawer-head">
-    <div>
-      <div class="eyebrow">리드 상세</div>
-      <h3 id="drawer-title">-</h3>
-    </div>
-    <button class="drawer-close" id="drawer-close">×</button>
-  </div>
-  <div class="drawer-body" id="drawer-body"></div>
-</aside>
-
 <script src="../proxy-client.js"></script>
 <script>
-  const COLS = [
-    { key:'_no',             label:'NO',           w: 56,  align:'right' },
-    { key:'submittedAt',     label:'제출 날짜',    w:148 },
-    { key:'service',         label:'서비스',       w:120,  render: v => v ? `<span class="tag-mini tag-svc">${esc(v)}</span>` : '-' },
-    { key:'company',         label:'기업명',       w:170,  bold:true },
-    { key:'employeeCount',   label:'임직원 수',    w:110 },
-    { key:'address',         label:'기업 주소',    w:240 },
-    { key:'manager',         label:'담당자',       w: 96 },
-    { key:'phone',           label:'전화번호',     w:140,  mono:true },
-    { key:'email',           label:'이메일',       w:200,  mono:true },
-    { key:'channel',         label:'유입경로',     w:120,  render: v => v ? `<span class="tag-mini tag-ch">${esc(v)}</span>` : '-' },
-    { key:'privacyAgreed',   label:'개인정보 동의', w: 96, render: v => ynTag(v) },
-    { key:'marketingAgreed', label:'마케팅 동의',   w: 96, render: v => ynTag(v) },
-    { key:'utm_source',      label:'utm_source',   w:120,  mono:true },
-    { key:'utm_medium',      label:'utm_medium',   w:120,  mono:true },
-    { key:'utm_campaign',    label:'utm_campaign', w:160,  mono:true },
-    { key:'utm_content',     label:'utm_content',  w:140,  mono:true },
-    { key:'utm_term',        label:'utm_term',     w:140,  mono:true }
-  ];
   const HUES = ['#7c5cff','#3ddc97','#4ea3ff','#ffb648','#ff7ab6','#ff5d73','#9c83ff','#7ee9bf','#9ccaff','#ffd99a'];
-  const W_KEY = 'smap_col_widths_v1';
 
   let CURRENT = [];
   let TREND_RANGE = 'month';
@@ -349,108 +300,6 @@
       </div>`).join('');
   }
 
-  // ── resizable table ──────────────────────────────────
-  function buildHeader(){
-    const saved = loadWidths();
-    const cg = $('cg'); const th = $('th-row');
-    cg.innerHTML = COLS.map((c,i) => `<col data-i="${i}" style="width:${(saved[c.key]||c.w)}px"/>`).join('');
-    th.innerHTML = COLS.map((c,i) => `<th data-i="${i}" style="text-align:${c.align==='right'?'right':'left'}">${esc(c.label)}<span class="resizer" data-i="${i}"></span></th>`).join('');
-    document.querySelectorAll('#th-row .resizer').forEach(h => h.addEventListener('mousedown', startResize));
-  }
-  let resizeState = null;
-  function startResize(e){
-    e.preventDefault();
-    const i = Number(e.target.dataset.i);
-    const col = document.querySelectorAll('#cg col')[i];
-    resizeState = { col, startX: e.clientX, startW: col.getBoundingClientRect().width };
-    e.target.classList.add('dragging');
-    document.body.style.cursor = 'col-resize';
-    window.addEventListener('mousemove', onResize);
-    window.addEventListener('mouseup', endResize);
-  }
-  function onResize(e){
-    if (!resizeState) return;
-    const w = Math.max(40, resizeState.startW + (e.clientX - resizeState.startX));
-    resizeState.col.style.width = w + 'px';
-  }
-  function endResize(){
-    if (!resizeState) return;
-    document.querySelectorAll('#th-row .resizer.dragging').forEach(el=>el.classList.remove('dragging'));
-    document.body.style.cursor = '';
-    saveWidths();
-    resizeState = null;
-    window.removeEventListener('mousemove', onResize);
-    window.removeEventListener('mouseup', endResize);
-  }
-  function saveWidths(){
-    const obj = {};
-    document.querySelectorAll('#cg col').forEach((c,i) => { obj[COLS[i].key] = Math.round(c.getBoundingClientRect().width); });
-    try { localStorage.setItem(W_KEY, JSON.stringify(obj)); } catch(_){}
-  }
-  function loadWidths(){ try { return JSON.parse(localStorage.getItem(W_KEY)||'{}'); } catch(_){ return {}; } }
-  function resetWidths(){
-    try { localStorage.removeItem(W_KEY); } catch(_){}
-    document.querySelectorAll('#cg col').forEach((c,i)=>{ c.style.width = COLS[i].w + 'px'; });
-  }
-
-  function renderTable(rows){
-    $('result-count').textContent = rows.length + '건';
-    const tbody = $('rows');
-    if (!rows.length){
-      tbody.innerHTML = `<tr><td colspan="${COLS.length}"><div class="empty">조건에 맞는 리드가 없습니다.</div></td></tr>`;
-      return;
-    }
-    tbody.innerHTML = rows.map((r, i) => {
-      return '<tr data-i="'+i+'">' + COLS.map(c => {
-        let v = c.key === '_no' ? (i+1) : r[c.key];
-        let html;
-        if (c.render) html = c.render(v, r, i);
-        else if (c.bold) html = `<span style="font-weight:600">${esc(v||'-')}</span>`;
-        else html = esc(v == null || v === '' ? '-' : v);
-        const cls = (c.mono?'num-cell ':'') + (c.key==='_no'?'col-no ':'');
-        const align = c.align === 'right' ? 'text-align:right' : '';
-        return `<td class="${cls}" style="${align}" title="${esc(typeof v==='string' ? v : '')}">${html}</td>`;
-      }).join('') + '</tr>';
-    }).join('');
-    tbody.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => openDrawer(rows[Number(tr.dataset.i)]));
-    });
-  }
-
-  function openDrawer(r){
-    if (!r) return;
-    $('drawer-title').textContent = r.company || '(이름 없음)';
-    const fields = [
-      ['제출 날짜', r.submittedAt],['관심 서비스', r.service],['기업명', r.company],
-      ['임직원 수', r.employeeCount],['기업 주소', r.address],['담당자', r.manager],
-      ['전화번호', r.phone],['이메일', r.email],['유입경로', r.channel],
-      ['문의내용', r.message],['개인정보 동의', r.privacyAgreed],['마케팅 동의', r.marketingAgreed],
-      ['utm_source', r.utm_source],['utm_medium', r.utm_medium],['utm_campaign', r.utm_campaign],
-      ['utm_content', r.utm_content],['utm_term', r.utm_term],['WebFormID', r.webFormId]
-    ];
-    $('drawer-body').innerHTML = fields.map(([k,v]) =>
-      `<div class="field"><div class="k">${k}</div><div class="v">${esc(v == null || v === '' ? '-' : v)}</div></div>`).join('');
-    $('drawer').classList.add('open'); $('drawer-back').classList.add('open');
-  }
-  function closeDrawer(){ $('drawer').classList.remove('open'); $('drawer-back').classList.remove('open'); }
-
-  function exportCSV(){
-    const rows = applyFilter(CURRENT);
-    const headers = COLS.map(c => c.label);
-    const csv = [headers.join(',')].concat(rows.map((r, i) => {
-      return COLS.map(c => {
-        const v = c.key === '_no' ? (i+1) : (r[c.key] == null ? '' : r[c.key]);
-        const s = String(v).replace(/"/g, '""');
-        return /[",\n]/.test(s) ? '"'+s+'"' : s;
-      }).join(',');
-    })).join('\n');
-    const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'salesmap_'+todayStr()+'.csv';
-    a.click();
-  }
-
   function rerender(){
     const filtered = applyFilter(CURRENT);
     renderKPI(filtered);
@@ -461,7 +310,6 @@
     renderRank(filtered, 'utm_campaign','utm-campaign', 6);
     renderRank(filtered, 'employeeCount','emp-dist',    7);
     $('ch-total').textContent = (new Set(filtered.map(r => r.channel||'(없음)'))).size + '개';
-    renderTable(filtered);
   }
 
   function render(rows){
@@ -487,12 +335,9 @@
   }
 
   // events
-  buildHeader();
   $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); load(); });
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load(); });
   $('btn-refresh').addEventListener('click', load);
-  $('btn-reset-w').addEventListener('click', resetWidths);
-  $('btn-export').addEventListener('click', exportCSV);
   ['q','svc','ch','from','to'].forEach(id => $(id).addEventListener('input', rerender));
   ['svc','ch','from','to'].forEach(id => $(id).addEventListener('change', rerender));
   $('trend-seg').addEventListener('click', e => {
@@ -502,9 +347,6 @@
     TREND_RANGE = b.dataset.r;
     renderTrend(applyFilter(CURRENT));
   });
-  $('drawer-close').addEventListener('click', closeDrawer);
-  $('drawer-back').addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
   window.addEventListener('DOMContentLoaded', load);
 </script>
