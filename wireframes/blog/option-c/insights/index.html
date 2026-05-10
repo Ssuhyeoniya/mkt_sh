@@ -160,8 +160,11 @@
     display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center;
   }
   @media (max-width:768px){ .hero{ grid-template-columns:1fr; padding:14px; } }
+  .hero .score-side{
+    display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;
+  }
   .hero .score-circle{
-    width:108px; height:108px; border-radius:50%; flex-shrink:0;
+    width:108px; height:108px; border-radius:50%;
     position:relative; display:flex; align-items:center; justify-content:center;
     transition:background .4s ease;
   }
@@ -173,12 +176,11 @@
     font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:600; color:#fff;
   }
   .hero .score-circle .num .total{ font-size:10px; color:var(--muted); margin-top:-2px; }
-  .hero .score-circle .num .tier-mini{
-    font-size:10px; color:var(--text-2); margin-top:5px;
-    white-space:nowrap; max-width:90px; overflow:hidden; text-overflow:ellipsis;
+  .hero .tier-below{
+    font-size:11.5px; color:var(--text-2); font-weight:500;
+    white-space:nowrap; text-align:center;
   }
-  .hero .info .label{ font-size:11px; color:#b8a6ff; }
-  .hero .info h2{ font-size:16px; font-weight:600; margin:3px 0 0; }
+  .hero .info .label{ font-size:11px; color:#b8a6ff; margin-bottom:4px; }
   .hero .info .deltas{ display:flex; gap:16px; flex-wrap:wrap; }
   .hero .info .deltas .delta{ display:flex; flex-direction:column; gap:2px; }
   .hero .info .deltas .delta .l{ font-size:11px; color:var(--muted); }
@@ -310,18 +312,19 @@
 
     <!-- Hero score -->
     <section class="hero">
-      <div class="score-circle" id="score-ring">
-        <div class="num">
-          <div class="v" id="score-val">–</div>
-          <div class="total">/100</div>
-          <div class="tier-mini" id="score-tier">분석 중</div>
+      <div class="score-side">
+        <div class="score-circle" id="score-ring">
+          <div class="num">
+            <div class="v" id="score-val">–</div>
+            <div class="total">/100</div>
+          </div>
         </div>
+        <div class="tier-below" id="score-tier">–</div>
       </div>
       <div class="info">
         <div class="label">종합 성과 점수</div>
-        <h2 id="score-title">블로그 인사이트</h2>
         <!-- 전월/전년 비교 버튼 -->
-        <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;">
           <span style="font-size:11px; color:var(--muted);">기준 비교</span>
           <button class="cmp-btn" data-cmp="mom">전월 대비</button>
           <button class="cmp-btn" data-cmp="yoy">전년 대비</button>
@@ -449,7 +452,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-9"></script>
+<script src="../../proxy-client.js?v=20260510-10"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -794,17 +797,14 @@
   function renderHero(d){
     if (!d){
       safeSet('score-val', '–');
-      safeSet('score-tier', '데이터 없음');
-      safeSet('score-title', '블로그 인사이트');
+      safeSet('score-tier', '–');
       const ring = $('score-ring'); if (ring) ring.style.background = 'conic-gradient(#1f242c 0 100%)';
       ['kpi-count','kpi-total','kpi-cvr','kpi-cat-sub'].forEach(id => safeSet(id, '–'));
       return;
     }
     safeSet('score-val', d.score);
-    // tier-mini 는 비교 모드 활성 시 applyCompare 에서 덮어씀
-    const baseTier = '현재 — ' + tierTextOf(d.score);
-    safeSet('score-tier', baseTier);
-    safeSet('score-title', '블로그 인사이트');
+    // tier-below: "상위 N%" 만 표시 — 비교 모드 시 applyCompare 에서 비교 점수로 덮어씀
+    safeSet('score-tier', tierTextOf(d.score));
     const ring = $('score-ring');
     if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 '+d.score+'%, #1f242c '+d.score+'% 100%)';
 
@@ -1144,7 +1144,7 @@
 
     // 점수 자동 변경 — 비교 기간의 점수로 표시
     safeSet('score-val', prevD.score);
-    safeSet('score-tier', cmpLabel + ' 대비 — ' + tierTextOf(prevD.score));
+    safeSet('score-tier', tierTextOf(prevD.score));
     const ring = $('score-ring');
     if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 ' + prevD.score + '%, #1f242c ' + prevD.score + '% 100%)';
 
