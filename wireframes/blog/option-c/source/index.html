@@ -11,7 +11,7 @@
 <style>
   .source-wrap{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
-    overflow:hidden; height:calc(100vh - 220px); min-height:560px;
+    overflow:hidden; height:calc(100vh - 200px); min-height:680px;
     display:flex; flex-direction:column;
   }
   .source-bar{
@@ -84,18 +84,18 @@
     <div class="source-wrap">
       <div class="source-bar">
         <div class="left">
-          <span class="pill">spreadsheet</span>
+          <span class="pill">edit mode</span>
           <span>13LWJmvtSJRy6G43Lo_jar9hqZquCY4vB4bP4kAQVQLQ</span>
           <span class="pill">시트 BLOG_RAW_DATA</span>
         </div>
         <a href="https://docs.google.com/spreadsheets/d/13LWJmvtSJRy6G43Lo_jar9hqZquCY4vB4bP4kAQVQLQ/edit?gid=1228243268"
-           target="_blank" rel="noopener noreferrer">새 창으로 열기 ↗</a>
+           target="_blank" rel="noopener">새 창으로 열기 ↗</a>
       </div>
       <iframe class="source-iframe"
               id="source-iframe"
               title="BLOG_RAW_DATA"
-              src="https://docs.google.com/spreadsheets/d/13LWJmvtSJRy6G43Lo_jar9hqZquCY4vB4bP4kAQVQLQ/preview?gid=1228243268&widget=true&headers=false&rm=minimal"
-              referrerpolicy="no-referrer"
+              src="https://docs.google.com/spreadsheets/d/13LWJmvtSJRy6G43Lo_jar9hqZquCY4vB4bP4kAQVQLQ/edit?gid=1228243268"
+              allow="clipboard-read; clipboard-write; fullscreen"
               allowfullscreen></iframe>
       <div class="fallback" id="fallback">
         <div>📄 시트가 비공개이거나 iframe 임베드가 차단되어 표시할 수 없습니다.</div>
@@ -104,7 +104,9 @@
       </div>
     </div>
 
-    <div class="text-center muted py-6" style="font-size:11.5px;">시트 변경 사항은 새로고침 시 반영됩니다.</div>
+    <div class="text-center muted py-6" style="font-size:11.5px;">
+      편집 모드 · 파일 / 삽입 / 데이터 등 메뉴 사용 가능 · 권한이 있는 Google 계정으로 로그인 필요
+    </div>
   </main>
 </div>
 
