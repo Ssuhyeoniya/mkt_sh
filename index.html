@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>마케팅 CRM · 와이어프레임 시안 비교</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{ font-family:'Pretendard', sans-serif; background:#f6f7f9; color:#111; }
+  .card{ background:#fff; border:1px solid #e6e8ec; border-radius:16px; overflow:hidden; transition:all .2s; }
+  .card:hover{ box-shadow:0 12px 40px rgba(0,0,0,.08); transform:translateY(-2px); }
+  .frame{ aspect-ratio:16/10; width:100%; background:#fafafa; border-bottom:1px solid #e6e8ec; }
+  .tag{ font-size:11px; padding:2px 8px; border-radius:999px; background:#eef1f6; color:#374151; display:inline-block; }
+  .btn{ font-size:13px; padding:8px 14px; border-radius:8px; border:1px solid #e6e8ec; background:#fff; }
+  .btn-primary{ background:#0f0f0f; color:#fff; border-color:#0f0f0f; }
+</style>
+</head>
+<body>
+<div class="max-w-[1280px] mx-auto px-8 py-10">
+  <div class="mb-8">
+    <div class="text-[12.5px] text-gray-500">Marketing CRM · Wireframes</div>
+    <h1 class="text-[28px] font-semibold tracking-tight mt-1">와이어프레임 시안 비교</h1>
+    <p class="text-[13.5px] text-gray-600 mt-2 leading-relaxed">
+      메뉴 구조 · 인바운드(IB/OB분석, IB/OB종합, 세일즈맵) · 고객사 관리(성약, 이탈) · 제휴점(리스트) · 광고(인앱, CORP) · SNS(미리보기, 블로그, 인스타, 링크드인)<br/>
+      메인 페이지는 위 항목을 한눈에 보여주는 종합 대시보드로 구성됩니다. 아래 3가지 시안 중 하나를 선택해 주세요.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-3 gap-5">
+    <div class="card">
+      <iframe class="frame" src="./option-a/" style="border:0; transform:scale(.5); transform-origin:top left; width:200%; height:200%; pointer-events:none;"></iframe>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="tag">시안 A</span><span class="tag" style="background:#1c1c1c; color:#fff">Dark</span></div>
+        <div class="text-[16px] font-semibold">Dark Minimal · 사이드바 네비</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">좌측 사이드바 + 다크 톤. 데이터 운영팀에 친숙한 콘솔 스타일. 정보 밀도가 높고 장시간 사용에 적합.</p>
+        <div class="mt-4 flex gap-2"><a href="./option-a/" class="btn">전체보기</a><a href="./option-a/" target="_blank" class="btn btn-primary">선택 미리보기 ↗</a></div>
+      </div>
+    </div>
+    <div class="card">
+      <iframe class="frame" src="./option-b/" style="border:0; transform:scale(.5); transform-origin:top left; width:200%; height:200%; pointer-events:none;"></iframe>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="tag">시안 B</span><span class="tag" style="background:#eaf1ff; color:#1f4ea3">Light · BI</span></div>
+        <div class="text-[16px] font-semibold">Light BI · 상단 탭 네비</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">상단 탭 + 라이트 톤. Looker Studio 같은 정통 BI 콘솔 느낌. 표/지표 기반 의사결정에 유리.</p>
+        <div class="mt-4 flex gap-2"><a href="./option-b/" class="btn">전체보기</a><a href="./option-b/" target="_blank" class="btn btn-primary">선택 미리보기 ↗</a></div>
+      </div>
+    </div>
+    <div class="card">
+      <iframe class="frame" src="./option-c/" style="border:0; transform:scale(.5); transform-origin:top left; width:200%; height:200%; pointer-events:none;"></iframe>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="tag">시안 C</span><span class="tag" style="background:#FFE9C7; color:#5a3a13">Bento</span></div>
+        <div class="text-[16px] font-semibold">Bento Grid · Pill 네비</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">크기가 다양한 카드형 그리드. 시각적 집중도가 높고 발표/리포트용 화면으로 인상적. 모던한 톤.</p>
+        <div class="mt-4 flex gap-2"><a href="./option-c/" class="btn">전체보기</a><a href="./option-c/" target="_blank" class="btn btn-primary">선택 미리보기 ↗</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-10 p-5 bg-white border border-[#e6e8ec] rounded-xl">
+    <div class="text-[14px] font-semibold mb-2">선택 후 다음 단계</div>
+    <ol class="text-[13px] text-gray-700 list-decimal pl-5 space-y-1">
+      <li>선택한 시안을 기반으로 모든 하위 페이지(인바운드/고객사/제휴점/광고/SNS) 와이어프레임을 확장</li>
+      <li>중앙 GAS 프록시(라우터) 설계 — n개 스프레드시트 → 단일 엔드포인트로 통합 응답</li>
+      <li>메인 GAS의 라우팅 스펙(action, sheet, params) 정의 및 하위 GAS 모듈 작성</li>
+      <li>프론트 페이지에 fetch 로직 연결 → 대시보드 카드/차트 실데이터 바인딩</li>
+    </ol>
+  </div>
+</div>
+</body>
+</html>
