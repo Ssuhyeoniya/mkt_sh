@@ -48,7 +48,16 @@
 
     blogList: async function (params) {
       const r = await this.call('blog.list', params);
-      return r.data;
+      const data = r.data || {};
+      // 방어: GAS 미배포 환경/구버전 대비 — 제목 공백 행 제외
+      if (Array.isArray(data.rows)) {
+        data.rows = data.rows.filter(function (row) {
+          const t = row && row['제목'];
+          return t !== null && t !== undefined && String(t).trim() !== '';
+        });
+        data.total = data.rows.length;
+      }
+      return data;
     },
     blogSummary: async function () {
       const r = await this.call('blog.summary');
@@ -65,16 +74,70 @@
 
 /**
  * 블로그 데모 데이터 — 프록시 미연결 시 표시
+ * (TOP 10 + 페이지네이션 데모를 위해 35건 구성)
  */
-window.SAMPLE_BLOG = [
-  { 제목:'마케팅 자동화로 업무 시간 70% 줄이는 방법',           링크:'https://example.com/p/1',  날짜:'2026-04-28', thumbnail:'https://picsum.photos/seed/blog1/240/144',  category:'자동화', service:'naver',   totalVisit:12431, weeklyVisitor:842, monthlyVisitor:3204, inbound:38, postid:'p001' },
-  { 제목:'CRM 도입 후 1년, 우리가 얻은 것들',                    링크:'https://example.com/p/2',  날짜:'2026-04-20', thumbnail:'https://picsum.photos/seed/blog2/240/144',  category:'CRM',    service:'naver',   totalVisit:8720,  weeklyVisitor:512, monthlyVisitor:2104, inbound:24, postid:'p002' },
-  { 제목:'세일즈맵으로 영업 동선 최적화하기',                    링크:'https://example.com/p/3',  날짜:'2026-04-15', thumbnail:'https://picsum.photos/seed/blog3/240/144',  category:'세일즈', service:'naver',   totalVisit:6210,  weeklyVisitor:421, monthlyVisitor:1820, inbound:19, postid:'p003' },
-  { 제목:'B2B 인바운드 리드 유입 늘리는 7가지 전략',             링크:'https://example.com/p/4',  날짜:'2026-04-10', thumbnail:'https://picsum.photos/seed/blog4/240/144',  category:'마케팅', service:'tistory', totalVisit:5840,  weeklyVisitor:312, monthlyVisitor:1432, inbound:31, postid:'p004' },
-  { 제목:'고객 이탈 신호 조기 감지하는 방법',                    링크:'https://example.com/p/5',  날짜:'2026-04-05', thumbnail:'https://picsum.photos/seed/blog5/240/144',  category:'CRM',    service:'naver',   totalVisit:4920,  weeklyVisitor:284, monthlyVisitor:1108, inbound:14, postid:'p005' },
-  { 제목:'제휴점 네트워크로 영업 채널 확장하기',                 링크:'https://example.com/p/6',  날짜:'2026-03-30', thumbnail:'https://picsum.photos/seed/blog6/240/144',  category:'제휴',   service:'naver',   totalVisit:3780,  weeklyVisitor:201, monthlyVisitor:894,  inbound:11, postid:'p006' },
-  { 제목:'광고 ROAS 400% 달성한 인앱 캠페인 사례',               링크:'https://example.com/p/7',  날짜:'2026-03-22', thumbnail:'https://picsum.photos/seed/blog7/240/144',  category:'광고',   service:'tistory', totalVisit:7320,  weeklyVisitor:498, monthlyVisitor:1820, inbound:42, postid:'p007' },
-  { 제목:'중소기업이 SNS 마케팅을 시작하는 방법',                링크:'https://example.com/p/8',  날짜:'2026-03-15', thumbnail:'https://picsum.photos/seed/blog8/240/144',  category:'SNS',    service:'naver',   totalVisit:5210,  weeklyVisitor:328, monthlyVisitor:1402, inbound:18, postid:'p008' },
-  { 제목:'블로그 콘텐츠로 검색 유입 3배 늘리기',                 링크:'https://example.com/p/9',  날짜:'2026-03-08', thumbnail:'https://picsum.photos/seed/blog9/240/144',  category:'SEO',    service:'naver',   totalVisit:9420,  weeklyVisitor:612, monthlyVisitor:2532, inbound:27, postid:'p009' },
-  { 제목:'데이터 기반 마케팅 의사결정 프레임워크',               링크:'https://example.com/p/10', 날짜:'2026-02-28', thumbnail:'https://picsum.photos/seed/blog10/240/144', category:'데이터', service:'tistory', totalVisit:6840,  weeklyVisitor:394, monthlyVisitor:1720, inbound:22, postid:'p010' },
-];
+window.SAMPLE_BLOG = (function(){
+  const cats = ['자동화','CRM','세일즈','마케팅','제휴','광고','SNS','SEO','데이터','콘텐츠'];
+  const srvs = ['naver','tistory'];
+  const titles = [
+    '마케팅 자동화로 업무 시간 70% 줄이는 방법',
+    'CRM 도입 후 1년, 우리가 얻은 것들',
+    '세일즈맵으로 영업 동선 최적화하기',
+    'B2B 인바운드 리드 유입 늘리는 7가지 전략',
+    '고객 이탈 신호 조기 감지하는 방법',
+    '제휴점 네트워크로 영업 채널 확장하기',
+    '광고 ROAS 400% 달성한 인앱 캠페인 사례',
+    '중소기업이 SNS 마케팅을 시작하는 방법',
+    '블로그 콘텐츠로 검색 유입 3배 늘리기',
+    '데이터 기반 마케팅 의사결정 프레임워크',
+    '리드 스코어링으로 영업 우선순위 정하는 법',
+    '뉴스레터 구독자 늘리는 12가지 콘텐츠 패턴',
+    '리타게팅 광고 효율 2배 올리는 전략',
+    '인스타그램 릴스로 브랜드 인지도 키우기',
+    '링크드인 B2B 콘텐츠 작성 가이드',
+    '구글 애널리틱스 4 핵심 지표 정리',
+    '홈페이지 전환율 개선 A/B 테스트 사례',
+    '챗봇으로 문의 응대 자동화한 후기',
+    '카카오톡 채널 마케팅 활용법',
+    '검색 키워드로 보는 시장 트렌드 분석',
+    'CRM 데이터 클렌징 자동화 프로젝트',
+    '마케팅 KPI 대시보드 만들기',
+    '오프라인 매장과 온라인 데이터 통합하기',
+    '신규 고객 온보딩 자동화 워크플로우',
+    '재구매율 높이는 메시지 시퀀스 설계',
+    '브랜드 보이스 가이드라인 작성하기',
+    'SaaS 무료체험 → 유료전환 전략',
+    '이메일 오픈율 높이는 제목 작성법',
+    '컨텐츠 마케팅 ROI 측정 방법',
+    'B2B 영업 클로징 화법 모음',
+    '경쟁사 분석 프레임워크 5가지',
+    '고객 인터뷰 인사이트 정리하는 법',
+    '랜딩페이지 디자인 체크리스트 30',
+    '구독 비즈니스 핵심 지표(MRR, Churn)',
+    '마케팅팀 OKR 설정 가이드',
+  ];
+  // 일부는 네이버 blogthumb URL (referrer 차단 우회 데모), 나머지는 picsum
+  const naverSample = 'https://blogthumb.pstatic.net/MjAyNjA1MDhfMjgw/MDAxNzc4MjAyOTc1MzEw.0rBfVVUQvtoa9DtP0AIASREorQqR1OhfIUH2BtjKd5Yg.s14eWbBJKt-xLsts6ypL1xRaKcE0NKp_ZZ7lOVMI9bEg.PNG/%BD%C4%B1%C7%B4%EB%C0%E5_%C1%A6%C8%DE%C1%A1_%BD%BD%B7%CE%BF%EC%C4%B6%B8%AE_%B0%E1%C1%A6_%B9%D7_%BB%E7%BF%EB_%B9%E6%B9%FD01.png?type=w2';
+  return titles.map(function(t, i){
+    const date = new Date(2026, 4, 9);
+    date.setDate(date.getDate() - i * 4);
+    const ymd = date.toISOString().slice(0,10);
+    const tv = 12500 - i * 300 + Math.floor(Math.random()*800);
+    const wk = Math.floor(tv * 0.07);
+    const mo = Math.floor(tv * 0.27);
+    const ib = Math.max(0, Math.floor(tv * 0.003));
+    return {
+      제목: t,
+      링크: 'https://example.com/p/' + (i+1),
+      날짜: ymd,
+      thumbnail: i % 3 === 0 ? naverSample : 'https://picsum.photos/seed/blog'+(i+1)+'/240/144',
+      category: cats[i % cats.length],
+      service: srvs[i % 2],
+      totalVisit: tv,
+      weeklyVisitor: wk,
+      monthlyVisitor: mo,
+      inbound: ib,
+      postid: 'p' + String(i+1).padStart(3,'0')
+    };
+  });
+})();
