@@ -83,15 +83,6 @@
       <a class="tab active" href="../option-c/">인사이트</a>
     </nav>
 
-    <!-- KPI -->
-    <section class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
-      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
-      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
-      <div class="kpi"><div class="kpi-label">UTM 추적</div><div class="kpi-value" id="kpi-utm">0%</div><div class="kpi-sub" id="kpi-utm-sub">utm_source 보유율</div></div>
-      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
-    </section>
-
     <!-- 기간 조회 -->
     <div class="date-filter">
       <span class="lbl">기간</span>
@@ -105,6 +96,15 @@
       <button class="clear" id="btn-clear-date">초기화</button>
       <span class="range-info" id="range-info"></span>
     </div>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
+      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
+      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
+      <div class="kpi"><div class="kpi-label">UTM 추적</div><div class="kpi-value" id="kpi-utm">0%</div><div class="kpi-sub" id="kpi-utm-sub">utm_source 보유율</div></div>
+      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
+    </section>
 
     <!-- Filter -->
     <div class="filter">
@@ -187,11 +187,21 @@
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function fmt(n){ const v=Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
-  function ynTag(v){
+  function ynLabel(v){
     const s = String(v||'').trim();
-    if (!s) return '-';
-    if (/(미동의|N|no|false|0)/i.test(s)) return `<span class="tag-mini tag-n">${esc(s)}</span>`;
-    return `<span class="tag-mini tag-y">${esc(s)}</span>`;
+    if (!s) return '';
+    if (/(미동의|동의하지|않)/.test(s)) return 'N';
+    if (/동의/.test(s)) return 'Y';
+    if (/^(N|no|false|0)$/i.test(s)) return 'N';
+    if (/^(Y|yes|true|1)$/i.test(s)) return 'Y';
+    return s;
+  }
+  function ynTag(v){
+    const lbl = ynLabel(v);
+    if (!lbl) return '-';
+    if (lbl === 'N') return `<span class="tag-mini tag-n">N</span>`;
+    if (lbl === 'Y') return `<span class="tag-mini tag-y">Y</span>`;
+    return `<span class="tag-mini">${esc(lbl)}</span>`;
   }
   function setStatus(t,k){ const el=$('status'); el.className='status '+(k||''); el.textContent=t; }
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -265,7 +275,7 @@
     const utm = rows.filter(r => String(r.utm_source||'').trim() && r.utm_source !== '(none)').length;
     $('kpi-utm').textContent = (rows.length ? Math.round(utm*100/rows.length) : 0) + '%';
     $('kpi-utm-sub').textContent = utm + ' / ' + rows.length;
-    const mkt = rows.filter(r => /동의/.test(String(r.marketingAgreed||'')) && !/미동의/.test(String(r.marketingAgreed||''))).length;
+    const mkt = rows.filter(r => ynLabel(r.marketingAgreed) === 'Y').length;
     const rate = rows.length ? Math.round(mkt*100/rows.length) : 0;
     $('kpi-mkt').textContent = rate + '%';
     $('kpi-mkt-sub').textContent = mkt + ' / ' + rows.length;
