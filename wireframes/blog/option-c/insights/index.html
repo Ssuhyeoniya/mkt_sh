@@ -33,6 +33,13 @@
   .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
   .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
 
+  /* KPI 축소 (insights 전용 오버라이드) */
+  .kpi-grid{ grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:12px; }
+  .kpi{ padding:10px 14px; border-radius:10px; }
+  .kpi .kpi-label{ font-size:11px; color:var(--muted); }
+  .kpi .kpi-value{ font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:600; margin-top:2px; line-height:1.2; }
+  .kpi .kpi-sub{ font-size:10.5px; color:var(--muted); margin-top:1px; line-height:1.3; }
+
   /* 비교 버튼 */
   .cmp-btn{
     background:transparent; border:1px solid rgba(255,255,255,.15);
@@ -148,27 +155,30 @@
 
   .hero{
     background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(124,92,255,.04));
-    border:1px solid rgba(124,92,255,.3); border-radius:16px;
-    padding:22px 24px; margin-bottom:14px;
-    display:grid; grid-template-columns:auto 1fr; gap:24px; align-items:center;
+    border:1px solid rgba(124,92,255,.3); border-radius:14px;
+    padding:14px 18px; margin-bottom:12px;
+    display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center;
   }
-  @media (max-width:768px){ .hero{ grid-template-columns:1fr; padding:18px; } }
+  @media (max-width:768px){ .hero{ grid-template-columns:1fr; padding:14px; } }
   .hero .score-circle{
-    width:130px; height:130px; border-radius:50%; flex-shrink:0;
+    width:108px; height:108px; border-radius:50%; flex-shrink:0;
     position:relative; display:flex; align-items:center; justify-content:center;
     transition:background .4s ease;
   }
   .hero .score-circle::after{
-    content:""; position:absolute; inset:8px; border-radius:50%; background:#0b0d10;
+    content:""; position:absolute; inset:7px; border-radius:50%; background:#0b0d10;
   }
-  .hero .score-circle .num{ position:relative; z-index:1; text-align:center; }
+  .hero .score-circle .num{ position:relative; z-index:1; text-align:center; line-height:1; }
   .hero .score-circle .num .v{
-    font-family:'JetBrains Mono', monospace; font-size:34px; font-weight:600; color:#fff;
+    font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:600; color:#fff;
   }
-  .hero .score-circle .num .total{ font-size:11px; color:var(--muted); margin-top:-4px; }
-  .hero .info .label{ font-size:11.5px; color:#b8a6ff; }
-  .hero .info h2{ font-size:20px; font-weight:600; margin:4px 0 6px; }
-  .hero .info .desc{ font-size:12.5px; color:var(--text-2); line-height:1.6; margin-bottom:10px; }
+  .hero .score-circle .num .total{ font-size:10px; color:var(--muted); margin-top:-2px; }
+  .hero .score-circle .num .tier-mini{
+    font-size:10px; color:var(--text-2); margin-top:5px;
+    white-space:nowrap; max-width:90px; overflow:hidden; text-overflow:ellipsis;
+  }
+  .hero .info .label{ font-size:11px; color:#b8a6ff; }
+  .hero .info h2{ font-size:16px; font-weight:600; margin:3px 0 0; }
   .hero .info .deltas{ display:flex; gap:16px; flex-wrap:wrap; }
   .hero .info .deltas .delta{ display:flex; flex-direction:column; gap:2px; }
   .hero .info .deltas .delta .l{ font-size:11px; color:var(--muted); }
@@ -301,12 +311,15 @@
     <!-- Hero score -->
     <section class="hero">
       <div class="score-circle" id="score-ring">
-        <div class="num"><div class="v" id="score-val">–</div><div class="total">/100</div></div>
+        <div class="num">
+          <div class="v" id="score-val">–</div>
+          <div class="total">/100</div>
+          <div class="tier-mini" id="score-tier">분석 중</div>
+        </div>
       </div>
       <div class="info">
         <div class="label">종합 성과 점수</div>
-        <h2 id="score-title">데이터 분석 중…</h2>
-        <div class="desc" id="score-desc">BLOG_RAW_DATA 시트의 데이터를 기반으로 자동 산출.</div>
+        <h2 id="score-title">블로그 인사이트</h2>
         <!-- 전월/전년 비교 버튼 -->
         <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
           <span style="font-size:11px; color:var(--muted);">기준 비교</span>
@@ -333,10 +346,9 @@
 
     <!-- KPI -->
     <section class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">분석 글</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat-sub">카테고리 0개</div></div>
-      <div class="kpi"><div class="kpi-label">총 누적 방문</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">합계</div></div>
-      <div class="kpi"><div class="kpi-label">인바운드 전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">유입 / 누적</div></div>
-      <div class="kpi"><div class="kpi-label">도출 인사이트</div><div class="kpi-value" id="kpi-insights">0</div><div class="kpi-sub">데이터 기반</div></div>
+      <div class="kpi"><div class="kpi-label">발행 글</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat-sub">카테고리 0개</div></div>
+      <div class="kpi"><div class="kpi-label">총 방문 수</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">합계</div></div>
+      <div class="kpi"><div class="kpi-label">전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">유입 / 누적</div></div>
     </section>
 
     <!-- 카테고리별 방문자 + 인바운드 막대그래프 -->
@@ -437,7 +449,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-8"></script>
+<script src="../../proxy-client.js?v=20260510-9"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -775,20 +787,24 @@
   function safeSet(id, text){ const el = $(id); if (el) el.textContent = text; }
   function safeHtml(id, html){ const el = $(id); if (el) el.innerHTML = html; }
 
+  function tierTextOf(score){
+    return score >= 80 ? '상위 18%' : score >= 65 ? '평균 이상' : '개선 필요';
+  }
+
   function renderHero(d){
     if (!d){
       safeSet('score-val', '–');
-      safeSet('score-title', '데이터 없음');
-      safeSet('score-desc', 'BLOG_RAW_DATA 시트에 데이터를 추가하거나 GAS 프록시를 연결해주세요.');
+      safeSet('score-tier', '데이터 없음');
+      safeSet('score-title', '블로그 인사이트');
       const ring = $('score-ring'); if (ring) ring.style.background = 'conic-gradient(#1f242c 0 100%)';
       ['kpi-count','kpi-total','kpi-cvr','kpi-cat-sub'].forEach(id => safeSet(id, '–'));
       return;
     }
     safeSet('score-val', d.score);
-    const tier = d.score >= 80 ? '상위 18%' : d.score >= 65 ? '평균 이상' : '개선 필요';
-    const tierColor = d.score >= 80 ? 'var(--green)' : d.score >= 65 ? 'var(--amber)' : 'var(--red)';
-    safeHtml('score-title', '전체 평균 대비 <span style="color:'+tierColor+'">'+tier+'</span>');
-    safeSet('score-desc', '최근 발행 '+d.rows.length+'건 기준 · 누적 방문 / 인바운드 전환 / 카테고리 다양성 / 발행 빈도 4개 축 가중 평균.');
+    // tier-mini 는 비교 모드 활성 시 applyCompare 에서 덮어씀
+    const baseTier = '현재 — ' + tierTextOf(d.score);
+    safeSet('score-tier', baseTier);
+    safeSet('score-title', '블로그 인사이트');
     const ring = $('score-ring');
     if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 '+d.score+'%, #1f242c '+d.score+'% 100%)';
 
@@ -801,7 +817,7 @@
   let CURRENT_INSIGHT_CARDS = [];
   function renderCards(items){
     CURRENT_INSIGHT_CARDS = items;
-    $('kpi-insights').textContent = items.length;
+    safeSet('kpi-insights', items.length);
     if (!items.length){
       $('insights-grid').innerHTML = '<div style="grid-column:1/-1"><div class="empty">도출 가능한 인사이트가 없습니다. 더 많은 데이터가 필요합니다.</div></div>';
       return;
@@ -1127,11 +1143,10 @@
     const prevD = derive(prevRows);
 
     // 점수 자동 변경 — 비교 기간의 점수로 표시
-    $('score-val').textContent = prevD.score;
-    const tier = prevD.score >= 80 ? '상위 18%' : prevD.score >= 65 ? '평균 이상' : '개선 필요';
-    const tierColor = prevD.score >= 80 ? 'var(--green)' : prevD.score >= 65 ? 'var(--amber)' : 'var(--red)';
-    $('score-title').innerHTML = '비교 기간 점수 (' + cmpLabel + ' 대비) — <span style="color:'+tierColor+'">'+tier+'</span>';
-    $('score-ring').style.background = 'conic-gradient(#7c5cff 0 ' + prevD.score + '%, #1f242c ' + prevD.score + '% 100%)';
+    safeSet('score-val', prevD.score);
+    safeSet('score-tier', cmpLabel + ' 대비 — ' + tierTextOf(prevD.score));
+    const ring = $('score-ring');
+    if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 ' + prevD.score + '%, #1f242c ' + prevD.score + '% 100%)';
 
     tbody.innerHTML =
       '<tr>'
