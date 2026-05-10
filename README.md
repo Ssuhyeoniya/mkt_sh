@@ -19,6 +19,13 @@
 - `wireframes/option-b/` · **Light BI** — 상단 탭, 라이트 BI
 - `wireframes/option-c/` · **Bento Grid** — 카드형 그리드, 모던
 
+## 하위 페이지 시안
+
+- `wireframes/blog/` · 블로그 분석/관리 (Power Table · Card Gallery · Analytics Hybrid)
+- `wireframes/salesmap/` · 세일즈맵 CRM 보드 (Power Table · CRM Pipeline · Analytics Hybrid)
+  - 17개 컬럼 로우테이블 + 헤더 우측 드래그로 컬럼 너비 자유 조절
+  - GAS 라우트: `?action=salesmap.list` · `?action=salesmap.summary`
+
 ## 다음 단계
 
 1. 시안 선택
