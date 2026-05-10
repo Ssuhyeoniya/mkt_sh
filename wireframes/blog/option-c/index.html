@@ -141,8 +141,13 @@
     display:none; z-index:5; white-space:nowrap; min-width:130px;
   }
   .trend-tooltip .tt-date{
-    color:var(--muted); margin-bottom:5px; font-family:'JetBrains Mono',monospace;
-    padding-bottom:5px; border-bottom:1px solid var(--line);
+    color:#fff; font-weight:600; font-size:12px;
+    margin-bottom:6px; font-family:'JetBrains Mono',monospace;
+    padding-bottom:6px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:6px;
+  }
+  .trend-tooltip .tt-date .dow{
+    font-size:10.5px; color:var(--muted); font-weight:400;
   }
   .trend-tooltip .tt-row{ display:flex; align-items:center; gap:6px; padding:2px 0; }
   .trend-tooltip .tt-row .lbl{ color:var(--muted); }
@@ -267,6 +272,50 @@
   .drawer-foot .btn-primary{ background:var(--accent); border:0; color:#fff; padding:8px 14px; border-radius:8px; font-size:12.5px; cursor:pointer; font-weight:500; }
   .drawer-foot .btn-primary:hover{ background:var(--accent-2); }
 
+  /* 편집 모드: select 스타일 */
+  .d-select{
+    background:#1a1e25; border:1px solid var(--line); border-radius:6px;
+    padding:5px 9px; color:var(--text); font-size:12px; outline:0;
+    color-scheme:dark; max-width:100%;
+  }
+  .d-select:focus{ border-color:var(--accent); }
+  .d-edit-row{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .d-edit-row .lbl{ font-size:11px; color:var(--muted); width:60px; flex-shrink:0; }
+  .d-edit-banner{
+    margin:8px 18px 0; padding:8px 10px; border-radius:8px;
+    background:rgba(124,92,255,.1); border:1px solid rgba(124,92,255,.3);
+    color:#b8a6ff; font-size:11.5px; line-height:1.5;
+    display:none;
+  }
+  .d-edit-banner.show{ display:block; }
+  .d-edit-banner.err{ background:rgba(255,93,115,.1); border-color:rgba(255,93,115,.3); color:#ffb1bb; }
+  .d-edit-banner.ok{ background:rgba(61,220,151,.1); border-color:rgba(61,220,151,.3); color:#a3edcc; }
+
+  /* 옵션 설정 버튼 */
+  .opt-btn{
+    background:transparent; border:1px solid var(--line); color:var(--muted);
+    padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer;
+    line-height:1.3; flex-shrink:0;
+  }
+  .opt-btn:hover{ border-color:var(--accent); color:#fff; }
+
+  /* 옵션 설정 모달 */
+  .opt-modal-content{ width:520px; max-width:92vw; }
+  .opt-modal-content textarea{
+    width:100%; min-height:120px; resize:vertical;
+    background:#1a1e25; border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; color:var(--text); font-size:12.5px;
+    font-family:'JetBrains Mono', monospace; outline:0;
+    line-height:1.6;
+  }
+  .opt-modal-content textarea:focus{ border-color:var(--accent); }
+  .opt-section{ margin-bottom:16px; }
+  .opt-section .opt-label{
+    font-size:12px; font-weight:600; color:var(--text); margin-bottom:6px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .opt-section .opt-label .help{ font-size:11px; color:var(--muted); font-weight:400; }
+
   /* Compact List 형태 (시안 B) */
   .d-head{ padding:18px 18px 12px; }
   .d-head .row1{ display:flex; gap:12px; align-items:flex-start; }
@@ -381,6 +430,7 @@
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
       </div>
+      <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">⚙ 옵션</button>
     </div>
 
     <!-- 카테고리 네비게이션 -->
@@ -539,10 +589,21 @@
         </div>
       </div>
     </div>
-    <div class="d-tags">
+    <div class="d-tags" id="d-tags-view">
       <span class="svc" id="d-svc" hidden></span>
       <span class="cat" id="d-cat" hidden></span>
     </div>
+    <div class="d-tags" id="d-tags-edit" hidden style="flex-direction:column; gap:8px; align-items:stretch;">
+      <div class="d-edit-row">
+        <span class="lbl">서비스</span>
+        <select class="d-select" id="d-svc-select" style="flex:1"></select>
+      </div>
+      <div class="d-edit-row">
+        <span class="lbl">카테고리</span>
+        <select class="d-select" id="d-cat-select" style="flex:1"></select>
+      </div>
+    </div>
+    <div class="d-edit-banner" id="d-edit-banner"></div>
     <div class="d-kpi">
       <div class="c"><div class="l">총 방문</div><div class="v" id="d-total">-</div></div>
       <div class="c"><div class="l">주간 방문</div><div class="v" id="d-weekly">-</div></div>
@@ -565,11 +626,55 @@
       <div class="meta-item"><span class="k">발행일</span><span class="v" id="d-meta-date">-</span></div>
     </div>
   </div>
-  <div class="drawer-foot">
+  <div class="drawer-foot" id="d-foot-view">
     <a class="btn-secondary" id="d-link" target="_blank" rel="noopener noreferrer">원문 열기 ↗</a>
-    <button class="btn-primary">편집</button>
+    <button class="btn-primary" id="btn-edit">편집</button>
+  </div>
+  <div class="drawer-foot" id="d-foot-edit" style="display:none">
+    <button class="btn-secondary" id="btn-edit-cancel">취소</button>
+    <button class="btn-primary" id="btn-edit-save">저장</button>
   </div>
 </aside>
+
+<!-- 옵션 설정 모달 (서비스/카테고리 드롭다운 값) -->
+<div class="modal-overlay" id="opt-modal" hidden>
+  <div class="modal-content opt-modal-content" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div>
+        <div class="eyebrow">드롭다운 옵션</div>
+        <h3>서비스 / 카테고리 옵션 설정</h3>
+      </div>
+      <button class="modal-close" id="opt-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="opt-section">
+        <div class="opt-label">
+          <span>서비스 옵션</span>
+          <span class="help">한 줄에 하나씩 입력</span>
+        </div>
+        <textarea id="opt-svc" placeholder="naver&#10;tistory&#10;brunch&#10;medium"></textarea>
+      </div>
+      <div class="opt-section">
+        <div class="opt-label">
+          <span>카테고리 옵션</span>
+          <span class="help">한 줄에 하나씩 입력</span>
+        </div>
+        <textarea id="opt-cat" placeholder="CRM&#10;자동화&#10;마케팅&#10;세일즈&#10;..."></textarea>
+      </div>
+      <div style="font-size:11px; color:var(--muted); line-height:1.6;">
+        ⓘ 여기서 설정한 값들은 상세보기 → 편집 시 드롭다운으로 표시됩니다.<br/>
+        설정은 이 브라우저에 저장되며 다른 기기에서는 다시 설정해야 합니다.
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span style="font-size:11.5px; color:var(--muted);" id="opt-info">localStorage 저장</span>
+      <div style="display:flex; gap:8px;">
+        <button class="modal-close" id="opt-reset" style="width:auto; padding:6px 12px; font-size:12.5px;">기본값 복원</button>
+        <button class="btn-connect" id="opt-save" style="background:var(--accent); color:#fff; padding:6px 14px; border-radius:7px; border:0; font-size:12.5px; cursor:pointer; font-weight:500;">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- 더보기 모달: 전체 발행글 랭킹 -->
 <div class="modal-overlay" id="top-modal" hidden>
@@ -809,8 +914,21 @@
         const xPx = rect.left - wrap.left + x(i) * ratioX;
         tip.style.left = xPx + 'px';
         tip.style.display = 'block';
+
+        // 날짜 라벨 — 일별이면 요일 함께, 월별이면 'YYYY년 M월'
+        const dowKR = ['일','월','화','수','목','금','토'];
+        let dateLabel = keys[i];
+        let dateExtra = '';
+        if (TREND_MODE === 'monthly'){
+          const m = keys[i].split('-');
+          dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
+        } else {
+          const d = new Date(keys[i]);
+          if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
+        }
+
         tip.innerHTML =
-          '<div class="tt-date">'+keys[i]+'</div>'
+          '<div class="tt-date">📅 '+dateLabel+' '+dateExtra+'</div>'
           + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
           + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
       });
@@ -984,6 +1102,8 @@
   // ── 상세보기 드로어 ──────────────────────────────
   function openDetail(row){
     if (!row) return;
+    CURRENT_DETAIL_ROW = row;
+    exitEditMode();   // 항상 보기 모드로 시작
     const setText = (id, v) => { const el = $(id); if (el) el.textContent = v ?? '-'; };
     const showTag = (id, v) => {
       const el = $(id);
@@ -1054,6 +1174,155 @@
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape' && $('detail-drawer').classList.contains('open')) closeDetail();
   });
+
+  // ── 옵션 설정 (서비스/카테고리 드롭다운 값) ────────
+  const OPT_KEY_SVC = 'mkt_blog_services';
+  const OPT_KEY_CAT = 'mkt_blog_categories';
+  const DEFAULT_SVC = ['naver','tistory'];
+  const DEFAULT_CAT = ['CRM','자동화','마케팅','세일즈','SEO','SNS','광고','제휴','데이터','콘텐츠','미분류'];
+  function readArr(key, def){
+    try{
+      const raw = localStorage.getItem(key);
+      if (!raw) return def.slice();
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) && arr.length ? arr.filter(Boolean).map(String) : def.slice();
+    }catch(_){ return def.slice(); }
+  }
+  function writeArr(key, arr){
+    const clean = (arr||[]).map(s => String(s||'').trim()).filter(Boolean);
+    localStorage.setItem(key, JSON.stringify(clean));
+  }
+  function getServices(){ return readArr(OPT_KEY_SVC, DEFAULT_SVC); }
+  function getCategories(){ return readArr(OPT_KEY_CAT, DEFAULT_CAT); }
+
+  $('btn-options').addEventListener('click', function(){
+    $('opt-svc').value = getServices().join('\n');
+    $('opt-cat').value = getCategories().join('\n');
+    $('opt-modal').hidden = false;
+  });
+  $('opt-close').addEventListener('click', function(){ $('opt-modal').hidden = true; });
+  $('opt-modal').addEventListener('click', function(e){
+    if (e.target === $('opt-modal')) $('opt-modal').hidden = true;
+  });
+  $('opt-reset').addEventListener('click', function(){
+    $('opt-svc').value = DEFAULT_SVC.join('\n');
+    $('opt-cat').value = DEFAULT_CAT.join('\n');
+  });
+  $('opt-save').addEventListener('click', function(){
+    writeArr(OPT_KEY_SVC, $('opt-svc').value.split(/\r?\n/));
+    writeArr(OPT_KEY_CAT, $('opt-cat').value.split(/\r?\n/));
+    $('opt-modal').hidden = true;
+    // 모달이 열려있으면 select 다시 채움
+    if ($('detail-drawer').classList.contains('open') && $('d-tags-edit').hidden === false){
+      populateEditSelects();
+    }
+  });
+
+  // ── 상세보기 편집 모드 ────────────────────────────
+  let CURRENT_DETAIL_ROW = null;
+
+  function populateEditSelects(){
+    if (!CURRENT_DETAIL_ROW) return;
+    const services = getServices();
+    const categories = getCategories();
+    const curSvc = String(CURRENT_DETAIL_ROW.service || '');
+    const curCat = String(CURRENT_DETAIL_ROW.category || '');
+    // 현재 값이 옵션 목록에 없으면 맨 앞에 추가
+    if (curSvc && services.indexOf(curSvc) < 0) services.unshift(curSvc);
+    if (curCat && categories.indexOf(curCat) < 0) categories.unshift(curCat);
+    $('d-svc-select').innerHTML = '<option value="">— 선택 —</option>' +
+      services.map(s => `<option value="${escAttr(s)}" ${s===curSvc?'selected':''}>${escHtml(s)}</option>`).join('');
+    $('d-cat-select').innerHTML = '<option value="">— 선택 —</option>' +
+      categories.map(c => `<option value="${escAttr(c)}" ${c===curCat?'selected':''}>${escHtml(c)}</option>`).join('');
+  }
+
+  function setEditBanner(text, kind){
+    const el = $('d-edit-banner');
+    el.className = 'd-edit-banner show ' + (kind || '');
+    el.textContent = text;
+  }
+  function clearEditBanner(){ $('d-edit-banner').className = 'd-edit-banner'; $('d-edit-banner').textContent = ''; }
+
+  function enterEditMode(){
+    $('d-tags-view').hidden = true;
+    $('d-tags-edit').hidden = false;
+    $('d-foot-view').style.display = 'none';
+    $('d-foot-edit').style.display = 'flex';
+    populateEditSelects();
+    if (!MktProxy.getUrl()){
+      setEditBanner('GAS 프록시 미연결 — 저장하려면 먼저 상단에서 [연결] 해주세요.', 'err');
+    } else {
+      clearEditBanner();
+    }
+  }
+  function exitEditMode(){
+    $('d-tags-view').hidden = false;
+    $('d-tags-edit').hidden = true;
+    $('d-foot-view').style.display = 'flex';
+    $('d-foot-edit').style.display = 'none';
+    clearEditBanner();
+  }
+
+  async function saveEdit(){
+    if (!CURRENT_DETAIL_ROW) return;
+    const newSvc = $('d-svc-select').value;
+    const newCat = $('d-cat-select').value;
+    const oldSvc = String(CURRENT_DETAIL_ROW.service || '');
+    const oldCat = String(CURRENT_DETAIL_ROW.category || '');
+    if (newSvc === oldSvc && newCat === oldCat){
+      setEditBanner('변경된 값이 없습니다.', '');
+      return;
+    }
+    if (!CURRENT_DETAIL_ROW.postid){
+      setEditBanner('postid 가 없어 저장할 수 없습니다.', 'err');
+      return;
+    }
+    if (!MktProxy.getUrl()){
+      setEditBanner('GAS 프록시 URL을 먼저 연결해주세요.', 'err');
+      return;
+    }
+
+    const saveBtn = $('btn-edit-save');
+    const cancelBtn = $('btn-edit-cancel');
+    saveBtn.disabled = true; cancelBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+    setEditBanner('시트에 저장 중...', '');
+
+    try{
+      const params = { postid: CURRENT_DETAIL_ROW.postid };
+      if (newSvc !== oldSvc) params.service = newSvc;
+      if (newCat !== oldCat) params.category = newCat;
+      const res = await MktProxy.blogUpdate(params);
+
+      // 로컬 데이터 갱신
+      const updateLocal = function (row) {
+        if (!row || String(row.postid) !== String(CURRENT_DETAIL_ROW.postid)) return;
+        if (params.service !== undefined) row.service = params.service;
+        if (params.category !== undefined) row.category = params.category;
+      };
+      CURRENT_ROWS.forEach(updateLocal);
+      SCOPED_ROWS.forEach(updateLocal);
+
+      // 화면 갱신
+      refreshAll();
+      setEditBanner('✓ 저장 완료 (시트 행 ' + (res.rowNumber || '?') + ')', 'ok');
+      // 1초 후 편집 모드 종료, 보기 모드 갱신
+      setTimeout(function(){
+        if (CURRENT_DETAIL_ROW){
+          openDetail(CURRENT_DETAIL_ROW);
+        }
+      }, 900);
+    }catch(err){
+      setEditBanner('저장 실패: ' + err.message, 'err');
+    }finally{
+      saveBtn.disabled = false; cancelBtn.disabled = false;
+      saveBtn.textContent = '저장';
+    }
+  }
+
+  $('btn-edit').addEventListener('click', enterEditMode);
+  $('btn-edit-cancel').addEventListener('click', exitEditMode);
+  $('btn-edit-save').addEventListener('click', saveEdit);
 
   // ── 더보기 모달: 전체 발행글 랭킹 (방문 / 인바운드) ──
   function showTopAll(mode){

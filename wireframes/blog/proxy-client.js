@@ -63,6 +63,12 @@
       const r = await this.call('blog.summary');
       return r.data;
     },
+    blogUpdate: async function (params) {
+      // params: { postid, service?, category? }
+      if (!params || !params.postid) throw new Error('postid_required');
+      const r = await this.call('blog.update', params);
+      return r.data;
+    },
     health: async function () {
       const r = await this.call('health');
       return r.data;
