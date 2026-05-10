@@ -141,8 +141,13 @@
     display:none; z-index:5; white-space:nowrap; min-width:130px;
   }
   .trend-tooltip .tt-date{
-    color:var(--muted); margin-bottom:5px; font-family:'JetBrains Mono',monospace;
-    padding-bottom:5px; border-bottom:1px solid var(--line);
+    color:#fff; font-weight:600; font-size:12px;
+    margin-bottom:6px; font-family:'JetBrains Mono',monospace;
+    padding-bottom:6px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:6px;
+  }
+  .trend-tooltip .tt-date .dow{
+    font-size:10.5px; color:var(--muted); font-weight:400;
   }
   .trend-tooltip .tt-row{ display:flex; align-items:center; gap:6px; padding:2px 0; }
   .trend-tooltip .tt-row .lbl{ color:var(--muted); }
@@ -909,8 +914,21 @@
         const xPx = rect.left - wrap.left + x(i) * ratioX;
         tip.style.left = xPx + 'px';
         tip.style.display = 'block';
+
+        // 날짜 라벨 — 일별이면 요일 함께, 월별이면 'YYYY년 M월'
+        const dowKR = ['일','월','화','수','목','금','토'];
+        let dateLabel = keys[i];
+        let dateExtra = '';
+        if (TREND_MODE === 'monthly'){
+          const m = keys[i].split('-');
+          dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
+        } else {
+          const d = new Date(keys[i]);
+          if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
+        }
+
         tip.innerHTML =
-          '<div class="tt-date">'+keys[i]+'</div>'
+          '<div class="tt-date">📅 '+dateLabel+' '+dateExtra+'</div>'
           + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
           + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
       });
