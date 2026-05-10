@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="referrer" content="no-referrer" />
+<title>인사이트 · 시안 A · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../shared.css">
+<style>
+  .insights-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:18px; }
+  @media (max-width:1100px){ .insights-grid{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:640px){ .insights-grid{ grid-template-columns:1fr; } }
+
+  .insight-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:16px; display:flex; flex-direction:column; gap:10px;
+    transition:all .15s; cursor:default;
+  }
+  .insight-card:hover{ border-color:var(--accent-2); }
+  .insight-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .insight-icon{
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    background:rgba(124,92,255,.15); border:1px solid rgba(124,92,255,.3); color:#b8a6ff;
+    flex-shrink:0;
+  }
+  .insight-icon.green{ background:rgba(61,220,151,.15); border-color:rgba(61,220,151,.3); color:#a3edcc; }
+  .insight-icon.amber{ background:rgba(255,182,72,.15); border-color:rgba(255,182,72,.3); color:#ffd99a; }
+  .insight-icon.blue{ background:rgba(78,163,255,.15); border-color:rgba(78,163,255,.3); color:#a3cdff; }
+  .insight-icon.red{ background:rgba(255,93,115,.15); border-color:rgba(255,93,115,.3); color:#ffb1bb; }
+  .score{
+    font-size:11px; padding:3px 8px; border-radius:99px;
+    background:#1a1e25; border:1px solid var(--line); color:var(--muted);
+    font-family:'JetBrains Mono', monospace; flex-shrink:0;
+  }
+  .score .v{ color:var(--green); font-weight:600; }
+  .insight-statement{ font-size:13.5px; line-height:1.5; font-weight:500; }
+  .insight-statement b{ color:var(--accent); font-weight:600; }
+  .insight-statement b.green{ color:var(--green); }
+  .insight-detail{ font-size:11.5px; color:var(--muted); line-height:1.5; }
+  .insight-mini{
+    margin-top:auto; padding-top:8px; border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted);
+  }
+  .mini-bar{ flex:1; height:5px; background:#1a1e25; border-radius:99px; overflow:hidden; }
+  .mini-bar > i{ display:block; height:100%; background:linear-gradient(90deg, var(--accent), #9c83ff); border-radius:99px; }
+  .mini-num{ font-family:'JetBrains Mono', monospace; color:var(--text); font-weight:500; }
+
+  .reco{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:14px;
+  }
+  .reco h2{ font-size:14px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  .reco h2 .badge{
+    font-size:10px; padding:2px 8px; border-radius:4px;
+    background:rgba(124,92,255,.15); color:#b8a6ff; border:1px solid rgba(124,92,255,.3);
+  }
+  .reco-list{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  @media (max-width:640px){ .reco-list{ grid-template-columns:1fr; } }
+  .reco-item{
+    background:#1a1e25; border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; display:flex; gap:10px; align-items:center;
+  }
+  .reco-item .dot-num{
+    flex-shrink:0; width:22px; height:22px; border-radius:99px;
+    background:var(--accent); color:#fff; font-size:11px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .reco-item .text{ font-size:12.5px; line-height:1.5; }
+  .reco-item .text small{ color:var(--muted); display:block; margin-top:2px; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../../../dashboard/">대시보드</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item active" href="../../">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">SNS · 블로그 · 인사이트 (시안 A)</div>
+        <h1>자동 도출 인사이트</h1>
+      </div>
+    </div>
+
+    <nav class="page-tabs">
+      <a class="tab" href="../../">블로그</a>
+      <a class="tab active" href="../">인사이트</a>
+      <a class="tab" href="../../source/">원본</a>
+    </nav>
+
+    <!-- KPI -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">분석 글</div><div class="kpi-value">35</div><div class="kpi-sub">최근 90일</div></div>
+      <div class="kpi"><div class="kpi-label">총 누적 방문</div><div class="kpi-value">218k</div><div class="kpi-sub">합계</div></div>
+      <div class="kpi"><div class="kpi-label">인바운드 전환율</div><div class="kpi-value">0.42%</div><div class="kpi-sub" style="color:var(--green)">▲ 0.08%p</div></div>
+      <div class="kpi"><div class="kpi-label">도출 인사이트</div><div class="kpi-value">6</div><div class="kpi-sub">신뢰도 70+ 만</div></div>
+    </section>
+
+    <!-- 인사이트 카드 그리드 -->
+    <section class="insights-grid">
+
+      <div class="insight-card">
+        <div class="insight-head">
+          <div class="insight-icon">🏆</div>
+          <span class="score">신뢰도 <span class="v">94%</span></span>
+        </div>
+        <div class="insight-statement"><b>자동화</b> 카테고리가 평균 인바운드 <b class="green">38건</b> — 전체 평균 대비 <b class="green">+2.1배</b></div>
+        <div class="insight-detail">8개 발행글 모두 인바운드 20건 이상. 다음 분기에 자동화 콘텐츠 비중 확대 권장.</div>
+        <div class="insight-mini">
+          <span>자동화 vs 평균</span>
+          <span class="mini-bar"><i style="width:92%"></i></span>
+          <span class="mini-num">38</span>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-head">
+          <div class="insight-icon green">📈</div>
+          <span class="score">신뢰도 <span class="v">88%</span></span>
+        </div>
+        <div class="insight-statement"><b>화·수요일</b> 발행 글의 주간 방문이 <b class="green">+27%</b> 더 높음</div>
+        <div class="insight-detail">월/금 발행은 평균 312 → 화/수 발행은 평균 396. 발행 캘린더 조정 권장.</div>
+        <div class="insight-mini">
+          <span>화수 평균</span>
+          <span class="mini-bar"><i style="width:78%; background:linear-gradient(90deg,#3ddc97,#76eaba)"></i></span>
+          <span class="mini-num">396</span>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-head">
+          <div class="insight-icon amber">🎯</div>
+          <span class="score">신뢰도 <span class="v">81%</span></span>
+        </div>
+        <div class="insight-statement">누적 방문 <b>5,000+</b> 글의 인바운드 전환율이 평균 <b class="green">1.8배</b></div>
+        <div class="insight-detail">상위 노출 글에 CTA 강화 시 추가 인바운드 약 60건/월 예상.</div>
+        <div class="insight-mini">
+          <span>전환율 비교</span>
+          <span class="mini-bar"><i style="width:65%; background:linear-gradient(90deg,#ffb648,#ffd99a)"></i></span>
+          <span class="mini-num">0.62%</span>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-head">
+          <div class="insight-icon blue">🔍</div>
+          <span class="score">신뢰도 <span class="v">76%</span></span>
+        </div>
+        <div class="insight-statement"><b>'CRM' 키워드</b>가 제목에 포함된 글의 평균 조회수가 <b class="green">+52%</b></div>
+        <div class="insight-detail">SEO 효과 + 직접 검색 유입. 관련 토픽 시리즈 기획 추천.</div>
+        <div class="insight-mini">
+          <span>CRM 키워드</span>
+          <span class="mini-bar"><i style="width:72%; background:linear-gradient(90deg,#4ea3ff,#a3cdff)"></i></span>
+          <span class="mini-num">9.4k</span>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-head">
+          <div class="insight-icon">⚡</div>
+          <span class="score">신뢰도 <span class="v">72%</span></span>
+        </div>
+        <div class="insight-statement"><b>naver</b> 서비스의 누적 방문이 tistory 대비 <b class="green">2.3배</b></div>
+        <div class="insight-detail">naver 22글 합계 168k vs tistory 13글 합계 50k. 발행 우선순위 재조정 권장.</div>
+        <div class="insight-mini">
+          <span>naver 우위</span>
+          <span class="mini-bar"><i style="width:85%"></i></span>
+          <span class="mini-num">2.3×</span>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-head">
+          <div class="insight-icon red">⚠️</div>
+          <span class="score">신뢰도 <span class="v">70%</span></span>
+        </div>
+        <div class="insight-statement"><b>'제휴'</b> 카테고리는 발행 대비 인바운드 효율 <b style="color:var(--red)">-38%</b></div>
+        <div class="insight-detail">콘텐츠 방향 재검토 필요. CTA/타겟팅 강화 또는 발행량 축소 검토.</div>
+        <div class="insight-mini">
+          <span>제휴 효율</span>
+          <span class="mini-bar"><i style="width:38%; background:linear-gradient(90deg,#ff5d73,#ff8a9b)"></i></span>
+          <span class="mini-num">-38%</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 추천 액션 -->
+    <section class="reco">
+      <h2>다음 액션 추천 <span class="badge">AUTO</span></h2>
+      <div class="reco-list">
+        <div class="reco-item">
+          <div class="dot-num">1</div>
+          <div class="text">자동화 카테고리 다음 분기 발행량 <strong>+50%</strong> 확대<small>예상 추가 인바운드 약 76건/월</small></div>
+        </div>
+        <div class="reco-item">
+          <div class="dot-num">2</div>
+          <div class="text">발행 요일을 <strong>화·수</strong> 중심으로 이동<small>주간 방문 평균 +27% 예상</small></div>
+        </div>
+        <div class="reco-item">
+          <div class="dot-num">3</div>
+          <div class="text">상위 5개 글에 <strong>CTA 강화 A/B 테스트</strong><small>인바운드 전환율 0.4 → 0.7% 목표</small></div>
+        </div>
+        <div class="reco-item">
+          <div class="dot-num">4</div>
+          <div class="text">제휴 카테고리 <strong>콘텐츠 방향 재검토</strong><small>현재 효율 -38% (개선 또는 축소)</small></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center muted py-6" style="font-size:11.5px;">시안 A · Auto Insight Cards · 자동 도출 + 액션 중심</div>
+  </main>
+</div>
+</body>
+</html>

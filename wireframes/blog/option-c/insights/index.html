@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="referrer" content="no-referrer" />
+<title>블로그 인사이트 시안 비교 · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared.css">
+<style>
+  .compare{ display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; }
+  .case h3{ font-size:14px; font-weight:600; margin:0 0 4px; }
+  .case .desc{ font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.5; min-height:60px; }
+  .frame-wrap{
+    aspect-ratio:16/11; background:var(--bg); border:1px solid var(--line); border-radius:14px;
+    overflow:hidden; position:relative;
+  }
+  .frame-wrap iframe{
+    position:absolute; inset:0; width:200%; height:200%;
+    transform:scale(.5); transform-origin:top left;
+    border:0; pointer-events:none;
+  }
+  .case .actions{ display:flex; gap:8px; margin-top:12px; }
+  .btn{ font-size:13px; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--text-2); text-decoration:none; }
+  .btn:hover{ border-color:var(--accent); color:#fff; }
+  .btn-primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary:hover{ background:var(--accent-2); border-color:var(--accent-2); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../../dashboard/">대시보드</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item active" href="../">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">SNS · 블로그 · 인사이트</div>
+        <h1>인사이트 보드 시안 비교</h1>
+      </div>
+    </div>
+
+    <nav class="page-tabs">
+      <a class="tab" href="../">블로그</a>
+      <a class="tab active" href="./">인사이트</a>
+      <a class="tab" href="../source/">원본</a>
+    </nav>
+
+    <p class="muted" style="font-size:13px; margin:0 0 18px; line-height:1.6;">
+      블로그 데이터에서 도출되는 인사이트 보드 디자인 시안 3종. 선택해주시면 해당 시안으로 인사이트 페이지를 확정합니다.
+    </p>
+
+    <div class="compare">
+      <!-- A -->
+      <div class="case">
+        <h3>시안 A · Auto Insight Cards</h3>
+        <p class="desc">자동 도출된 인사이트를 카드 그리드로 나열. 각 카드는 핵심 발견 + 미니 차트 + 신뢰도 스코어. 빠르게 액션 포인트 파악.</p>
+        <div class="frame-wrap"><iframe src="./a/"></iframe></div>
+        <div class="actions">
+          <a class="btn" href="./a/">전체보기</a>
+          <a class="btn btn-primary" href="./a/" target="_blank">새 창 ↗</a>
+        </div>
+      </div>
+
+      <!-- B -->
+      <div class="case">
+        <h3>시안 B · Comparative Analysis</h3>
+        <p class="desc">카테고리/서비스/요일별 성과를 한 화면에 비교. 막대·라인·매트릭스 차트 조합. 다각도 비교 분석에 최적.</p>
+        <div class="frame-wrap"><iframe src="./b/"></iframe></div>
+        <div class="actions">
+          <a class="btn" href="./b/">전체보기</a>
+          <a class="btn btn-primary" href="./b/" target="_blank">새 창 ↗</a>
+        </div>
+      </div>
+
+      <!-- C -->
+      <div class="case">
+        <h3>시안 C · Score &amp; Funnel</h3>
+        <p class="desc">종합 성과 점수 + 4단계 퍼널(방문→주간→월간→인바운드) + 카테고리별 점수 카드. 성과 측정 중심.</p>
+        <div class="frame-wrap"><iframe src="./c/"></iframe></div>
+        <div class="actions">
+          <a class="btn" href="./c/">전체보기</a>
+          <a class="btn btn-primary" href="./c/" target="_blank">새 창 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center muted py-6" style="font-size:11.5px; margin-top:10px;">
+      선택하신 시안을 인사이트 페이지로 확정 후 실데이터(GAS 프록시) 연결합니다.
+    </div>
+  </main>
+</div>
+</body>
+</html>
