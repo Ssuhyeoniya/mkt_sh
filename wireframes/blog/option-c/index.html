@@ -729,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-18"></script>
+<script src="../proxy-client.js?v=20260510-19"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -767,11 +767,15 @@
     const de = $('date-end').value;
     if (!ds && !de) return rows.slice();
     return rows.filter(function(r){
+      // ① 발행일 기준 매칭
       const d = String(r['날짜']||'').slice(0,10);
-      if (!d) return false;
-      if (ds && d < ds) return false;
-      if (de && d > de) return false;
-      return true;
+      const publishedInPeriod = d && (!ds || d >= ds) && (!de || d <= de);
+      if (publishedInPeriod) return true;
+      // ② 인바운드 인입일자 기준 매칭 — INBOUND_COUNTS 가 서버에서 from/to 필터된 결과이므로
+      //    utm_term 이 INBOUND_COUNTS 에 있고 카운트가 0보다 크면 해당 기간에 인입된 글
+      const u = String(r.utm_term || '').trim();
+      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u) && (Number(INBOUND_COUNTS[u]) || 0) > 0) return true;
+      return false;
     });
   }
   function setQuickRange(days){
@@ -1342,7 +1346,21 @@
         console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
       }
     }catch(err){
-      console.warn('[blog] inboundCounts 로드 실패:', err);
+      const msg = String(err && err.message || err);
+      console.error('[blog] inboundCounts 호출 실패:', msg);
+      // unknown_action → GAS 재배포 안됨 (Blog_inboundCounts 함수 누락)
+      if (msg.indexOf('unknown_action') >= 0){
+        console.error('[blog] 🛑 GAS 에 blog.inboundCounts 라우트 없음 — modules/blog.gs (Blog_inboundCounts 함수) 추가 후 재배포 필요!');
+        const statusEl = $('status');
+        if (statusEl){
+          const cur = statusEl.textContent;
+          if (cur.indexOf('blog.inboundCounts 없음') < 0){
+            statusEl.textContent = cur + ' · ⚠ blog.inboundCounts 없음 → GAS 재배포 필요';
+            statusEl.className = 'status err';
+            statusEl.title = 'modules/blog.gs 에 Blog_inboundCounts 함수가 없거나 라우트가 등록되지 않음. 재배포 필요.\n' + msg;
+          }
+        }
+      }
       INBOUND_COUNTS = {};
     }
   }
