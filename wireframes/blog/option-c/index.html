@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260511-1">
+<link rel="stylesheet" href="../shared.css?v=20260511-2">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -130,8 +130,8 @@
     background:var(--panel); border:1px solid var(--line-2); border-radius:8px;
     padding:8px 10px; font-size:11px; color:var(--text);
     box-shadow:0 6px 20px rgba(15,23,42,.12);
-    transform:translateX(-50%) translateY(-100%);
-    margin-top:-6px;
+    transform:translateX(-50%);
+    margin-top:14px;
     display:none; z-index:5; white-space:nowrap; min-width:130px;
   }
   .trend-tooltip .tt-date{
@@ -729,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260511-1"></script>
+<script src="../proxy-client.js?v=20260511-2"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체

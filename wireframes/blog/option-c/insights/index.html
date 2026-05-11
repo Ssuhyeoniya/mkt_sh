@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared.css?v=20260511-1">
+<link rel="stylesheet" href="../../shared.css?v=20260511-2">
 <style>
   /* 기간 조회 바 */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -25,7 +25,7 @@
     padding:6px 12px; color:var(--text-2); font-size:12px; cursor:pointer;
   }
   .date-filter .qbtn:hover{ border-color:var(--accent-2); color:var(--text); }
-  .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:var(--text); }
+  .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .date-filter .clear{
     background:transparent; border:1px solid var(--line); border-radius:8px;
     padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
@@ -58,7 +58,7 @@
     cursor:pointer; line-height:1.3;
   }
   .cmp-btn:hover{ border-color:var(--accent); color:var(--text); }
-  .cmp-btn.active{ background:var(--accent); border-color:var(--accent); color:var(--text); }
+  .cmp-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
 
   /* 비교 테이블 */
   .cmp-table-wrap{ margin-top:12px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
@@ -67,6 +67,7 @@
     padding:10px 12px; text-align:left;
     border-bottom:1px solid var(--line);
   }
+  .cmp-table td{ background:#fff; }
   .cmp-table th{
     background:var(--panel-2); color:var(--muted);
     font-size:10.5px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
@@ -411,7 +412,7 @@
   .cat-modal-overlay.open{ display:flex; }
   .cat-modal-content{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
-    width:680px; max-width:92vw; max-height:80vh;
+    width:880px; max-width:94vw; max-height:80vh;
     display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(15,23,42,.20);
   }
   .cat-modal-head{
@@ -450,6 +451,30 @@
   .cm-modal-body-inner{ overflow-x:hidden; }
   .vgroup{ cursor:pointer; }
   .vgroup:hover .vbar{ filter:brightness(1.2); }
+
+  /* 카테고리 모달: 두 리스트(방문자 TOP / 인바운드 TOP) 좌우 분할 */
+  .cm-section-row{
+    flex:1; overflow:hidden;
+    display:grid; grid-template-columns:1fr 1fr; gap:0;
+    border-top:1px solid var(--line);
+  }
+  @media (max-width:780px){ .cm-section-row{ grid-template-columns:1fr; } }
+  .cm-section{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  .cm-section + .cm-section{ border-left:1px solid var(--line); }
+  @media (max-width:780px){ .cm-section + .cm-section{ border-left:0; border-top:1px solid var(--line); } }
+  .cm-section-title{
+    padding:10px 18px; font-size:12px; font-weight:600; color:var(--text-2);
+    background:var(--panel-2); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:6px;
+  }
+  .cm-section-title .dot{ width:7px; height:7px; border-radius:50%; }
+  .cm-section-title .dot.visit{ background:var(--accent); }
+  .cm-section-title .dot.inbound{ background:var(--green); }
+  .cm-section-list{ flex:1; overflow-y:auto; }
+  /* 분할된 섹션 내부의 row 는 단순화: NO · 제목 · 값 */
+  .cm-section .cm-row{
+    grid-template-columns: 32px minmax(0, 1fr) 80px;
+  }
 </style>
 <div class="cat-modal-overlay" id="cat-modal">
   <div class="cat-modal-content" role="dialog" aria-modal="true">
@@ -460,8 +485,7 @@
       </div>
       <button class="modal-close" id="cat-modal-close" aria-label="닫기">✕</button>
     </div>
-    <div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div><div class="num">인바운드</div><div class="num">전환율</div></div>
-    <div class="cat-modal-body" id="cat-modal-body"></div>
+    <div class="cm-section-row" id="cat-modal-body"></div>
     <div class="cat-modal-foot">
       <span id="cat-modal-info">-</span>
       <span>ESC · 바깥 클릭으로 닫기</span>
@@ -469,7 +493,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260511-1"></script>
+<script src="../../proxy-client.js?v=20260511-2"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -507,11 +531,14 @@
     const ds = $('date-start').value, de = $('date-end').value;
     if (!ds && !de) return rows.slice();
     return rows.filter(function(r){
+      // ① 발행일 기준 매칭
       const d = String(r['날짜']||'').slice(0,10);
-      if (!d) return false;
-      if (ds && d < ds) return false;
-      if (de && d > de) return false;
-      return true;
+      const publishedInPeriod = d && (!ds || d >= ds) && (!de || d <= de);
+      if (publishedInPeriod) return true;
+      // ② 인바운드 인입일자 기준 매칭 (utm_term 매칭 + 기간 내 제출 건이 있는 경우)
+      const u = String(r.utm_term || '').trim();
+      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u) && (Number(INBOUND_COUNTS[u]) || 0) > 0) return true;
+      return false;
     });
   }
   function setQuickRange(days){
@@ -1035,7 +1062,6 @@
       if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) return Number(INBOUND_COUNTS[u]) || 0;
       return Number(r.inbound) || 0;
     };
-    posts.sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
     const sumV = posts.reduce(function(s,r){ return s + Number(r.totalVisit||0); }, 0);
     const sumI = posts.reduce(function(s,r){ return s + inbOf(r); }, 0);
 
@@ -1044,12 +1070,14 @@
 
     const body = $('cat-modal-body');
     if (!posts.length){
-      body.innerHTML = '<div class="empty" style="margin:24px;">게시글 없음</div>';
-    } else {
-      body.innerHTML = posts.map(function(r,i){
-        const tv = Number(r.totalVisit||0);
-        const ib = inbOf(r);
-        const cv = tv > 0 ? (ib/tv*100).toFixed(2)+'%' : '-';
+      body.innerHTML = '<div class="empty" style="margin:24px; grid-column:1/-1;">게시글 없음</div>';
+      $('cat-modal').classList.add('open');
+      return;
+    }
+
+    const renderList = function(rows, valueOf, valueClass){
+      const rowsHtml = rows.map(function(r,i){
+        const v = valueOf(r);
         return '<div class="cm-row">'
           + '<div class="no">'+(i+1)+'</div>'
           + '<div class="info-cell">'
@@ -1060,12 +1088,27 @@
               + (r.utm_term ? '<span>·</span><span style="font-family:JetBrains Mono,monospace;">'+escapeHtml(r.utm_term)+'</span>' : '')
             + '</div>'
           + '</div>'
-          + '<div class="num">'+fmt(tv)+'</div>'
-          + '<div class="num green">'+fmt(ib)+'</div>'
-          + '<div class="num">'+cv+'</div>'
+          + '<div class="num '+(valueClass||'')+'">'+fmt(v)+'</div>'
         + '</div>';
       }).join('');
-    }
+      return rowsHtml;
+    };
+
+    const byVisit   = posts.slice().sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
+    const byInbound = posts.slice().sort(function(a,b){ return inbOf(b) - inbOf(a); });
+
+    body.innerHTML =
+      '<div class="cm-section">'
+        + '<div class="cm-section-title"><span class="dot visit"></span>방문자 많은 순<span style="margin-left:auto; color:var(--muted); font-weight:400; font-size:11px;">'+ posts.length +'건</span></div>'
+        + '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div></div>'
+        + '<div class="cm-section-list">' + renderList(byVisit, function(r){ return Number(r.totalVisit||0); }) + '</div>'
+      + '</div>'
+      + '<div class="cm-section">'
+        + '<div class="cm-section-title"><span class="dot inbound"></span>인바운드 많은 순<span style="margin-left:auto; color:var(--muted); font-weight:400; font-size:11px;">'+ posts.length +'건</span></div>'
+        + '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">인바운드</div></div>'
+        + '<div class="cm-section-list">' + renderList(byInbound, function(r){ return inbOf(r); }, 'green') + '</div>'
+      + '</div>';
+
     $('cat-modal').classList.add('open');
   }
   function closeCategoryModal(){ $('cat-modal').classList.remove('open'); }
