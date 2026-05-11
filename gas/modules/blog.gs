@@ -246,19 +246,33 @@ function Blog_inboundDates(params) {
 }
 
 /**
- * utm_term 별 인바운드 인입 건수 일괄 반환
- *   { counts: {utm_term: count, ...}, total }
- *   인사이트 페이지에서 한 번만 호출하여 모든 카테고리 인바운드 정확도 계산
+ * utm_term 별 인바운드 인입 건수 반환 (선택적 기간 필터)
+ *   params.from? : 'yyyy-MM-dd' 이상
+ *   params.to?   : 'yyyy-MM-dd' 이하
+ *   - 필터 미지정 시 전체 기간
+ *   - 필터 지정 시 salesmap 의 '제출 날짜' 기준 필터링 후 집계
+ * 반환: { counts: {utm_term: count, ...}, total, from, to }
  */
-function Blog_inboundCounts() {
+function Blog_inboundCounts(params) {
+  params = params || {};
+  const from = String(params.from || '').slice(0, 10);
+  const to   = String(params.to   || '').slice(0, 10);
   const parsed = blog_loadSalesmap_();
   const list = parsed.rows || [];
   const counts = {};
+  let total = 0;
   for (let i = 0; i < list.length; i++) {
-    const u = list[i].u;
-    counts[u] = (counts[u] || 0) + 1;
+    const r = list[i];
+    if (from || to) {
+      const date = (r.d || '').slice(0, 10);
+      if (!date) continue;
+      if (from && date < from) continue;
+      if (to   && date > to)   continue;
+    }
+    counts[r.u] = (counts[r.u] || 0) + 1;
+    total++;
   }
-  return { counts: counts, total: list.length };
+  return { counts: counts, total: total, from: from, to: to };
 }
 
 // ── helpers ─────────────────────────────────
