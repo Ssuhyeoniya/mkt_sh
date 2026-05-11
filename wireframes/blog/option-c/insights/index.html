@@ -469,7 +469,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-18"></script>
+<script src="../../proxy-client.js?v=20260510-19"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -1249,7 +1249,19 @@
         } else if (r && !('from' in r)){
           console.warn('[insights] ⚠ GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
         }
-      }catch(_){ /* keep previous */ }
+      }catch(err){
+        const msg = String(err && err.message || err);
+        console.error('[insights] inboundCounts 실패:', msg);
+        if (msg.indexOf('unknown_action') >= 0){
+          console.error('[insights] 🛑 GAS 에 blog.inboundCounts 없음 — modules/blog.gs 재배포 필요');
+          const statusEl = $('status');
+          if (statusEl && statusEl.textContent.indexOf('blog.inboundCounts 없음') < 0){
+            statusEl.textContent = statusEl.textContent + ' · ⚠ blog.inboundCounts 없음 → GAS 재배포 필요';
+            statusEl.className = 'status err';
+          }
+        }
+        INBOUND_COUNTS = {};
+      }
     }
 
     const d = derive(filtered, INBOUND_COUNTS);
