@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared.css?v=20260511-4">
+<link rel="stylesheet" href="../../shared.css?v=20260511-5">
 <style>
   /* 기간 조회 바 */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -295,9 +295,12 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">SNS · 블로그 · 인사이트</div>
-        <h1>블로그 인사이트</h1>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div>
+          <div class="page-eyebrow">SNS · 블로그 · 인사이트</div>
+          <h1>블로그 인사이트</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 분석 중</span>
@@ -305,7 +308,6 @@
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
       </div>
-      <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
     </div>
 
     <nav class="page-tabs">
@@ -501,8 +503,8 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260511-4"></script>
-<script src="../../_detail-drawer.js?v=20260511-4"></script>
+<script src="../../proxy-client.js?v=20260511-5"></script>
+<script src="../../_detail-drawer.js?v=20260511-5"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
