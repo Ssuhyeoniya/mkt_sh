@@ -729,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-16"></script>
+<script src="../proxy-client.js?v=20260510-18"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -1326,6 +1326,7 @@
   }
   async function loadInboundCountsForCurrent(){
     if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
+    // 인바운드 = utm_term 매칭 + 세일즈맵 '제출 일자' 가 선택 기간 내인 것
     const ds = $('date-start').value, de = $('date-end').value;
     const params = {};
     if (ds) params.from = ds;
@@ -1334,12 +1335,11 @@
       const r = await MktProxy.blogInboundCounts(params);
       INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
       const matched = Object.keys(INBOUND_COUNTS).length;
-      console.log('[blog] inboundCounts:', { req:params, utm_terms:matched, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
+      console.log('[blog] inboundCounts (제출일자):', { req:params, utm_terms:matched, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
       if (params.from && r && r.from && r.from !== params.from){
         console.warn('[blog] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
-      }
-      if (params.from && r && !('from' in r)){
-        console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 Blog_inboundCounts 사용 중. 재배포 필요');
+      } else if (params.from && r && !('from' in r)){
+        console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
       }
     }catch(err){
       console.warn('[blog] inboundCounts 로드 실패:', err);

@@ -469,7 +469,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-16"></script>
+<script src="../../proxy-client.js?v=20260510-18"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -1175,7 +1175,7 @@
     const prevRows = rowsInRange(prevStart, prevEnd);
     const cmpLabel = COMPARE_MODE === 'mom' ? '전월' : '전년';
 
-    // 비교 기간 인바운드 counts 로드 (서버에서 제출일자 필터 적용)
+    // 비교 기간 인바운드 counts (세일즈맵 제출일자 기준)
     let prevCounts = {};
     if (MktProxy.getUrl()){
       try{
@@ -1237,17 +1237,17 @@
     const filtered = applyDateFilter(ALL_ROWS);
     SCOPED_ROWS_GLOBAL = filtered;
 
-    // 현재 기간 인바운드 counts 로드 (서버에서 제출일자 필터 적용)
+    // 인바운드 = utm_term 매칭 + 세일즈맵 '제출 일자' 가 선택 기간 내인 것
     const cur = getCurrentRange();
     if (cur && MktProxy.getUrl()){
       try{
         const r = await MktProxy.blogInboundCounts({ from: cur.start, to: cur.end });
         INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
-        console.log('[insights] inboundCounts:', { req:{from:cur.start, to:cur.end}, utm_terms:Object.keys(INBOUND_COUNTS).length, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
+        console.log('[insights] inboundCounts (제출일자):', { req:{from:cur.start, to:cur.end}, utm_terms:Object.keys(INBOUND_COUNTS).length, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
         if (r && r.from && r.from !== cur.start){
-          console.warn('[insights] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요. 응답 echo:', r.from, r.to);
+          console.warn('[insights] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
         } else if (r && !('from' in r)){
-          console.warn('[insights] ⚠ GAS 응답에 from 에코 없음 — 구버전 Blog_inboundCounts 사용 중. 재배포 필요');
+          console.warn('[insights] ⚠ GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
         }
       }catch(_){ /* keep previous */ }
     }
