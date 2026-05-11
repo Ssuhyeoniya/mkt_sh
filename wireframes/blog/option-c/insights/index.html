@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared.css?v=20260511-2">
+<link rel="stylesheet" href="../../shared.css?v=20260511-3">
 <style>
   /* 기간 조회 바 */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -455,10 +455,15 @@
   /* 카테고리 모달: 두 리스트(방문자 TOP / 인바운드 TOP) 좌우 분할 */
   .cm-section-row{
     flex:1; overflow:hidden;
-    display:grid; grid-template-columns:1fr 1fr; gap:0;
     border-top:1px solid var(--line);
+    display:block;
   }
-  @media (max-width:780px){ .cm-section-row{ grid-template-columns:1fr; } }
+  .cm-section-row.split{
+    display:grid; grid-template-columns:1fr 1fr; gap:0;
+  }
+  /* 단일 리스트(인사이트 카드 산출 근거 등) 모드에서는 세로 스크롤 */
+  .cm-section-row:not(.split){ overflow-y:auto; overflow-x:hidden; }
+  @media (max-width:780px){ .cm-section-row.split{ grid-template-columns:1fr; } }
   .cm-section{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
   .cm-section + .cm-section{ border-left:1px solid var(--line); }
   @media (max-width:780px){ .cm-section + .cm-section{ border-left:0; border-top:1px solid var(--line); } }
@@ -475,6 +480,8 @@
   .cm-section .cm-row{
     grid-template-columns: 32px minmax(0, 1fr) 80px;
   }
+  .cm-row-link{ cursor:pointer; transition:background .12s; }
+  .cm-row-link:hover{ background:var(--hover-bg); }
 </style>
 <div class="cat-modal-overlay" id="cat-modal">
   <div class="cat-modal-content" role="dialog" aria-modal="true">
@@ -493,7 +500,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260511-2"></script>
+<script src="../../proxy-client.js?v=20260511-3"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -567,14 +574,12 @@
     if (!rows || !rows.length) return null;
 
     // 실제 인바운드 = 세일즈맵에서 (utm_term + 제출일자 기간) 매칭 건수
-    // countsMap 미지정 시 글로벌 INBOUND_COUNTS 사용 (호환)
+    // 기간이 지정되면 해당 기간 내 발생 건수만 사용 (sheet 의 누적 r.inbound 로 폴백하지 않음)
     const counts = countsMap || INBOUND_COUNTS;
     const actualInbound = function(r){
       const u = String(r.utm_term || '').trim();
-      if (u && Object.prototype.hasOwnProperty.call(counts, u)) {
-        return Number(counts[u]) || 0;
-      }
-      return Number(r.inbound) || 0;
+      if (!u) return 0;
+      return Number(counts[u]) || 0;
     };
 
     const totalVisit   = rows.reduce((s,r)=>s+(+r.totalVisit||0), 0);
@@ -935,8 +940,8 @@
     if (!card) return;
     const inbOf = function(r){
       const u = String(r.utm_term || '').trim();
-      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) return Number(INBOUND_COUNTS[u]) || 0;
-      return Number(r.inbound) || 0;
+      if (!u) return 0;
+      return Number(INBOUND_COUNTS[u]) || 0;
     };
     const rows = (card.rows || []).slice().sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
 
@@ -948,6 +953,7 @@
     $('cat-modal-info').textContent = '참고 ' + rows.length + '건 · 누적 방문 ' + fmt(sumV) + ' · 인바운드 ' + fmt(sumI);
 
     const body = $('cat-modal-body');
+    body.classList.remove('split');
     let html = '';
     // 산출 기준
     if (card.criteria && card.criteria.length){
@@ -967,7 +973,8 @@
         const tv = Number(r.totalVisit||0);
         const ib = inbOf(r);
         const cv = tv > 0 ? (ib/tv*100).toFixed(2)+'%' : '-';
-        return '<div class="cm-row">'
+        const pid = r.postid != null ? String(r.postid) : '';
+        return '<div class="cm-row cm-row-link" data-postid="'+escAttr(pid)+'" title="클릭하여 상세보기">'
           + '<div class="no">'+(i+1)+'</div>'
           + '<div class="info-cell">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escapeHtml(r['제목']||'-')+'</div>'
@@ -984,6 +991,14 @@
       }).join('');
     }
     body.innerHTML = html;
+    // 행 클릭 → 블로그 페이지 상세 드로어 열기
+    body.querySelectorAll('.cm-row-link').forEach(function(el){
+      el.addEventListener('click', function(){
+        const pid = el.dataset.postid || '';
+        if (!pid) return;
+        location.href = '../?postid=' + encodeURIComponent(pid);
+      });
+    });
     $('cat-modal').classList.add('open');
   }
 
@@ -1059,8 +1074,8 @@
     // 인바운드 = 세일즈맵 매칭 + fallback
     const inbOf = function(r){
       const u = String(r.utm_term || '').trim();
-      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) return Number(INBOUND_COUNTS[u]) || 0;
-      return Number(r.inbound) || 0;
+      if (!u) return 0;
+      return Number(INBOUND_COUNTS[u]) || 0;
     };
     const sumV = posts.reduce(function(s,r){ return s + Number(r.totalVisit||0); }, 0);
     const sumI = posts.reduce(function(s,r){ return s + inbOf(r); }, 0);
@@ -1069,8 +1084,10 @@
     $('cat-modal-info').textContent = '총 ' + posts.length + '건 · 누적 방문 ' + fmt(sumV) + ' · 인바운드 ' + fmt(sumI);
 
     const body = $('cat-modal-body');
+    body.classList.add('split');
     if (!posts.length){
-      body.innerHTML = '<div class="empty" style="margin:24px; grid-column:1/-1;">게시글 없음</div>';
+      body.classList.remove('split');
+      body.innerHTML = '<div class="empty" style="margin:24px;">게시글 없음</div>';
       $('cat-modal').classList.add('open');
       return;
     }
@@ -1078,7 +1095,8 @@
     const renderList = function(rows, valueOf, valueClass){
       const rowsHtml = rows.map(function(r,i){
         const v = valueOf(r);
-        return '<div class="cm-row">'
+        const pid = r.postid != null ? String(r.postid) : '';
+        return '<div class="cm-row cm-row-link" data-postid="'+escAttr(pid)+'" title="클릭하여 상세보기">'
           + '<div class="no">'+(i+1)+'</div>'
           + '<div class="info-cell">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escapeHtml(r['제목']||'-')+'</div>'
@@ -1108,6 +1126,15 @@
         + '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">인바운드</div></div>'
         + '<div class="cm-section-list">' + renderList(byInbound, function(r){ return inbOf(r); }, 'green') + '</div>'
       + '</div>';
+
+    // 행 클릭 → 블로그 페이지 상세 드로어 열기 (?postid=XXX)
+    body.querySelectorAll('.cm-row-link').forEach(function(el){
+      el.addEventListener('click', function(){
+        const pid = el.dataset.postid || '';
+        if (!pid) return;
+        location.href = '../?postid=' + encodeURIComponent(pid);
+      });
+    });
 
     $('cat-modal').classList.add('open');
   }

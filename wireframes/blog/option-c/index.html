@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260511-2">
+<link rel="stylesheet" href="../shared.css?v=20260511-3">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -729,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260511-2"></script>
+<script src="../proxy-client.js?v=20260511-3"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -1098,6 +1098,7 @@
     if (!url){
       setStatus('데모 데이터 표시 중', 'demo');
       render(SAMPLE_BLOG);
+      openDetailFromUrl();
       return;
     }
     try{
@@ -1107,6 +1108,7 @@
       await loadInboundCountsForCurrent();
       refreshAll();
       setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
+      openDetailFromUrl();
     }catch(err){
       // 진단: 프록시 자체가 살아있는지 health로 확인
       let hint = '';
@@ -1155,6 +1157,17 @@
   $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
   $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
   $('btn-clear-date').addEventListener('click', clearDateRange);
+
+  // URL ?postid=XXX 로 진입 시 해당 글의 상세 드로어를 자동 오픈
+  function openDetailFromUrl(){
+    try {
+      const params = new URLSearchParams(location.search);
+      const pid = params.get('postid');
+      if (!pid) return;
+      const row = (CURRENT_ROWS || []).find(function(r){ return String(r.postid||'') === String(pid); });
+      if (row) openDetail(row);
+    } catch (_) {}
+  }
 
   // ── 상세보기 드로어 ──────────────────────────────
   function openDetail(row){
