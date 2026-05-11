@@ -9,6 +9,33 @@
  */
 (function () {
   const STORAGE_KEY = 'mkt_gas_url';
+  const CACHE_PREFIX = 'mkt_cache_';
+  const CACHE_TTL    = 30 * 60 * 1000; // 30분 — 새로고침 버튼으로 명시 무효화 가능
+
+  function _ssGet(key){
+    try {
+      const raw = sessionStorage.getItem(CACHE_PREFIX + key);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj.t !== 'number') return null;
+      if (Date.now() - obj.t > CACHE_TTL) return null;
+      return obj.d;
+    } catch (_) { return null; }
+  }
+  function _ssSet(key, data){
+    try { sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), d: data })); }
+    catch (_) {}
+  }
+  function _ssClear(){
+    try {
+      const keys = [];
+      for (let i = 0; i < sessionStorage.length; i++){
+        const k = sessionStorage.key(i);
+        if (k && k.indexOf(CACHE_PREFIX) === 0) keys.push(k);
+      }
+      keys.forEach(function(k){ sessionStorage.removeItem(k); });
+    } catch (_) {}
+  }
 
   const Proxy = {
     STORAGE_KEY: STORAGE_KEY,
@@ -68,6 +95,9 @@
     },
 
     blogList: async function (params) {
+      const cacheKey = 'blog_list:' + JSON.stringify(params || {});
+      const cached = _ssGet(cacheKey);
+      if (cached) return cached;
       const r = await this.call('blog.list', params);
       const data = r.data || {};
       // 방어: GAS 미배포 환경/구버전 대비 — 제목 공백 행 제외
@@ -78,6 +108,7 @@
         });
         data.total = data.rows.length;
       }
+      _ssSet(cacheKey, data);
       return data;
     },
     blogSummary: async function () {
@@ -111,12 +142,29 @@
     blogInboundCounts: async function (params) {
       params = params || {};
       const key = (params.from || '') + '|' + (params.to || '');
+      // 1차: 메모리 캐시
       if (!this._countsCacheMap) this._countsCacheMap = new Map();
-      const cached = this._countsCacheMap.get(key);
-      if (cached && (Date.now() - cached.t) < this._inboundCacheTtl) return cached.d;
+      const mem = this._countsCacheMap.get(key);
+      if (mem && (Date.now() - mem.t) < this._inboundCacheTtl) return mem.d;
+      // 2차: sessionStorage (페이지 이동 시에도 유지)
+      const ssKey = 'inbound_counts:' + key;
+      const disk = _ssGet(ssKey);
+      if (disk) {
+        this._countsCacheMap.set(key, { d: disk, t: Date.now() });
+        return disk;
+      }
       const r = await this.call('blog.inboundCounts', params);
       this._countsCacheMap.set(key, { d: r.data, t: Date.now() });
+      _ssSet(ssKey, r.data);
       return r.data;
+    },
+    /**
+     * 모든 캐시(메모리 + sessionStorage) 무효화 — 새로고침 버튼 핸들러에서 호출
+     */
+    invalidateAll: function () {
+      if (this._inboundCache && this._inboundCache.clear) this._inboundCache.clear();
+      if (this._countsCacheMap && this._countsCacheMap.clear) this._countsCacheMap.clear();
+      _ssClear();
     },
     health: async function () {
       const r = await this.call('health');

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared.css?v=20260511-3">
+<link rel="stylesheet" href="../../shared.css?v=20260511-4">
 <style>
   /* 기간 조회 바 */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -305,6 +305,7 @@
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
       </div>
+      <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
     </div>
 
     <nav class="page-tabs">
@@ -500,7 +501,8 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260511-3"></script>
+<script src="../../proxy-client.js?v=20260511-4"></script>
+<script src="../../_detail-drawer.js?v=20260511-4"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -991,12 +993,14 @@
       }).join('');
     }
     body.innerHTML = html;
-    // 행 클릭 → 블로그 페이지 상세 드로어 열기
+    // 행 클릭 → 인사이트 페이지 내에서 상세 드로어 오픈
     body.querySelectorAll('.cm-row-link').forEach(function(el){
       el.addEventListener('click', function(){
         const pid = el.dataset.postid || '';
         if (!pid) return;
-        location.href = '../?postid=' + encodeURIComponent(pid);
+        const row = ALL_ROWS.find(function(r){ return String(r.postid||'') === pid; });
+        if (!row) return;
+        MktDrawer.open(row, { editHref: '../?postid=' + encodeURIComponent(pid) });
       });
     });
     $('cat-modal').classList.add('open');
@@ -1127,12 +1131,14 @@
         + '<div class="cm-section-list">' + renderList(byInbound, function(r){ return inbOf(r); }, 'green') + '</div>'
       + '</div>';
 
-    // 행 클릭 → 블로그 페이지 상세 드로어 열기 (?postid=XXX)
+    // 행 클릭 → 인사이트 페이지 내에서 상세 드로어 오픈
     body.querySelectorAll('.cm-row-link').forEach(function(el){
       el.addEventListener('click', function(){
         const pid = el.dataset.postid || '';
         if (!pid) return;
-        location.href = '../?postid=' + encodeURIComponent(pid);
+        const row = ALL_ROWS.find(function(r){ return String(r.postid||'') === pid; });
+        if (!row) return;
+        MktDrawer.open(row, { editHref: '../?postid=' + encodeURIComponent(pid) });
       });
     });
 
@@ -1403,10 +1409,17 @@
   $('btn-connect').addEventListener('click', () => {
     const v = $('gas-url').value.trim();
     if (!v) return;
-    MktProxy.setUrl(v); load();
+    MktProxy.setUrl(v);
+    MktProxy.invalidateAll();
+    load();
   });
   $('btn-disconnect').addEventListener('click', () => {
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
+  });
+  $('btn-refresh').addEventListener('click', function(){
+    MktProxy.invalidateAll();
+    setStatus('새로고침 중...');
+    load();
   });
 
   // 기간 조회 핸들러
