@@ -87,6 +87,14 @@ a{ color:inherit; text-decoration:none; }
 .link-icon{ display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; border:1px solid var(--line); color:var(--muted); }
 .link-icon:hover{ color:var(--accent); border-color:var(--accent); }
 
+/* header utility button (새로고침 / 옵션 등) */
+.opt-btn{
+  background:transparent; border:1px solid var(--line); color:var(--muted);
+  padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer;
+  line-height:1.3; flex-shrink:0;
+}
+.opt-btn:hover{ border-color:var(--accent); color:var(--accent); }
+
 /* page tabs (블로그 / 인사이트 / 원본) */
 .page-tabs{
   display:flex; gap:2px; border-bottom:1px solid var(--line);

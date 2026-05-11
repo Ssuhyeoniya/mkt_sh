@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260511-6">
+<link rel="stylesheet" href="../shared.css?v=20260511-7">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -306,14 +306,6 @@
   .d-edit-banner.show{ display:block; }
   .d-edit-banner.err{ background:rgba(255,93,115,.1); border-color:rgba(255,93,115,.3); color:#ffb1bb; }
   .d-edit-banner.ok{ background:rgba(61,220,151,.1); border-color:rgba(61,220,151,.3); color:#a3edcc; }
-
-  /* 옵션 설정 버튼 */
-  .opt-btn{
-    background:transparent; border:1px solid var(--line); color:var(--muted);
-    padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer;
-    line-height:1.3; flex-shrink:0;
-  }
-  .opt-btn:hover{ border-color:var(--accent); color:var(--accent); }
 
   /* 옵션 설정 모달 */
   .opt-modal-content{ width:520px; max-width:92vw; }
@@ -732,7 +724,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260511-6"></script>
+<script src="../proxy-client.js?v=20260511-7"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
