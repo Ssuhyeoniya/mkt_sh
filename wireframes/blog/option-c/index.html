@@ -729,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-16"></script>
+<script src="../proxy-client.js?v=20260510-17"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -781,13 +781,13 @@
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
     ACTIVE_RANGE = String(days);
-    loadInboundCountsForCurrent().then(refreshAll);
+    refreshAll();   // 인바운드 카운트는 발행일 필터와 무관 → 재로드 불필요
   }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
-    loadInboundCountsForCurrent().then(refreshAll);
+    refreshAll();
   }
   function updateRangeInfo(){
     const ds = $('date-start').value;
@@ -1148,8 +1148,8 @@
     });
   });
   // 기간 조회: 사용자 직접 선택
-  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
-  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
+  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; refreshAll(); });
+  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; refreshAll(); });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
   // ── 상세보기 드로어 ──────────────────────────────
@@ -1326,21 +1326,13 @@
   }
   async function loadInboundCountsForCurrent(){
     if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
-    const ds = $('date-start').value, de = $('date-end').value;
-    const params = {};
-    if (ds) params.from = ds;
-    if (de) params.to   = de;
+    // 인바운드 카운트는 발행 일자 필터와 무관 — salesmap 전체 시간 utm 매칭 사용
+    // (날짜 필터는 블로그 글 자체의 발행일에만 적용)
     try{
-      const r = await MktProxy.blogInboundCounts(params);
+      const r = await MktProxy.blogInboundCounts();
       INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
       const matched = Object.keys(INBOUND_COUNTS).length;
-      console.log('[blog] inboundCounts:', { req:params, utm_terms:matched, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
-      if (params.from && r && r.from && r.from !== params.from){
-        console.warn('[blog] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
-      }
-      if (params.from && r && !('from' in r)){
-        console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 Blog_inboundCounts 사용 중. 재배포 필요');
-      }
+      console.log('[blog] inboundCounts (전체 시간):', { utm_terms:matched, total:r&&r.total });
     }catch(err){
       console.warn('[blog] inboundCounts 로드 실패:', err);
       INBOUND_COUNTS = {};
