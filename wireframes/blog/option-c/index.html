@@ -729,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-15"></script>
+<script src="../proxy-client.js?v=20260510-16"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -781,13 +781,13 @@
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
     ACTIVE_RANGE = String(days);
-    refreshAll();
+    loadInboundCountsForCurrent().then(refreshAll);
   }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
-    refreshAll();
+    loadInboundCountsForCurrent().then(refreshAll);
   }
   function updateRangeInfo(){
     const ds = $('date-start').value;
@@ -813,16 +813,20 @@
       if (sort === 'date_desc')    return String(b['날짜']||'').localeCompare(String(a['날짜']||''));
       if (sort === 'visit_desc')   return Number(b.totalVisit||0) - Number(a.totalVisit||0);
       if (sort === 'weekly_desc')  return Number(b.weeklyVisitor||0) - Number(a.weeklyVisitor||0);
-      if (sort === 'inbound_desc') return Number(b.inbound||0) - Number(a.inbound||0);
+      if (sort === 'inbound_desc') return actualInbound(b) - actualInbound(a);
       return 0;
     });
     return out;
   }
 
   // ── analytics renderers ──────────────────────────
-  function renderTopList(rows, key, listEl){
+  // getter: string(key) 또는 function(r)→number
+  function renderTopList(rows, getter, listEl){
+    const getVal = (typeof getter === 'function')
+      ? getter
+      : function(r){ return Number(r[getter]) || 0; };
     const sorted = rows.slice()
-      .sort((a,b)=>Number(b[key]||0)-Number(a[key]||0))
+      .sort((a,b)=> getVal(b) - getVal(a))
       .slice(0,5);
     if (!sorted.length){ listEl.innerHTML = '<div class="empty" style="margin:auto">데이터 없음</div>'; return; }
     const items = sorted.slice();
@@ -832,12 +836,12 @@
       return '<div class="item">'
         + '<div class="rk">'+(i+1)+'</div>'
         + '<div class="tt" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-        + '<div class="vv">'+fmt(r[key])+'</div>'
+        + '<div class="vv">'+fmt(getVal(r))+'</div>'
       + '</div>';
     }).join('');
   }
-  function renderTop(rows){        renderTopList(rows, 'totalVisit', $('top-list')); }
-  function renderInboundTop(rows){ renderTopList(rows, 'inbound',    $('inbound-list')); }
+  function renderTop(rows){        renderTopList(rows, 'totalVisit',  $('top-list')); }
+  function renderInboundTop(rows){ renderTopList(rows, actualInbound, $('inbound-list')); }
 
   function renderCatBars(rows){
     const map = {};
@@ -877,7 +881,7 @@
       if (!k) return;
       if (!map[k]) map[k] = { totalVisit:0, inbound:0 };
       map[k].totalVisit += Number(r.totalVisit||0);
-      map[k].inbound    += Number(r.inbound||0);
+      map[k].inbound    += actualInbound(r);
     });
     const keys   = Object.keys(map).sort();
     const svg    = $('trend');
@@ -1040,7 +1044,7 @@
           + '<div class="num-cell">'+fmt(r.totalVisit)+'</div>'
           + '<div class="num-cell">'+fmt(r.weeklyVisitor)+'</div>'
           + '<div class="num-cell">'+fmt(r.monthlyVisitor)+'</div>'
-          + '<div class="num-cell" style="color:'+(Number(r.inbound)>=20?'var(--green)':'var(--text)')+'">'+fmt(r.inbound)+'</div>'
+          + (function(){ const ib = actualInbound(r); return '<div class="num-cell" style="color:'+(ib>=20?'var(--green)':'var(--text)')+'">'+fmt(ib)+'</div>'; })()
           + '<div>'+link+'</div>'
           + '<div><button class="btn-detail" data-postid="'+escAttr(r.postid||'')+'" data-idx="'+(start+i)+'">상세</button></div>'
         + '</div>';
@@ -1058,7 +1062,7 @@
     const rows = SCOPED_ROWS;
     const tot = rows.reduce((s,r)=>s+Number(r.totalVisit||0),0);
     const wk  = rows.reduce((s,r)=>s+Number(r.weeklyVisitor||0),0);
-    const ib  = rows.reduce((s,r)=>s+Number(r.inbound||0),0);
+    const ib  = rows.reduce((s,r)=>s+actualInbound(r),0);
     const cats = Array.from(new Set(rows.map(r=>r.category||'미분류')));
     const avg = rows.length ? Math.round(tot/rows.length) : 0;
     const cvr = tot > 0 ? (ib/tot*100).toFixed(2) + '%' : '0%';
@@ -1095,8 +1099,10 @@
     try{
       setStatus('연결 중...');
       const data = await MktProxy.blogList();
-      render(data.rows || []);
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+      CURRENT_ROWS = data.rows || [];
+      await loadInboundCountsForCurrent();
+      refreshAll();
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
     }catch(err){
       // 진단: 프록시 자체가 살아있는지 health로 확인
       let hint = '';
@@ -1142,8 +1148,8 @@
     });
   });
   // 기간 조회: 사용자 직접 선택
-  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; refreshAll(); });
-  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; refreshAll(); });
+  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
+  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
   // ── 상세보기 드로어 ──────────────────────────────
@@ -1310,6 +1316,36 @@
 
   // ── 상세보기 편집 모드 ────────────────────────────
   let CURRENT_DETAIL_ROW = null;
+  let INBOUND_COUNTS = {};   // utm_term → 인바운드 인입 건수 (제출일자 기간 필터 적용됨)
+  function actualInbound(r){
+    const u = String(r && r.utm_term || '').trim();
+    if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)){
+      return Number(INBOUND_COUNTS[u]) || 0;
+    }
+    return Number(r && r.inbound) || 0;
+  }
+  async function loadInboundCountsForCurrent(){
+    if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
+    const ds = $('date-start').value, de = $('date-end').value;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+    try{
+      const r = await MktProxy.blogInboundCounts(params);
+      INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
+      const matched = Object.keys(INBOUND_COUNTS).length;
+      console.log('[blog] inboundCounts:', { req:params, utm_terms:matched, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
+      if (params.from && r && r.from && r.from !== params.from){
+        console.warn('[blog] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
+      }
+      if (params.from && r && !('from' in r)){
+        console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 Blog_inboundCounts 사용 중. 재배포 필요');
+      }
+    }catch(err){
+      console.warn('[blog] inboundCounts 로드 실패:', err);
+      INBOUND_COUNTS = {};
+    }
+  }
 
   function populateEditSelects(){
     if (!CURRENT_DETAIL_ROW) return;
