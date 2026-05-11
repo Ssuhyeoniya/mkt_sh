@@ -107,15 +107,15 @@
       if (utm_term) this._inboundCache.delete(utm_term);
       else this._inboundCache.clear();
     },
-    _countsCache: null,
-    _countsCacheT: 0,
-    blogInboundCounts: async function () {
-      if (this._countsCache && (Date.now() - this._countsCacheT) < this._inboundCacheTtl) {
-        return this._countsCache;
-      }
-      const r = await this.call('blog.inboundCounts');
-      this._countsCache = r.data;
-      this._countsCacheT = Date.now();
+    _countsCacheMap: null,
+    blogInboundCounts: async function (params) {
+      params = params || {};
+      const key = (params.from || '') + '|' + (params.to || '');
+      if (!this._countsCacheMap) this._countsCacheMap = new Map();
+      const cached = this._countsCacheMap.get(key);
+      if (cached && (Date.now() - cached.t) < this._inboundCacheTtl) return cached.d;
+      const r = await this.call('blog.inboundCounts', params);
+      this._countsCacheMap.set(key, { d: r.data, t: Date.now() });
       return r.data;
     },
     health: async function () {

@@ -469,7 +469,7 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260510-14"></script>
+<script src="../../proxy-client.js?v=20260510-15"></script>
 <script>
   function $(id){ return document.getElementById(id); }
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
@@ -536,15 +536,16 @@
   }
 
   // ── 인사이트 도출 로직 ───────────────────────────
-  function derive(rows){
+  function derive(rows, countsMap){
     if (!rows || !rows.length) return null;
 
-    // 실제 인바운드 = 세일즈맵에서 utm_term 매칭 건수 (있으면 우선 사용),
-    // 없으면 BLOG_RAW_DATA 의 inbound 컬럼 사용
+    // 실제 인바운드 = 세일즈맵에서 (utm_term + 제출일자 기간) 매칭 건수
+    // countsMap 미지정 시 글로벌 INBOUND_COUNTS 사용 (호환)
+    const counts = countsMap || INBOUND_COUNTS;
     const actualInbound = function(r){
       const u = String(r.utm_term || '').trim();
-      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)) {
-        return Number(INBOUND_COUNTS[u]) || 0;
+      if (u && Object.prototype.hasOwnProperty.call(counts, u)) {
+        return Number(counts[u]) || 0;
       }
       return Number(r.inbound) || 0;
     };
@@ -1137,7 +1138,7 @@
     return '<span class="'+cls+'">'+sign+d+'점</span>';
   }
 
-  function applyCompare(curD){
+  async function applyCompare(curD){
     document.querySelectorAll('.cmp-btn').forEach(function(b){
       b.classList.toggle('active', b.dataset.cmp === COMPARE_MODE);
     });
@@ -1174,6 +1175,15 @@
     const prevRows = rowsInRange(prevStart, prevEnd);
     const cmpLabel = COMPARE_MODE === 'mom' ? '전월' : '전년';
 
+    // 비교 기간 인바운드 counts 로드 (서버에서 제출일자 필터 적용)
+    let prevCounts = {};
+    if (MktProxy.getUrl()){
+      try{
+        const r = await MktProxy.blogInboundCounts({ from: prevStart, to: prevEnd });
+        prevCounts = (r && r.counts) ? r.counts : {};
+      }catch(_){ prevCounts = {}; }
+    }
+
     if (!prevRows.length){
       tbody.innerHTML =
         '<tr>'
@@ -1190,7 +1200,7 @@
       return;
     }
 
-    const prevD = derive(prevRows);
+    const prevD = derive(prevRows, prevCounts);
 
     // 점수 자동 변경 — 비교 기간의 점수로 표시
     safeSet('score-val', prevD.score);
@@ -1222,20 +1232,28 @@
       + '</tr>';
   }
 
-  function refresh(){
+  async function refresh(){
     updateRangeInfo();
     const filtered = applyDateFilter(ALL_ROWS);
     SCOPED_ROWS_GLOBAL = filtered;
-    const d = derive(filtered);
+
+    // 현재 기간 인바운드 counts 로드 (서버에서 제출일자 필터 적용)
+    const cur = getCurrentRange();
+    if (cur && MktProxy.getUrl()){
+      try{
+        const r = await MktProxy.blogInboundCounts({ from: cur.start, to: cur.end });
+        INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
+      }catch(_){ /* keep previous */ }
+    }
+
+    const d = derive(filtered, INBOUND_COUNTS);
     renderHero(d);
     applyCompare(d);
     renderCatChart(d);
     const ins = buildInsights(d);
     renderCards(ins.cards);
     renderReco(ins.reco);
-    const range = ACTIVE_RANGE
-      ? `최근 ${ACTIVE_RANGE}일`
-      : (!$('date-start').value && !$('date-end').value ? '전체 기간' : '사용자 지정 기간');
+    const range = cur ? (cur.start + ' ~ ' + cur.end) : '전체 기간';
     $('footer-note').textContent =
       `${SOURCE_LABEL} · ${range} · ${filtered.length}건 분석 · ${ins.cards.length}개 인사이트 · ${ins.reco.length}개 추천 액션`;
   }
