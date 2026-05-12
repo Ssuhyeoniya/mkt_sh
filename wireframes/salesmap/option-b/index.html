@@ -127,6 +127,7 @@
       </div>
 
       <button id="btn-apply" class="btn-apply">조회</button>
+      <button id="btn-refresh" class="ghost-btn" title="GAS 프록시에서 다시 불러오기">↻ 새로고침</button>
 
       <div style="flex:1"></div>
 
@@ -579,16 +580,22 @@
     rerender();
   }
 
-  async function load(){
+  async function load(force){
     const url = MktProxy.getUrl();
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
-    if (!url){ setStatus('데모 데이터 표시 중', 'demo'); render(SAMPLE_SALESMAP); return; }
+    if (!url){
+      MktProxy.salesmapClearCache();
+      setStatus('데모 데이터 표시 중', 'demo');
+      render(SAMPLE_SALESMAP);
+      return;
+    }
     try{
-      setStatus('연결 중...');
-      const data = await MktProxy.salesmapList();
+      setStatus(force ? '새로고침 중...' : '불러오는 중...');
+      const data = await MktProxy.salesmapListCached(force);
       render(data.rows || []);
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+      const tag = data._fromCache ? ' · 캐시됨' : '';
+      setStatus('● 연결됨 · ' + (data.total || (data.rows||[]).length) + '건' + tag, 'ok');
     }catch(err){
       setStatus('연결 실패: '+err.message, 'err');
       render(SAMPLE_SALESMAP);
@@ -604,14 +611,15 @@
     document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
   });
 
-  $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); load(); });
-  $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load(); });
+  $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); MktProxy.salesmapClearCache(); load(true); });
+  $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; MktProxy.salesmapClearCache(); load(); });
   $('btn-reset-w').addEventListener('click', resetWidths);
   $('btn-export').addEventListener('click', exportCSV);
 
   // 조회 버튼: 필터 적용
   function applySearch(){ readApplied(); PAGE = 1; rerender(); }
   $('btn-apply').addEventListener('click', applySearch);
+  $('btn-refresh').addEventListener('click', () => load(true));
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
 
   // 기간 조회
