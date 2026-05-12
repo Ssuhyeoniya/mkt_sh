@@ -50,6 +50,27 @@
     const r = await this.call('salesmap.summary');
     return r.data;
   };
+
+  // ── 세션 캐시 (세일즈맵 ↔ 인사이트 탭 전환 시 즉시 표시) ─────
+  // force=true 또는 캐시 미존재 시 GAS 재조회. 새로고침 버튼이 force 호출.
+  const SMAP_CACHE_KEY = 'smap_cache_v1';
+  window.MktProxy.salesmapListCached = async function (force) {
+    if (!force) {
+      try {
+        const cached = sessionStorage.getItem(SMAP_CACHE_KEY);
+        if (cached) {
+          const obj = JSON.parse(cached);
+          if (obj && Array.isArray(obj.rows)) return Object.assign({}, obj, { _fromCache: true });
+        }
+      } catch (_) {}
+    }
+    const data = await this.salesmapList();
+    try { sessionStorage.setItem(SMAP_CACHE_KEY, JSON.stringify({ rows: data.rows || [], total: data.total || 0, ts: Date.now() })); } catch (_) {}
+    return data;
+  };
+  window.MktProxy.salesmapClearCache = function () {
+    try { sessionStorage.removeItem(SMAP_CACHE_KEY); } catch (_) {}
+  };
 })();
 
 /**
