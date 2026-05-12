@@ -20,11 +20,11 @@
   .grid-3 > .panel{ flex:1 1 300px; min-width:300px; }
   .grid-3.lead > .panel:first-child{ flex:1.4 1 380px; min-width:360px; }
   .grid-3::-webkit-scrollbar{ height:8px; }
-  .grid-3::-webkit-scrollbar-thumb{ background:#262c35; border-radius:99px; }
+  .grid-3::-webkit-scrollbar-thumb{ background:var(--line-2); border-radius:99px; }
   .rank-row{ display:flex; align-items:center; gap:10px; padding:6px 0; }
   .rank-row .idx{ width:18px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
   .rank-row .name{ flex:1; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .rank-row .bar{ width:120px; height:5px; background:#1a1e25; border-radius:99px; overflow:hidden; }
+  .rank-row .bar{ width:120px; height:5px; background:var(--hover-bg); border-radius:99px; overflow:hidden; }
   .rank-row .bar > i{ display:block; height:100%; background:var(--accent); border-radius:99px; }
   .rank-row .v{ width:42px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-2); }
   .donut-legend{ display:flex; flex-direction:column; gap:6px; font-size:12px; }
@@ -38,7 +38,7 @@
   .stat-bar .b .v{ position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
   .stat-bar-x{ display:flex; gap:6px; padding:6px 4px 0; }
   .stat-bar-x .x{ flex:1; text-align:center; font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
-  .seg{ display:inline-flex; background:#1a1e25; border:1px solid var(--line); border-radius:7px; padding:2px; }
+  .seg{ display:inline-flex; background:var(--hover-bg); border:1px solid var(--line); border-radius:7px; padding:2px; }
   .seg button{ background:transparent; border:0; color:var(--muted); font-size:11.5px; padding:4px 10px; border-radius:5px; cursor:pointer; }
   .seg button.active{ background:var(--accent); color:#fff; }
 </style>
@@ -146,7 +146,7 @@
       <div class="panel panel-pad">
         <div class="panel-title"><h3>관심 서비스 비중</h3><span class="sub" id="svc-total">0건</span></div>
         <div style="display:flex; align-items:center; gap:18px;">
-          <div class="donut" id="svc-donut" style="background:conic-gradient(#262c35 0 100%)">
+          <div class="donut" id="svc-donut" style="background:conic-gradient(#e2e5ec 0 100%)">
             <div class="hole">
               <div class="text-[11px] muted">서비스</div>
               <div class="num text-[16px] font-semibold" id="svc-donut-n">0</div>
@@ -201,7 +201,7 @@
 
 <script src="../proxy-client.js"></script>
 <script>
-  const HUES = ['#7c5cff','#3ddc97','#4ea3ff','#ffb648','#ff7ab6','#ff5d73','#9c83ff','#7ee9bf','#9ccaff','#ffd99a'];
+  const HUES = ['#6d4eff','#16a34a','#2563eb','#d97706','#db2777','#dc2626','#8a72ff','#22c55e','#3b82f6','#f59e0b'];
 
   let CURRENT = [];
   let TREND_RANGE = 'month';
@@ -341,7 +341,7 @@
     $('svc-total').textContent = total + '건';
     $('svc-donut-n').textContent = arr.length;
     if (!total){
-      $('svc-donut').style.background = 'conic-gradient(#262c35 0 100%)';
+      $('svc-donut').style.background = 'conic-gradient(#e2e5ec 0 100%)';
       $('svc-legend').innerHTML = '<div class="muted text-[12px]">데이터 없음</div>';
       return;
     }
@@ -352,7 +352,7 @@
       const end = acc / total * 100;
       return `${HUES[i]} ${start}% ${end}%`;
     });
-    $('svc-donut').style.background = 'conic-gradient(' + stops.join(', ') + ', #262c35 ' + (acc/total*100) + '% 100%)';
+    $('svc-donut').style.background = 'conic-gradient(' + stops.join(', ') + ', #e2e5ec ' + (acc/total*100) + '% 100%)';
     $('svc-legend').innerHTML = arr.slice(0, 6).map((x,i) => `
       <div class="row">
         <span class="dot" style="background:${HUES[i % HUES.length]}"></span>
