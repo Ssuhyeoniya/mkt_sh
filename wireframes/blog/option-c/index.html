@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260511-9">
+<link rel="stylesheet" href="../shared.css?v=20260512-1">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -359,6 +359,30 @@
   .inbound-summary{ padding:8px 12px; border-bottom:1px solid var(--line); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
   .inbound-summary .num{ color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight:600; }
 
+  /* 상세 드로어 일자별 인바운드 미니 차트 */
+  .d-daily-card{
+    background:var(--panel-2); border:1px solid var(--line-2); border-radius:8px;
+    padding:10px 12px;
+  }
+  .d-daily-card .d-daily-meta{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color:var(--muted); margin-bottom:6px;
+  }
+  .d-daily-card .d-daily-meta .num{ color:var(--accent); font-family:'JetBrains Mono',monospace; font-weight:600; }
+  .d-daily-chart-svg{ width:100%; height:120px; display:block; }
+  .d-daily-chart-svg .bar{ fill:var(--green); }
+  .d-daily-chart-svg .bar:hover{ fill:var(--accent); }
+  .d-daily-chart-svg .axis-line{ stroke:var(--line); stroke-width:1; }
+  .d-daily-chart-svg text{ font-size:9px; fill:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .d-daily-bar-tip{
+    position:fixed; pointer-events:none; z-index:1000;
+    background:var(--panel); border:1px solid var(--line-2); border-radius:6px;
+    padding:5px 8px; font-size:11px; color:var(--text); white-space:nowrap;
+    box-shadow:0 4px 12px rgba(15,23,42,.15);
+    display:none; transform:translateX(-50%);
+  }
+  .d-daily-bar-tip .num{ color:var(--accent); font-family:'JetBrains Mono',monospace; font-weight:600; }
+
   .d-meta{ padding:14px 18px 18px; border-top:1px solid var(--line); }
   .d-meta .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
   .meta-item{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
@@ -638,6 +662,12 @@
       <div class="c"><div class="l">인바운드</div><div class="v" id="d-inbound" style="color:var(--green)">-</div></div>
     </div>
     <div class="d-section">
+      <div class="section-h">일자별 인바운드 현황 <span style="font-weight:400; color:var(--muted); margin-left:4px;" id="d-daily-range"></span></div>
+      <div id="d-daily-chart">
+        <div class="d-timeline-stub">utm_term 정보가 필요합니다.</div>
+      </div>
+    </div>
+    <div class="d-section">
       <div class="section-h">본문 요약</div>
       <div class="body" id="d-summary">-</div>
     </div>
@@ -724,7 +754,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260511-9"></script>
+<script src="../proxy-client.js?v=20260512-1"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -1244,24 +1274,154 @@
     loadInboundDates(row.utm_term);
   }
 
+  // 일자별 인바운드 미니 차트 — 조회 기간(date-start/date-end)에 맞춰 일 단위 카운트
+  function renderDailyInboundChart(items, utm_term){
+    const target = $('d-daily-chart');
+    const rangeEl = $('d-daily-range');
+    if (!items || !items.length){
+      target.innerHTML = '<div class="d-timeline-stub">매칭되는 인바운드 없음</div>';
+      rangeEl.textContent = '';
+      return;
+    }
+
+    // 1) 인입 datetime → 'YYYY-MM-DD' 추출
+    const dates = items.map(function(it){
+      const raw = String(it.datetime || it.date || '');
+      const m = raw.match(/\d{4}-\d{2}-\d{2}/);
+      return m ? m[0] : '';
+    }).filter(Boolean);
+    if (!dates.length){
+      target.innerHTML = '<div class="d-timeline-stub">유효한 인입 일자가 없습니다.</div>';
+      rangeEl.textContent = '';
+      return;
+    }
+
+    // 2) 조회 기간 결정: date-start/date-end 픽커 값. 비어있으면 인입 일자의 min/max 사용
+    const dsPicker = $('date-start').value;
+    const dePicker = $('date-end').value;
+    const sortedDates = dates.slice().sort();
+    const fromStr = dsPicker || sortedDates[0];
+    const toStr   = dePicker || sortedDates[sortedDates.length-1];
+
+    // 3) 기간 내 일별 카운트
+    const counts = {};
+    dates.forEach(function(d){
+      if (d >= fromStr && d <= toStr){
+        counts[d] = (counts[d] || 0) + 1;
+      }
+    });
+
+    // 4) 기간 내 모든 일자 시리즈 생성 (0건도 포함)
+    const series = [];
+    const start = new Date(fromStr);
+    const end   = new Date(toStr);
+    if (isNaN(start) || isNaN(end) || end < start){
+      target.innerHTML = '<div class="d-timeline-stub">유효한 기간이 아닙니다.</div>';
+      rangeEl.textContent = '';
+      return;
+    }
+    const dayMs = 86400000;
+    const days = Math.min(Math.floor((end - start)/dayMs) + 1, 366);  // 안전 상한 1년
+    for (let i = 0; i < days; i++){
+      const d = new Date(start.getTime() + i*dayMs);
+      const k = d.toISOString().slice(0,10);
+      series.push({ date:k, count: counts[k] || 0 });
+    }
+
+    const totalInPeriod = series.reduce(function(s,x){ return s + x.count; }, 0);
+    rangeEl.textContent = '· ' + fromStr + ' ~ ' + toStr + ' · ' + totalInPeriod + '건';
+
+    // 5) SVG 막대 그래프 생성
+    const W = 420, H = 120, P_T = 8, P_B = 22, P_L = 26, P_R = 6;
+    const innerW = W - P_L - P_R;
+    const innerH = H - P_T - P_B;
+    const maxC = Math.max.apply(null, series.map(function(x){ return x.count; }).concat([1]));
+    const n = series.length;
+    const barW = Math.max(1, innerW / n - 1);
+    const step = innerW / n;
+
+    let inner = '';
+    // Y축 그리드 (3 눈금)
+    for (let i = 0; i <= 2; i++){
+      const yPos = P_T + (innerH * i / 2);
+      const val  = maxC * (1 - i/2);
+      inner += '<line class="axis-line" x1="'+P_L+'" y1="'+yPos+'" x2="'+(W-P_R)+'" y2="'+yPos+'"/>';
+      inner += '<text x="'+(P_L-4)+'" y="'+(yPos+3)+'" text-anchor="end">'+Math.round(val)+'</text>';
+    }
+    // 막대
+    series.forEach(function(x, i){
+      const h = (x.count / maxC) * innerH;
+      const barX = P_L + i*step + (step - barW)/2;
+      const barY = P_T + innerH - h;
+      inner += '<rect class="bar" x="'+barX.toFixed(1)+'" y="'+barY.toFixed(1)
+        +'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)
+        +'" data-date="'+x.date+'" data-count="'+x.count+'">'
+        + '<title>'+x.date+' · '+x.count+'건</title>'
+        + '</rect>';
+    });
+    // X축 라벨 (시작/중간/끝)
+    const labelIdx = [0, Math.floor(n/2), n-1];
+    labelIdx.forEach(function(i){
+      if (i < 0 || i >= n) return;
+      const cx = P_L + i*step + step/2;
+      inner += '<text x="'+cx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+ series[i].date.slice(5) +'</text>';
+    });
+
+    target.innerHTML =
+      '<div class="d-daily-card">'
+      + '<div class="d-daily-meta"><span>매칭 utm_term: <code style="font-family:JetBrains Mono,monospace;color:var(--text-2);">'+escHtml(utm_term||'-')+'</code></span><span>최대 <span class="num">'+maxC+'</span>건/일</span></div>'
+      + '<svg class="d-daily-chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+inner+'</svg>'
+      + '</div>';
+
+    // 호버 툴팁
+    const tip = (function(){
+      let el = document.getElementById('d-daily-bar-tip');
+      if (!el){
+        el = document.createElement('div');
+        el.id = 'd-daily-bar-tip';
+        el.className = 'd-daily-bar-tip';
+        document.body.appendChild(el);
+      }
+      return el;
+    })();
+    target.querySelectorAll('rect.bar').forEach(function(rect){
+      rect.addEventListener('mouseenter', function(e){
+        const r = rect.getBoundingClientRect();
+        tip.innerHTML = '<div>'+rect.dataset.date+'</div><div><span class="num">'+rect.dataset.count+'</span>건</div>';
+        tip.style.left = (r.left + r.width/2) + 'px';
+        tip.style.top  = (r.top - 8) + 'px';
+        tip.style.transform = 'translate(-50%, -100%)';
+        tip.style.display = 'block';
+      });
+      rect.addEventListener('mouseleave', function(){ tip.style.display = 'none'; });
+    });
+  }
+
   // ── 인바운드 인입 날짜 (세일즈맵 utm_term 매칭) ───────
   async function loadInboundDates(utm_term){
     const target = $('d-inbound-list');
     const counter = $('d-inbound-count');
+    const dailyTarget = $('d-daily-chart');
+    const dailyRange = $('d-daily-range');
     counter.textContent = '';
+    if (dailyRange) dailyRange.textContent = '';
     if (!utm_term){
       target.innerHTML = '<div class="d-timeline-stub">utm_term 정보가 없어 매칭할 수 없습니다.</div>';
+      if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub">utm_term 정보가 필요합니다.</div>';
       return;
     }
     if (!MktProxy.getUrl()){
       target.innerHTML = '<div class="d-timeline-stub">프록시 미연결 — 연결 후 자동 표시</div>';
+      if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub">프록시 미연결 — 연결 후 자동 표시</div>';
       return;
     }
     target.innerHTML = '<div class="d-timeline-stub">불러오는 중...</div>';
+    if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub">불러오는 중...</div>';
     try{
       const data = await MktProxy.blogInboundDates(utm_term);
       if (!data.count){
         target.innerHTML = '<div class="d-timeline-stub">매칭되는 인바운드 없음 (utm_term: ' + escAttr(utm_term) + ')</div>';
+        renderDailyInboundChart([], utm_term);
         return;
       }
       counter.textContent = '· ' + data.count + '건';
@@ -1278,8 +1438,10 @@
       });
       html += '</div>';
       target.innerHTML = html;
+      renderDailyInboundChart(data.items, utm_term);
     }catch(err){
       target.innerHTML = '<div class="d-timeline-stub" style="color:var(--red); border-color:rgba(255,93,115,.3);">불러오기 실패: '+ escHtml(err.message) +'</div>';
+      if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub" style="color:var(--red);">불러오기 실패</div>';
     }
   }
   function closeDetail(){
