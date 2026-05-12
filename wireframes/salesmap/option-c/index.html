@@ -72,9 +72,12 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
-        <h1>세일즈맵 · 분석 인사이트</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+          <h1>세일즈맵 · 분석 인사이트</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -121,7 +124,6 @@
       </div>
       <select id="svc"><option value="">전체 서비스</option></select>
       <select id="ch"><option value="">전체 유입경로</option></select>
-      <button id="btn-refresh">↻ 새로고침</button>
     </div>
 
     <!-- Charts -->

@@ -46,9 +46,12 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
-        <h1>세일즈맵 · 리드 로우테이블</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+          <h1>세일즈맵 · 리드 로우테이블</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -78,7 +81,6 @@
       <input id="from" type="date"/>
       <span class="muted text-[12px]">~</span>
       <input id="to" type="date"/>
-      <button id="btn-refresh">↻ 새로고침</button>
       <button id="btn-export">⇩ CSV</button>
       <button id="btn-reset-w" title="컬럼 너비 초기화">↔ 너비 초기화</button>
     </div>

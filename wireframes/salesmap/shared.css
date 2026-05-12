@@ -38,6 +38,14 @@ a{ color:inherit; text-decoration:none; }
 .page-head h1{ font-size:24px; font-weight:600; letter-spacing:-.01em; margin:4px 0 0; color:var(--text); }
 .page-eyebrow{ font-size:12px; color:var(--muted); }
 
+/* header utility button (새로고침 등) — 블로그 페이지와 톤 통일 */
+.opt-btn{
+  background:transparent; border:1px solid var(--line); color:var(--muted);
+  padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer;
+  line-height:1.3; flex-shrink:0;
+}
+.opt-btn:hover{ border-color:var(--accent); color:var(--accent); }
+
 /* connection bar */
 .conn{ display:flex; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 6px 6px 12px; min-width:520px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
 .conn input{ flex:1; background:transparent; border:0; outline:0; color:var(--text); font-size:12.5px; font-family:'JetBrains Mono',monospace; min-width:0; }

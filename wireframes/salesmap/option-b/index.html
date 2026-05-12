@@ -48,9 +48,12 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
-        <h1>세일즈맵 · CRM 파이프라인</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+          <h1>세일즈맵 · CRM 파이프라인</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -607,6 +610,7 @@
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load(); });
   $('btn-reset-w').addEventListener('click', resetWidths);
   $('btn-export').addEventListener('click', exportCSV);
+  $('btn-refresh').addEventListener('click', load);
 
   // 조회 버튼: 필터 적용
   function applySearch(){ readApplied(); PAGE = 1; rerender(); }
