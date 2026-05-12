@@ -559,7 +559,6 @@
         <option value="weekly_desc">주간 방문 많은 순</option>
         <option value="inbound_desc">유입 많은 순</option>
       </select>
-      <button id="btn-refresh">↻ 새로고침</button>
       <span style="flex:1"></span>
       <span class="chip" id="result-count">0건</span>
       <span class="pager-info" id="pager-info" style="font-size:11.5px;color:var(--muted);"></span>
@@ -1145,7 +1144,6 @@
   $('btn-disconnect').addEventListener('click', function(){
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
-  $('btn-refresh').addEventListener('click', load);
   $('q').addEventListener('input',     function(){ CURRENT_PAGE=1; renderTable(); });
   $('cat').addEventListener('change',  function(){ CURRENT_PAGE=1; renderTable(); });
   $('sort').addEventListener('change', function(){ CURRENT_PAGE=1; renderTable(); });

@@ -337,11 +337,24 @@
     }).join('');
   }
 
+  function parseDateMs(v){
+    if (v == null) return 0;
+    const s = String(v).trim();
+    if (!s) return 0;
+    // YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD (선택적으로 HH:mm)
+    const m = s.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2}))?/);
+    if (m){
+      const y = +m[1], mo = +m[2]-1, d = +m[3], hh = +(m[4]||0), mm = +(m[5]||0);
+      const t = new Date(y, mo, d, hh, mm).getTime();
+      if (!isNaN(t)) return t;
+    }
+    const t2 = new Date(s).getTime();
+    return isNaN(t2) ? 0 : t2;
+  }
+
   function sortLatest(rows){
     return rows.slice().sort(function(a,b){
-      const da = String(a['날짜'] || '');
-      const db = String(b['날짜'] || '');
-      return db.localeCompare(da);
+      return parseDateMs(b['날짜']) - parseDateMs(a['날짜']);
     });
   }
 
