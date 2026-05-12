@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260511-7">
+<link rel="stylesheet" href="../shared.css?v=20260511-8">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -443,8 +443,8 @@
           <div class="page-eyebrow">SNS · 블로그</div>
           <h1>블로그 성과 분석</h1>
         </div>
-        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
-        <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">⚙ 옵션</button>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">새로고침</button>
+        <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">옵션</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -549,7 +549,7 @@
     <!-- Filter -->
     <div class="filter">
       <div class="search">
-        <span style="color:var(--muted)">⌕</span>
+        <span style="color:var(--muted); font-size:11px;">검색</span>
         <input id="q" type="text" placeholder="제목으로 검색..."/>
       </div>
       <select id="cat"><option value="">전체 카테고리</option></select>
@@ -559,7 +559,7 @@
         <option value="weekly_desc">주간 방문 많은 순</option>
         <option value="inbound_desc">유입 많은 순</option>
       </select>
-      <button id="btn-refresh">↻ 새로고침</button>
+      <button id="btn-refresh">새로고침</button>
       <span style="flex:1"></span>
       <span class="chip" id="result-count">0건</span>
       <span class="pager-info" id="pager-info" style="font-size:11.5px;color:var(--muted);"></span>
@@ -596,7 +596,7 @@
 <aside class="detail-drawer" id="detail-drawer" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="drawer-head">
     <div class="eyebrow">상세보기</div>
-    <button class="drawer-close" id="detail-close" aria-label="닫기">✕</button>
+    <button class="drawer-close" id="detail-close" aria-label="닫기">닫기</button>
   </div>
   <div class="drawer-body">
     <div class="d-head">
@@ -657,7 +657,7 @@
     </div>
   </div>
   <div class="drawer-foot" id="d-foot-view">
-    <a class="btn-secondary" id="d-link" target="_blank" rel="noopener noreferrer">원문 열기 ↗</a>
+    <a class="btn-secondary" id="d-link" target="_blank" rel="noopener noreferrer">원문 열기</a>
     <button class="btn-primary" id="btn-edit">편집</button>
   </div>
   <div class="drawer-foot" id="d-foot-edit" style="display:none">
@@ -674,7 +674,7 @@
         <div class="eyebrow">드롭다운 옵션</div>
         <h3>서비스 / 카테고리 옵션 설정</h3>
       </div>
-      <button class="modal-close" id="opt-close" aria-label="닫기">✕</button>
+      <button class="modal-close" id="opt-close" aria-label="닫기">닫기</button>
     </div>
     <div class="modal-body">
       <div class="opt-section">
@@ -692,7 +692,7 @@
         <textarea id="opt-cat" placeholder="CRM&#10;자동화&#10;마케팅&#10;세일즈&#10;..."></textarea>
       </div>
       <div style="font-size:11px; color:var(--muted); line-height:1.6;">
-        ⓘ 여기서 설정한 값들은 상세보기 → 편집 시 드롭다운으로 표시됩니다.<br/>
+        여기서 설정한 값들은 상세보기 → 편집 시 드롭다운으로 표시됩니다.<br/>
         설정은 이 브라우저에 저장되며 다른 기기에서는 다시 설정해야 합니다.
       </div>
     </div>
@@ -714,7 +714,7 @@
         <div class="eyebrow">전체 발행글 랭킹</div>
         <h3>방문 많은 순</h3>
       </div>
-      <button class="modal-close" id="top-modal-close" aria-label="닫기">✕</button>
+      <button class="modal-close" id="top-modal-close" aria-label="닫기">닫기</button>
     </div>
     <div class="modal-body" id="top-modal-body"></div>
     <div class="modal-foot">
@@ -724,7 +724,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260511-7"></script>
+<script src="../proxy-client.js?v=20260511-8"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -970,7 +970,7 @@
         }
 
         tip.innerHTML =
-          '<div class="tt-date">📅 <span>'+dateLabel+'</span> '+dateExtra+'</div>'
+          '<div class="tt-date"><span>'+dateLabel+'</span> '+dateExtra+'</div>'
           + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
           + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
       });
@@ -991,7 +991,7 @@
     info.textContent = total === 0 ? '0건' : `${start}–${end} / 총 ${total}건 · ${CURRENT_PAGE}/${pages} 페이지`;
 
     const buttons = [];
-    buttons.push(`<button ${CURRENT_PAGE===1?'disabled':''} data-go="prev">‹</button>`);
+    buttons.push(`<button ${CURRENT_PAGE===1?'disabled':''} data-go="prev">이전</button>`);
     // smart pagination: 항상 1, ..., 현재±1, ..., 마지막
     const win = new Set([1, pages, CURRENT_PAGE-1, CURRENT_PAGE, CURRENT_PAGE+1]);
     let last = 0;
@@ -1000,7 +1000,7 @@
       buttons.push(`<button class="${p===CURRENT_PAGE?'active':''}" data-go="${p}">${p}</button>`);
       last = p;
     });
-    buttons.push(`<button ${CURRENT_PAGE===pages?'disabled':''} data-go="next">›</button>`);
+    buttons.push(`<button ${CURRENT_PAGE===pages?'disabled':''} data-go="next">다음</button>`);
     $('pager').innerHTML = buttons.join('');
     $('pager').querySelectorAll('button[data-go]').forEach(function(btn){
       btn.addEventListener('click', function(){
@@ -1028,9 +1028,9 @@
       list.innerHTML = pageRows.map(function(r,i){
         const idx = start + i + 1;
         const thumb = r.thumbnail
-          ? `<img src="${escAttr(r.thumbnail)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentNode.innerHTML='&lt;span class=ph&gt;◇&lt;/span&gt;'"/>`
-          : '<span class="ph">◇</span>';
-        const link = r['링크'] ? `<a class="lk" href="${escAttr(r['링크'])}" target="_blank" rel="noopener noreferrer">↗</a>` : '<span class="lk" style="opacity:.3">-</span>';
+          ? `<img src="${escAttr(r.thumbnail)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentNode.innerHTML='&lt;span class=ph&gt;&lt;/span&gt;'"/>`
+          : '<span class="ph"></span>';
+        const link = r['링크'] ? `<a class="lk" href="${escAttr(r['링크'])}" target="_blank" rel="noopener noreferrer">링크</a>` : '<span class="lk" style="opacity:.3">-</span>';
         return '<div class="post-row">'
           + '<div class="no">'+idx+'</div>'
           + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
@@ -1102,16 +1102,16 @@
       CURRENT_ROWS = data.rows || [];
       await loadInboundCountsForCurrent();
       refreshAll();
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
+      setStatus('연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
       openDetailFromUrl();
     }catch(err){
       // 진단: 프록시 자체가 살아있는지 health로 확인
       let hint = '';
       try {
         await MktProxy.health();
-        hint = ' · ⚠ 프록시는 정상 — blog 모듈 코드/배포 확인 필요';
+        hint = ' · 프록시는 정상 — blog 모듈 코드/배포 확인 필요';
       } catch (_) {
-        hint = ' · ⚠ 프록시 자체 응답 없음 — URL/재배포 확인';
+        hint = ' · 프록시 자체 응답 없음 — URL/재배포 확인';
       }
       setStatus('연결 실패: ' + err.message + hint, 'err');
       console.error('[MktProxy] blog.list 실패:', err);
@@ -1356,21 +1356,21 @@
       const matched = Object.keys(INBOUND_COUNTS).length;
       console.log('[blog] inboundCounts (제출일자):', { req:params, utm_terms:matched, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
       if (params.from && r && r.from && r.from !== params.from){
-        console.warn('[blog] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
+        console.warn('[blog] GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
       } else if (params.from && r && !('from' in r)){
-        console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
+        console.warn('[blog] GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
       }
     }catch(err){
       const msg = String(err && err.message || err);
       console.error('[blog] inboundCounts 호출 실패:', msg);
       // unknown_action → GAS 재배포 안됨 (Blog_inboundCounts 함수 누락)
       if (msg.indexOf('unknown_action') >= 0){
-        console.error('[blog] 🛑 GAS 에 blog.inboundCounts 라우트 없음 — modules/blog.gs (Blog_inboundCounts 함수) 추가 후 재배포 필요!');
+        console.error('[blog] GAS 에 blog.inboundCounts 라우트 없음 — modules/blog.gs (Blog_inboundCounts 함수) 추가 후 재배포 필요!');
         const statusEl = $('status');
         if (statusEl){
           const cur = statusEl.textContent;
           if (cur.indexOf('blog.inboundCounts 없음') < 0){
-            statusEl.textContent = cur + ' · ⚠ blog.inboundCounts 없음 → GAS 재배포 필요';
+            statusEl.textContent = cur + ' · blog.inboundCounts 없음 → GAS 재배포 필요';
             statusEl.className = 'status err';
             statusEl.title = 'modules/blog.gs 에 Blog_inboundCounts 함수가 없거나 라우트가 등록되지 않음. 재배포 필요.\n' + msg;
           }
@@ -1470,7 +1470,7 @@
 
       // 화면 갱신
       refreshAll();
-      setEditBanner('✓ 저장 완료 (시트 행 ' + (res.rowNumber || '?') + ')', 'ok');
+      setEditBanner('저장 완료 (시트 행 ' + (res.rowNumber || '?') + ')', 'ok');
       // 1초 후 편집 모드 종료, 보기 모드 갱신
       setTimeout(function(){
         if (CURRENT_DETAIL_ROW){
