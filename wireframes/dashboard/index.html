@@ -248,40 +248,156 @@
     <!-- SNS preview -->
     <section class="panel p-5 mb-6">
       <div class="flex items-center justify-between mb-4">
-        <div class="text-[15px] font-semibold">SNS 미리보기</div>
-        <div class="flex gap-1">
-          <span class="sub-tab active">전체</span>
-          <a class="sub-tab" href="../blog/option-c/">블로그</a>
-          <span class="sub-tab">인스타그램</span>
-          <span class="sub-tab">링크드인</span>
+        <div class="flex items-center gap-2">
+          <div class="text-[15px] font-semibold">SNS 미리보기</div>
+          <span id="sns-status" class="text-[11px] muted"></span>
+        </div>
+        <div class="flex gap-1" id="sns-tabs">
+          <span class="sub-tab active" data-svc="all">전체</span>
+          <span class="sub-tab" data-svc="blog">블로그</span>
+          <span class="sub-tab" data-svc="instagram">인스타그램</span>
+          <span class="sub-tab" data-svc="linkedin">링크드인</span>
         </div>
       </div>
-      <div class="grid grid-cols-4 gap-3">
-        <a href="../blog/option-c/" class="rounded-lg border border-[var(--line)] p-3 block hover:bg-[#f6f7fa] transition-colors no-underline text-inherit">
-          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
-          <div class="text-[12.5px] font-medium">블로그 · 신규 캠페인 회고</div>
-          <div class="text-[11px] muted mt-1">조회 12,431 · 5/8</div>
-        </a>
+      <div id="sns-cards" class="grid grid-cols-4 gap-3">
         <div class="rounded-lg border border-[var(--line)] p-3">
           <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
-          <div class="text-[12.5px] font-medium">인스타 · 봄 프로모션 릴스</div>
-          <div class="text-[11px] muted mt-1">좋아요 3,210 · 5/7</div>
+          <div class="text-[12.5px] font-medium muted">불러오는 중…</div>
+          <div class="text-[11px] muted mt-1">&nbsp;</div>
         </div>
-        <div class="rounded-lg border border-[var(--line)] p-3">
-          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
-          <div class="text-[12.5px] font-medium">링크드인 · B2B 케이스</div>
-          <div class="text-[11px] muted mt-1">반응 412 · 5/6</div>
-        </div>
-        <a href="../blog/option-c/" class="rounded-lg border border-[var(--line)] p-3 block hover:bg-[#f6f7fa] transition-colors no-underline text-inherit">
-          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
-          <div class="text-[12.5px] font-medium">블로그 · 분기 리포트</div>
-          <div class="text-[11px] muted mt-1">조회 8,720 · 5/3</div>
-        </a>
       </div>
     </section>
 
     <div class="text-center text-[11.5px] muted py-4">마케팅 CRM · 종합 대시보드 · 와이어프레임 v2</div>
   </main>
 </div>
+
+<script src="../blog/proxy-client.js?v=20260511-9"></script>
+<script>
+(function(){
+  const cardsEl = document.getElementById('sns-cards');
+  const statusEl = document.getElementById('sns-status');
+  const tabsEl = document.getElementById('sns-tabs');
+  let allRows = [];
+  let currentSvc = 'all';
+
+  function fmtNum(n){
+    const v = Number(n) || 0;
+    return v.toLocaleString('ko-KR');
+  }
+  function fmtMD(ymd){
+    if (!ymd) return '';
+    const s = String(ymd);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return parseInt(m[2],10) + '/' + parseInt(m[3],10);
+    const d = new Date(s);
+    if (!isNaN(d)) return (d.getMonth()+1) + '/' + d.getDate();
+    return s;
+  }
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function escAttr(s){ return esc(s); }
+
+  function svcLabel(svc){
+    if (svc === 'naver' || svc === 'tistory' || svc === 'blog') return '블로그';
+    if (svc === 'instagram') return '인스타';
+    if (svc === 'linkedin') return '링크드인';
+    return svc ? String(svc) : 'SNS';
+  }
+  function matchTab(row, tab){
+    if (tab === 'all') return true;
+    const s = String(row.service || '').toLowerCase();
+    if (tab === 'blog') return s === 'naver' || s === 'tistory' || s === 'blog' || s === '';
+    return s === tab;
+  }
+
+  function render(){
+    const filtered = allRows.filter(function(r){ return matchTab(r, currentSvc); });
+    const top = filtered.slice(0, 4);
+    if (top.length === 0){
+      cardsEl.innerHTML = '<div class="col-span-4 text-center text-[12.5px] muted py-6">표시할 게시물이 없습니다.</div>';
+      return;
+    }
+    cardsEl.innerHTML = top.map(function(r){
+      const title = svcLabel(r.service) + ' · ' + esc(r['제목'] || '(제목 없음)');
+      const views = r.totalVisit != null ? r.totalVisit : (r.weeklyVisitor != null ? r.weeklyVisitor : 0);
+      const meta = '조회 ' + fmtNum(views) + ' · ' + esc(fmtMD(r['날짜']));
+      const link = r['링크'] ? r['링크'] : '../blog/option-c/';
+      const thumb = r.thumbnail
+        ? '<img src="'+escAttr(r.thumbnail)+'" alt="" referrerpolicy="no-referrer" class="w-full h-full object-cover rounded" onerror="this.style.display=\'none\'"/>'
+        : '';
+      return '<a href="'+escAttr(link)+'" target="_blank" rel="noopener noreferrer" class="rounded-lg border border-[var(--line)] p-3 block hover:bg-[#f6f7fa] transition-colors no-underline text-inherit">'
+        +   '<div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2 overflow-hidden">'+thumb+'</div>'
+        +   '<div class="text-[12.5px] font-medium line-clamp-2">'+title+'</div>'
+        +   '<div class="text-[11px] muted mt-1">'+meta+'</div>'
+        + '</a>';
+    }).join('');
+  }
+
+  function sortLatest(rows){
+    return rows.slice().sort(function(a,b){
+      const da = String(a['날짜'] || '');
+      const db = String(b['날짜'] || '');
+      return db.localeCompare(da);
+    });
+  }
+
+  // 인스타그램/링크드인은 아직 GAS 연결 전 — 샘플 데이터로 표시
+  const SAMPLE_INSTAGRAM = [
+    { 제목:'봄 프로모션 릴스 — 신규 가입 30% 쿠폰', 날짜:'2026-05-10', service:'instagram', totalVisit:3210, thumbnail:'https://picsum.photos/seed/insta1/240/144', 링크:'https://instagram.com/p/sample1' },
+    { 제목:'고객 인터뷰 클립 · CRM 도입 후기', 날짜:'2026-05-06', service:'instagram', totalVisit:2105, thumbnail:'https://picsum.photos/seed/insta2/240/144', 링크:'https://instagram.com/p/sample2' },
+    { 제목:'팀 데일리 비하인드 카루셀', 날짜:'2026-05-02', service:'instagram', totalVisit:1582, thumbnail:'https://picsum.photos/seed/insta3/240/144', 링크:'https://instagram.com/p/sample3' },
+    { 제목:'신규 기능 티저 릴스', 날짜:'2026-04-27', service:'instagram', totalVisit:980, thumbnail:'https://picsum.photos/seed/insta4/240/144', 링크:'https://instagram.com/p/sample4' }
+  ];
+  const SAMPLE_LINKEDIN = [
+    { 제목:'B2B 인바운드 리드 성장 케이스 스터디', 날짜:'2026-05-09', service:'linkedin', totalVisit:842, thumbnail:'https://picsum.photos/seed/li1/240/144', 링크:'https://linkedin.com/feed/sample1' },
+    { 제목:'세일즈팀 OKR 운영 회고', 날짜:'2026-05-05', service:'linkedin', totalVisit:612, thumbnail:'https://picsum.photos/seed/li2/240/144', 링크:'https://linkedin.com/feed/sample2' },
+    { 제목:'마케팅 자동화 도입 ROI 측정 방법', 날짜:'2026-05-01', service:'linkedin', totalVisit:471, thumbnail:'https://picsum.photos/seed/li3/240/144', 링크:'https://linkedin.com/feed/sample3' },
+    { 제목:'채용 공고 · 그로스 마케터', 날짜:'2026-04-25', service:'linkedin', totalVisit:355, thumbnail:'https://picsum.photos/seed/li4/240/144', 링크:'https://linkedin.com/feed/sample4' }
+  ];
+
+  async function load(){
+    let blogRows = null;
+    let source = 'demo';
+    try {
+      if (window.MktProxy && MktProxy.getUrl && MktProxy.getUrl()){
+        const data = await MktProxy.blogList({});
+        if (data && Array.isArray(data.rows) && data.rows.length){
+          blogRows = data.rows;
+          source = 'live';
+        }
+      }
+    } catch(err){
+      console.warn('[dashboard] blogList 실패, 데모 데이터로 대체:', err.message);
+    }
+    if (!blogRows){
+      blogRows = Array.isArray(window.SAMPLE_BLOG) ? window.SAMPLE_BLOG.slice() : [];
+    }
+    // 블로그 service 값이 비어있으면 'blog'로 정규화 (필터 안정성)
+    blogRows = blogRows.map(function(r){
+      if (!r.service) return Object.assign({}, r, { service: 'blog' });
+      return r;
+    });
+    const combined = blogRows.concat(SAMPLE_INSTAGRAM, SAMPLE_LINKEDIN);
+    allRows = sortLatest(combined);
+    statusEl.textContent = '· 블로그 ' + (source === 'live' ? '실시간' : '데모') + ' / 인스타·링크드인 샘플';
+    render();
+  }
+
+  tabsEl.addEventListener('click', function(e){
+    const t = e.target.closest('.sub-tab');
+    if (!t) return;
+    tabsEl.querySelectorAll('.sub-tab').forEach(function(el){ el.classList.remove('active'); });
+    t.classList.add('active');
+    currentSvc = t.getAttribute('data-svc') || 'all';
+    render();
+  });
+
+  load();
+})();
+</script>
 </body>
 </html>
