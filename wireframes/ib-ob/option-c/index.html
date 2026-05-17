@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IB/OB 종합 시안 C · Bento Insights · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item active" href="../">IB / OB 종합</a>
+    <a class="nav-item" href="../../salesmap/">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item" href="../../blog/option-c/">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">인바운드 · IB / OB 종합</div>
+        <h1>IB / OB 종합 · Bento Insights</h1>
+      </div>
+      <div class="text-[12px] muted">시트 · <span class="num">TOTAL</span> · 24개 컬럼 동기화</div>
+    </div>
+
+    <nav class="opt-tabs">
+      <a href="../option-a/">시안 A · Power Table</a>
+      <a href="../option-b/">시안 B · Funnel</a>
+      <a class="active" href="./">시안 C · Bento</a>
+    </nav>
+
+    <!-- KPI -->
+    <section class="kpi-grid" id="kpi"></section>
+
+    <!-- Bento: 4셀 (인지채널 도넛 · 유입구분 도넛 · 시도 랭킹 · 기업구분 분포) -->
+    <section class="bento">
+      <div class="cell">
+        <div class="title">인지채널 비중</div>
+        <div class="sub">고객사가 인지하게 된 채널</div>
+        <div class="flex items-center gap-4 mt-3" id="donut-aware"></div>
+      </div>
+      <div class="cell">
+        <div class="title">유입구분 비중</div>
+        <div class="sub">실제 유입 경로 (웹폼 · 콜 · 제휴 …)</div>
+        <div class="flex items-center gap-4 mt-3" id="donut-inflow"></div>
+      </div>
+      <div class="cell">
+        <div class="title">시도 랭킹</div>
+        <div class="sub">건수 기준 TOP 5</div>
+        <div class="rank-list mt-3" id="rank-region"></div>
+      </div>
+      <div class="cell">
+        <div class="title">기업구분 분포</div>
+        <div class="sub">스타트업 · 중소 · 중견 · 대기업</div>
+        <div class="rank-list mt-3" id="rank-firm"></div>
+      </div>
+    </section>
+
+    <!-- Filter -->
+    <div class="filter">
+      <div class="chip-row" id="ch-chips">
+        <button class="chip-toggle active" data-ch="all">CH 전체</button>
+        <button class="chip-toggle" data-ch="IB">IB</button>
+        <button class="chip-toggle" data-ch="OB">OB</button>
+      </div>
+      <div class="chip-row" id="status-chips">
+        <button class="chip-toggle active" data-st="all">성약 전체</button>
+        <button class="chip-toggle" data-st="y">성약</button>
+        <button class="chip-toggle" data-st="mid">협의중</button>
+        <button class="chip-toggle" data-st="drop">드롭</button>
+      </div>
+      <div class="search">
+        <span style="color:var(--muted)">⌕</span>
+        <input id="q" type="text" placeholder="고객사 · 주소 · 키워드 · UTM"/>
+      </div>
+      <div style="flex:1"></div>
+      <button class="ghost-btn" id="btn-reset">↔ 너비 초기화</button>
+    </div>
+
+    <!-- Table -->
+    <section>
+      <div class="panel" style="overflow:hidden">
+        <div class="toolbar">
+          <div class="left">
+            <span class="text-[13px] font-medium">리드 테이블</span>
+            <span class="chip" id="result-count">0건</span>
+            <span class="text-[11.5px] muted">우측 [상세보기] 클릭 시 24개 필드 전체 확인</span>
+          </div>
+          <div class="right">
+            <div class="pager">
+              <button id="pg-prev" disabled>‹</button>
+              <span id="pg-info" class="text-[12px] muted px-2">1 / 1</span>
+              <button id="pg-next">›</button>
+            </div>
+            <button class="ghost-btn" id="btn-export">⇩ CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap" style="max-height:48vh">
+          <table class="ibob-table" id="tbl">
+            <colgroup id="cg"></colgroup>
+            <thead><tr id="th-row"></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center muted py-4" style="font-size:11.5px;">시안 C · Bento Insights · 분포 인사이트 + 컴팩트 테이블 + 상세보기 모달</div>
+  </main>
+</div>
+
+<!-- 상세보기 모달 -->
+<div class="modal-back" id="modal-back"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div>
+      <div class="eyebrow">고객사 상세 · TOTAL 시트 24개 필드</div>
+      <h3 id="modal-title">-</h3>
+      <div class="meta-tags" id="modal-meta"></div>
+    </div>
+    <button class="modal-close" id="modal-close">×</button>
+  </div>
+  <div class="modal-body" id="modal-body"></div>
+</div>
+
+<script src="../sample-data.js"></script>
+<script src="../shared.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE_SIZE = 10;
+  let PAGE = 1;
+  let STATE = { q:'', status:'all', ch:'all' };
+  const PALETTE = ['#6d4eff','#2563eb','#16a34a','#d97706','#db2777','#0d9488','#94a3b8'];
+
+  function renderKPI(rows){
+    const k = IBOB.computeKPI(rows);
+    $('kpi').innerHTML = [
+      ['전체 리드',    IBOB.fmt(k.total), '필터 적용 결과'],
+      ['IB 인입',      IBOB.fmt(k.ib),    'CH = IB'],
+      ['OB 컨택',      IBOB.fmt(k.ob),    'CH = OB'],
+      ['성약',         IBOB.fmt(k.conv),  '협의중 ' + k.mid + ' · 드롭 ' + k.drop],
+      ['성약 전환율',  k.rate + '%',      '성약 / 전체']
+    ].map(([l,v,s]) => `<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${s}</div></div>`).join('');
+  }
+
+  function renderDonut(targetId, rows, key){
+    const dist = IBOB.distribute(rows, key).slice(0, 5);
+    const total = dist.reduce((s,d) => s + d.count, 0) || 1;
+    let acc = 0;
+    const segs = dist.map((d, i) => {
+      const from = acc / total * 100;
+      acc += d.count;
+      const to = acc / total * 100;
+      return `${PALETTE[i % PALETTE.length]} ${from}% ${to}%`;
+    });
+    const bg = `conic-gradient(${segs.join(', ')})`;
+    const legend = dist.map((d, i) => {
+      const pct = Math.round(d.count * 100 / total);
+      return `<div class="row"><span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span><span>${IBOB.esc(d.name)} · ${pct}% <span class="muted">(${d.count})</span></span></div>`;
+    }).join('') || '<div class="muted text-[11.5px]">-</div>';
+    $(targetId).innerHTML = `
+      <div class="donut" style="background:${bg}">
+        <div class="hole">
+          <div class="text-[10.5px] muted">전체</div>
+          <div class="num text-[15px] font-semibold">${total}</div>
+        </div>
+      </div>
+      <div class="legend">${legend}</div>`;
+  }
+
+  function renderRank(targetId, rows, key, max){
+    const dist = IBOB.distribute(rows, key).slice(0, max || 5);
+    const top = dist[0] ? dist[0].count : 1;
+    $(targetId).innerHTML = dist.map((d, i) => `
+      <div class="rank-row">
+        <span class="idx">${i+1}</span>
+        <span class="name">${IBOB.esc(d.name)}</span>
+        <span class="bar"><i style="width:${Math.round(d.count*100/top)}%"></i></span>
+        <span class="v">${d.count}</span>
+      </div>`).join('') || '<div class="muted text-[11.5px]">-</div>';
+  }
+
+  function rerender(){
+    const filtered = IBOB.applyFilter(window.SAMPLE_IBOB, STATE.q, STATE.status, STATE.ch);
+    renderKPI(filtered);
+    renderDonut('donut-aware',  filtered, '인지채널');
+    renderDonut('donut-inflow', filtered, '유입구분');
+    renderRank('rank-region',   filtered, '시도', 5);
+    renderRank('rank-firm',     filtered, '기업구분', 5);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (PAGE > totalPages) PAGE = totalPages;
+    $('pg-info').textContent = PAGE + ' / ' + totalPages;
+    $('pg-prev').disabled = PAGE <= 1;
+    $('pg-next').disabled = PAGE >= totalPages;
+    IBOB.renderTable(filtered.slice((PAGE-1)*PAGE_SIZE, PAGE*PAGE_SIZE));
+  }
+
+  IBOB.buildHeader();
+  rerender();
+
+  $('ch-chips').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $('ch-chips').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    STATE.ch = b.dataset.ch; PAGE = 1; rerender();
+  });
+  $('status-chips').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $('status-chips').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    STATE.status = b.dataset.st; PAGE = 1; rerender();
+  });
+  $('q').addEventListener('input', e => { STATE.q = e.target.value; PAGE = 1; rerender(); });
+  $('btn-reset').addEventListener('click', IBOB.resetWidths);
+  $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); rerender(); });
+  $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; rerender(); });
+  $('btn-export').addEventListener('click', () => alert('CSV 내보내기 (목업)'));
+
+  $('modal-close').addEventListener('click', IBOB.closeModal);
+  $('modal-back').addEventListener('click', IBOB.closeModal);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') IBOB.closeModal(); });
+})();
+</script>
+</body>
+</html>

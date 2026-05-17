@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IB / OB 종합 · 와이어프레임 시안 비교</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{ font-family:'Pretendard',sans-serif; background:#f6f7f9; color:#111; }
+  .card{ background:#fff; border:1px solid #e6e8ec; border-radius:16px; overflow:hidden; transition:all .2s; }
+  .card:hover{ box-shadow:0 12px 40px rgba(0,0,0,.08); transform:translateY(-2px); }
+  .frame{ aspect-ratio:16/10; width:100%; background:#fafafa; border-bottom:1px solid #e6e8ec; }
+  .tag{ font-size:11px; padding:2px 8px; border-radius:999px; background:#eef1f6; color:#374151; display:inline-block; }
+  .btn{ font-size:13px; padding:8px 14px; border-radius:8px; border:1px solid #e6e8ec; background:#fff; }
+  .btn-primary{ background:#6d4eff; color:#fff; border-color:#6d4eff; }
+</style>
+</head>
+<body>
+<div class="max-w-[1280px] mx-auto px-8 py-10">
+  <div class="mb-8">
+    <div class="text-[12.5px] text-gray-500">
+      <a href="../" class="hover:underline">← 전체 시안 비교</a>
+      &nbsp;·&nbsp; 인바운드 · IB / OB 종합
+    </div>
+    <h1 class="text-[28px] font-semibold tracking-tight mt-1">IB / OB 종합 · 시안 비교</h1>
+    <p class="text-[13.5px] text-gray-600 mt-2 leading-relaxed">
+      구글 스프레드시트 <code class="bg-gray-100 px-1.5 py-0.5 rounded text-[12px]">TOTAL</code> 시트(24개 컬럼)를 기반으로 한 IB/OB 종합 페이지 와이어프레임 3안.<br/>
+      공통 사양 — 표시 컬럼 18개(주차/IB·계약일/성약/고객사/주소/지역 3단계/임직원수/기업구분/상장/유입/UTM/상세경로/인터뷰/인지채널/검색어) +
+      행 우측 <strong>[상세보기]</strong> 버튼 → 24개 필드 전체 모달 팝업.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-3 gap-5">
+    <!-- A -->
+    <div class="card">
+      <iframe class="frame" src="./option-a/index.html" style="border:0; transform:scale(.5); transform-origin:top left; width:200%; height:200%; pointer-events:none;"></iframe>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="tag">시안 A</span>
+          <span class="tag" style="background:#efe8ff; color:#5a3eb8">Power Table</span>
+        </div>
+        <div class="text-[16px] font-semibold">밀도형 · 데이터그리드 중심</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">
+          KPI + 필터칩 + 리사이즈 가능한 18컬럼 테이블. 스프레드시트에 익숙한 운영팀에 친숙. 단축키·페이지네이션·CSV 위주.
+        </p>
+        <div class="mt-4 flex gap-2">
+          <a href="./option-a/index.html" class="btn">전체보기</a>
+          <a href="./option-a/index.html" target="_blank" class="btn btn-primary">새 탭 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="card">
+      <iframe class="frame" src="./option-b/index.html" style="border:0; transform:scale(.5); transform-origin:top left; width:200%; height:200%; pointer-events:none;"></iframe>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="tag">시안 B</span>
+          <span class="tag" style="background:#e6f6ec; color:#15803d">Funnel</span>
+        </div>
+        <div class="text-[16px] font-semibold">전환 퍼널 · 주차별 추이 + 테이블</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">
+          상단에 IB→협의→계약→성약 4단계 퍼널 + 주차별 IB/OB 스택바. 전환율 모니터링과 영업 회의에 강함.
+        </p>
+        <div class="mt-4 flex gap-2">
+          <a href="./option-b/index.html" class="btn">전체보기</a>
+          <a href="./option-b/index.html" target="_blank" class="btn btn-primary">새 탭 ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="card">
+      <iframe class="frame" src="./option-c/index.html" style="border:0; transform:scale(.5); transform-origin:top left; width:200%; height:200%; pointer-events:none;"></iframe>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="tag">시안 C</span>
+          <span class="tag" style="background:#FFE9C7; color:#5a3a13">Bento</span>
+        </div>
+        <div class="text-[16px] font-semibold">분포 인사이트 · Bento 카드</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">
+          인지채널·유입구분 도넛 + 시도/기업구분 랭킹 카드. 한 화면에 분포 인사이트 + 컴팩트 테이블 동시 노출.
+        </p>
+        <div class="mt-4 flex gap-2">
+          <a href="./option-c/index.html" class="btn">전체보기</a>
+          <a href="./option-c/index.html" target="_blank" class="btn btn-primary">새 탭 ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-10 card p-6">
+    <div class="text-[14px] font-semibold mb-3">공통 사양</div>
+    <div class="grid grid-cols-2 gap-x-10 gap-y-2 text-[12.5px] text-gray-600">
+      <div><strong class="text-gray-900">데이터 소스</strong> · 구글 스프레드시트 <code>TOTAL</code> 시트 (24 컬럼)</div>
+      <div><strong class="text-gray-900">필터</strong> · CH (IB/OB) · 성약 상태 · 검색어 (고객사·주소·키워드·UTM)</div>
+      <div><strong class="text-gray-900">로우 테이블</strong> · 18개 컬럼, 컬럼 너비 드래그 조정 · localStorage 저장</div>
+      <div><strong class="text-gray-900">상세보기 팝업</strong> · 24개 필드 2열 그리드, ESC/오버레이/× 닫기</div>
+      <div><strong class="text-gray-900">상태 태그</strong> · 성약 / 협의중 / 드롭 / 무응답</div>
+      <div><strong class="text-gray-900">CSV 내보내기</strong> · 필터 적용 후 결과 다운로드 (목업)</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
