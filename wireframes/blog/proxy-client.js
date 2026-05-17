@@ -39,10 +39,31 @@
         });
       }
       // GAS 웹앱은 Anyone 접근 시 GET 요청에 CORS 허용 헤더를 포함합니다.
-      const res = await fetch(u.toString(), { method: 'GET', redirect: 'follow' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const json = await res.json();
-      if (!json.ok) throw new Error(json.error || 'unknown_error');
+      let res;
+      try {
+        res = await fetch(u.toString(), { method: 'GET', redirect: 'follow' });
+      } catch (err) {
+        throw new Error('네트워크 오류: ' + err.message);
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — 권한 또는 URL 확인');
+
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        // GAS 코드 문법 오류 등 → HTML 에러 페이지 반환된 경우
+        const isHtml = /^\s*<!DOCTYPE|^\s*<html/i.test(text);
+        const snippet = text.slice(0, 140).replace(/\s+/g, ' ');
+        throw new Error(
+          (isHtml ? 'GAS가 HTML 에러 페이지 반환 — 모듈 코드 문법 오류 또는 재배포 필요. ' : 'JSON 파싱 실패. ')
+          + '응답 미리보기: ' + snippet
+        );
+      }
+      if (!json.ok) {
+        const avail = json.available ? ' (사용 가능: ' + json.available.join(', ') + ')' : '';
+        throw new Error(json.error + avail);
+      }
       return json;
     },
 
@@ -64,9 +85,37 @@
       return r.data;
     },
     blogUpdate: async function (params) {
-      // params: { postid, service?, category? }
+      // params: { postid, service?, category?, utm_term? }
       if (!params || !params.postid) throw new Error('postid_required');
       const r = await this.call('blog.update', params);
+      return r.data;
+    },
+    _inboundCache: new Map(),
+    _inboundCacheTtl: 5 * 60 * 1000, // 5분
+    blogInboundDates: async function (utm_term) {
+      if (!utm_term) throw new Error('utm_term_required');
+      // 클라이언트 사이드 캐시: 같은 페이지 세션에서 같은 utm_term 재호출 방지
+      const cached = this._inboundCache.get(utm_term);
+      if (cached && (Date.now() - cached.t) < this._inboundCacheTtl) {
+        return cached.d;
+      }
+      const r = await this.call('blog.inboundDates', { utm_term: utm_term });
+      this._inboundCache.set(utm_term, { d: r.data, t: Date.now() });
+      return r.data;
+    },
+    invalidateInboundCache: function (utm_term) {
+      if (utm_term) this._inboundCache.delete(utm_term);
+      else this._inboundCache.clear();
+    },
+    _countsCacheMap: null,
+    blogInboundCounts: async function (params) {
+      params = params || {};
+      const key = (params.from || '') + '|' + (params.to || '');
+      if (!this._countsCacheMap) this._countsCacheMap = new Map();
+      const cached = this._countsCacheMap.get(key);
+      if (cached && (Date.now() - cached.t) < this._inboundCacheTtl) return cached.d;
+      const r = await this.call('blog.inboundCounts', params);
+      this._countsCacheMap.set(key, { d: r.data, t: Date.now() });
       return r.data;
     },
     health: async function () {

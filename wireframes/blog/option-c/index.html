@@ -41,23 +41,17 @@
   .kpi .kpi-value{ font-size:18px; margin-top:2px; line-height:1.2; }
   .kpi .kpi-sub{ font-size:10.5px; margin-top:2px; line-height:1.3; }
 
-  /* ── Analytics row: 4개 패널 동일 너비/높이 + 가로 스크롤 ─────
-     - flex로 고정 너비(320px) 균등 배치
-     - 부모가 좁아지면 가로 스크롤로 전환 (1fr 균등 축소 X) */
+  /* ── Analytics row: 4개 패널 동일 너비/높이 (로우테이블 너비 기준 4등분) ─── */
   .analytics-row{
-    display:flex; gap:14px; margin-bottom:18px; align-items:stretch;
-    overflow-x:auto; padding-bottom:6px;            /* 스크롤바 잘림 방지 */
-    scroll-snap-type:x proximity;
+    display:grid; grid-template-columns:repeat(4, 1fr);
+    gap:14px; margin-bottom:18px; align-items:stretch;
   }
-  .analytics-row::-webkit-scrollbar{ height:8px; }
-  .analytics-row::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
   .a-panel{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
     padding:16px; display:flex; flex-direction:column;
-    min-height:260px;
-    flex:0 0 320px; width:320px; max-width:320px;     /* 명시적 동일 너비 */
-    scroll-snap-align:start;
-    overflow:hidden;                                   /* 내부 콘텐츠가 패널 밖으로 못 나가게 */
+    min-height:360px;             /* 트렌드 차트 가독성 위해 패널 높이 확대 */
+    min-width:0;                  /* 그리드 셀 안에서 축소 허용 */
+    overflow:hidden;              /* 내부 콘텐츠가 패널 밖으로 못 나가게 */
   }
   /* 패널 헤더 텍스트도 한 줄 잘림 (엑셀식) */
   .a-panel .ph .ph-text{ flex:1 1 auto; min-width:0; overflow:hidden; }
@@ -200,16 +194,19 @@
 
   /* Trend chart — 패널 내부에서 stretch (최소 160px) */
   .trend-area{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; }
-  .trend-svg{ flex:1 1 auto; width:100%; min-height:160px; display:block; }
+  .trend-svg{ flex:1 1 auto; width:100%; min-height:260px; display:block; }
   .trend-legend{ display:flex; gap:14px; margin-top:8px; font-size:11px; color:var(--muted); flex-shrink:0; }
 
-  /* ── 반응형: 분석 행은 항상 고정 너비 + 가로 스크롤 유지 ── */
+  /* ── 반응형 ── */
+  @media (max-width: 1280px){
+    .analytics-row{ grid-template-columns:repeat(2, 1fr); }
+  }
   @media (max-width: 900px){
-    .a-panel{ min-height:240px; flex-basis:280px; }
+    .a-panel{ min-height:240px; }
     .kpi-grid{ grid-template-columns:repeat(2, 1fr); }
   }
   @media (max-width: 640px){
-    .a-panel{ flex-basis:260px; }
+    .analytics-row{ grid-template-columns:1fr; }
     .kpi-grid{ grid-template-columns:1fr; }
     .sidebar{ width:64px; padding:10px 6px; }
     .sidebar .brand-name, .sidebar .brand-ver, .sidebar .nav-section, .sidebar .nav-item{ display:none; }
@@ -217,11 +214,30 @@
     .conn{ min-width:0; flex-wrap:wrap; }
   }
 
-  /* ── Bottom table ───────────────────────────────── */
+  /* ── Bottom table — 가로 + 세로 스크롤 통합, sticky header ── */
+  .table-scroll{
+    overflow:auto;
+    max-height: 440px;          /* head ≈40 + 행 40 × 10 */
+  }
+  .table-scroll::-webkit-scrollbar{ width:8px; height:8px; }
+  .table-scroll::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
   .table-head, .post-row{
     display:grid;
-    grid-template-columns:36px 64px 1fr 80px 100px 90px 80px 80px 80px 80px 36px 64px;
-    gap:10px; align-items:center;
+    grid-template-columns:
+      minmax(24px, 0.35fr)   /* NO */
+      minmax(64px, 1fr)      /* 발행일 */
+      minmax(120px, 4fr)     /* 제목 */
+      minmax(36px, 0.6fr)    /* 썸네일 */
+      minmax(48px, 0.85fr)   /* 서비스 */
+      minmax(60px, 1.1fr)    /* 카테고리 */
+      minmax(48px, 0.85fr)   /* 총방문 */
+      minmax(44px, 0.8fr)    /* 주간 */
+      minmax(44px, 0.8fr)    /* 월간 */
+      minmax(44px, 0.8fr)    /* 유입 */
+      minmax(24px, 0.35fr)   /* 링크 */
+      minmax(40px, 0.7fr);   /* 상세 */
+    gap:6px; align-items:center;
+    min-width:700px;
   }
   .post-row .svc-tag{
     font-size:10.5px; padding:2px 7px; border-radius:4px;
@@ -339,6 +355,17 @@
   .d-section .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
   .d-section .body{ font-size:12.5px; color:var(--text-2); line-height:1.6; }
   .d-timeline-stub{ font-size:11.5px; color:var(--muted); padding:14px; background:#1a1e25; border-radius:8px; border:1px dashed var(--line-2); text-align:center; }
+  /* 인바운드 인입 리스트 */
+  .inbound-wrap{ background:#1a1e25; border:1px solid var(--line-2); border-radius:8px; max-height:220px; overflow-y:auto; }
+  .inbound-item{ padding:9px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:3px; }
+  .inbound-item:last-child{ border-bottom:0; }
+  .inbound-item .iro1{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .inbound-item .iro1 .dt{ font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--text); }
+  .inbound-item .iro1 .svc{ font-size:10.5px; padding:1px 6px; border-radius:4px; background:rgba(78,163,255,.15); color:#a3cdff; border:1px solid rgba(78,163,255,.3); }
+  .inbound-item .iro2{ font-size:11.5px; color:var(--text-2); }
+  .inbound-item .iro2 .mgr{ color:var(--muted); }
+  .inbound-summary{ padding:8px 12px; border-bottom:1px solid var(--line); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
+  .inbound-summary .num{ color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight:600; }
 
   .d-meta{ padding:14px 18px 18px; border-top:1px solid var(--line); }
   .d-meta .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
@@ -350,20 +377,20 @@
     padding:10px 14px; background:var(--panel-2); color:var(--muted);
     font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
     border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:2;   /* 세로 스크롤 시 헤더 고정 */
   }
   .table-head .num-cell{ text-align:right; }
 
-  /* 행 높이 56px × 10행 = 560px = 한번에 보이는 영역 */
-  .post-row{ height:56px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
+  /* 행 높이 40px × 10행 = 400px = 한번에 보이는 영역 */
+  .post-row{ height:40px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
   .post-row:last-child{ border-bottom:0; }
   .post-row:hover{ background:rgba(255,255,255,.02); }
   .post-row .no{ font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:11.5px; text-align:center; }
-  .post-row .thumb-cell{ width:56px; height:42px; border-radius:6px; overflow:hidden; background:#1a1e25; display:flex; align-items:center; justify-content:center; }
+  .post-row .thumb-cell{ width:44px; height:28px; border-radius:5px; overflow:hidden; background:#1a1e25; display:flex; align-items:center; justify-content:center; }
   .post-row .thumb-cell img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .post-row .thumb-cell .ph{ color:#3a4150; font-size:18px; }
+  .post-row .thumb-cell .ph{ color:#3a4150; font-size:14px; }
   .post-row .title-wrap{ min-width:0; }
-  .post-row .title-wrap .ttl{ font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .post-row .title-wrap .meta-line{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .post-row .title-wrap .ttl{ font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.3; }
   .post-row .num-cell{ font-family:'JetBrains Mono',monospace; text-align:right; }
   .post-row .cat-tag{ font-size:10.5px; padding:2px 7px; border-radius:4px; background:rgba(124,92,255,.15); color:#b8a6ff; border:1px solid rgba(124,92,255,.3); display:inline-block; }
   .post-row .date-cell{ color:var(--muted); font-size:11.5px; }
@@ -371,8 +398,7 @@
   .post-row .lk:hover{ color:var(--accent); border-color:var(--accent); }
 
   .table-body{
-    max-height: 560px;     /* 10행 × 56px */
-    overflow-y:auto;
+    /* 스크롤은 .table-scroll 에서 통합 처리 (head + body 동시 스크롤) */
   }
   .table-body::-webkit-scrollbar{ width:8px; }
   .table-body::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
@@ -513,7 +539,7 @@
         <div class="pb">
           <div class="trend-area">
             <div class="trend-wrap">
-              <svg class="trend-svg" id="trend" viewBox="0 0 360 180"></svg>
+              <svg class="trend-svg" id="trend" viewBox="0 0 360 260" preserveAspectRatio="none"></svg>
               <div class="trend-tooltip" id="trend-tooltip"></div>
             </div>
             <div class="trend-legend">
@@ -547,14 +573,15 @@
 
     <!-- Compact post list -->
     <div class="panel" style="overflow:hidden">
+     <div class="table-scroll">
       <div class="table-head">
         <div>NO</div>
-        <div>썸네일</div>
+        <div>발행일</div>
         <div>제목</div>
+        <div>썸네일</div>
         <div>서비스</div>
         <div>카테고리</div>
-        <div>발행일</div>
-        <div class="num-cell">누적방문</div>
+        <div class="num-cell">총방문</div>
         <div class="num-cell">주간</div>
         <div class="num-cell">월간</div>
         <div class="num-cell">유입</div>
@@ -562,6 +589,7 @@
         <div>상세</div>
       </div>
       <div class="table-body" id="rows"></div>
+     </div>
     </div>
 
     <div class="text-center muted py-6" style="font-size:11.5px;">시안 C · Analytics Hybrid · 분석 위젯 + 콤팩트 표 (페이지당 30건, 한 화면 10건 스크롤)</div>
@@ -602,6 +630,10 @@
         <span class="lbl">카테고리</span>
         <select class="d-select" id="d-cat-select" style="flex:1"></select>
       </div>
+      <div class="d-edit-row">
+        <span class="lbl">utm_term</span>
+        <input class="d-select" id="d-utm-input" type="text" placeholder="utm_term 입력" style="flex:1; font-family:'JetBrains Mono', monospace;" />
+      </div>
     </div>
     <div class="d-edit-banner" id="d-edit-banner"></div>
     <div class="d-kpi">
@@ -615,14 +647,17 @@
       <div class="body" id="d-summary">-</div>
     </div>
     <div class="d-section">
-      <div class="section-h">인바운드 인입 날짜</div>
-      <div class="d-timeline-stub">📅 차후 업데이트 연결 예정</div>
+      <div class="section-h">인바운드 인입 날짜 <span style="font-weight:400; color:var(--muted); margin-left:4px;" id="d-inbound-count"></span></div>
+      <div id="d-inbound-list">
+        <div class="d-timeline-stub">utm_term 정보가 필요합니다.</div>
+      </div>
     </div>
     <div class="d-meta">
       <div class="section-h">메타데이터</div>
       <div class="meta-item"><span class="k">postid</span><span class="v" id="d-meta-postid">-</span></div>
       <div class="meta-item"><span class="k">service</span><span class="v" id="d-meta-svc">-</span></div>
       <div class="meta-item"><span class="k">category</span><span class="v" id="d-meta-cat">-</span></div>
+      <div class="meta-item"><span class="k">utm_term</span><span class="v" id="d-meta-utm">-</span></div>
       <div class="meta-item"><span class="k">발행일</span><span class="v" id="d-meta-date">-</span></div>
     </div>
   </div>
@@ -694,7 +729,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js"></script>
+<script src="../proxy-client.js?v=20260510-19"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -709,6 +744,7 @@
     const el = $('status');
     el.className = 'status ' + (kind || '');
     el.textContent = text;
+    el.title = text;   // 호버 시 전체 메시지 확인
   }
   function escAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
   function escHtml(s){ return String(s||'').replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
@@ -731,11 +767,15 @@
     const de = $('date-end').value;
     if (!ds && !de) return rows.slice();
     return rows.filter(function(r){
+      // ① 발행일 기준 매칭
       const d = String(r['날짜']||'').slice(0,10);
-      if (!d) return false;
-      if (ds && d < ds) return false;
-      if (de && d > de) return false;
-      return true;
+      const publishedInPeriod = d && (!ds || d >= ds) && (!de || d <= de);
+      if (publishedInPeriod) return true;
+      // ② 인바운드 인입일자 기준 매칭 — INBOUND_COUNTS 가 서버에서 from/to 필터된 결과이므로
+      //    utm_term 이 INBOUND_COUNTS 에 있고 카운트가 0보다 크면 해당 기간에 인입된 글
+      const u = String(r.utm_term || '').trim();
+      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u) && (Number(INBOUND_COUNTS[u]) || 0) > 0) return true;
+      return false;
     });
   }
   function setQuickRange(days){
@@ -745,13 +785,13 @@
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
     ACTIVE_RANGE = String(days);
-    refreshAll();
+    loadInboundCountsForCurrent().then(refreshAll);
   }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
-    refreshAll();
+    loadInboundCountsForCurrent().then(refreshAll);
   }
   function updateRangeInfo(){
     const ds = $('date-start').value;
@@ -777,16 +817,20 @@
       if (sort === 'date_desc')    return String(b['날짜']||'').localeCompare(String(a['날짜']||''));
       if (sort === 'visit_desc')   return Number(b.totalVisit||0) - Number(a.totalVisit||0);
       if (sort === 'weekly_desc')  return Number(b.weeklyVisitor||0) - Number(a.weeklyVisitor||0);
-      if (sort === 'inbound_desc') return Number(b.inbound||0) - Number(a.inbound||0);
+      if (sort === 'inbound_desc') return actualInbound(b) - actualInbound(a);
       return 0;
     });
     return out;
   }
 
   // ── analytics renderers ──────────────────────────
-  function renderTopList(rows, key, listEl){
+  // getter: string(key) 또는 function(r)→number
+  function renderTopList(rows, getter, listEl){
+    const getVal = (typeof getter === 'function')
+      ? getter
+      : function(r){ return Number(r[getter]) || 0; };
     const sorted = rows.slice()
-      .sort((a,b)=>Number(b[key]||0)-Number(a[key]||0))
+      .sort((a,b)=> getVal(b) - getVal(a))
       .slice(0,5);
     if (!sorted.length){ listEl.innerHTML = '<div class="empty" style="margin:auto">데이터 없음</div>'; return; }
     const items = sorted.slice();
@@ -796,12 +840,12 @@
       return '<div class="item">'
         + '<div class="rk">'+(i+1)+'</div>'
         + '<div class="tt" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-        + '<div class="vv">'+fmt(r[key])+'</div>'
+        + '<div class="vv">'+fmt(getVal(r))+'</div>'
       + '</div>';
     }).join('');
   }
-  function renderTop(rows){        renderTopList(rows, 'totalVisit', $('top-list')); }
-  function renderInboundTop(rows){ renderTopList(rows, 'inbound',    $('inbound-list')); }
+  function renderTop(rows){        renderTopList(rows, 'totalVisit',  $('top-list')); }
+  function renderInboundTop(rows){ renderTopList(rows, actualInbound, $('inbound-list')); }
 
   function renderCatBars(rows){
     const map = {};
@@ -841,7 +885,7 @@
       if (!k) return;
       if (!map[k]) map[k] = { totalVisit:0, inbound:0 };
       map[k].totalVisit += Number(r.totalVisit||0);
-      map[k].inbound    += Number(r.inbound||0);
+      map[k].inbound    += actualInbound(r);
     });
     const keys   = Object.keys(map).sort();
     const svg    = $('trend');
@@ -852,7 +896,7 @@
     const inbounds = keys.map(k=>map[k].inbound);
 
     // viewBox geometry (Y축 좌측 라벨 공간 38px, 우측 8, 상단 8, 하단 24)
-    const W = 360, H = 180, P_T = 8, P_B = 24, P_L = 38, P_R = 8;
+    const W = 360, H = 260, P_T = 10, P_B = 26, P_L = 40, P_R = 8;
     const innerW = W - P_L - P_R;
     const innerH = H - P_T - P_B;
     const maxV = Math.max.apply(null, visits.concat([1]));
@@ -917,18 +961,21 @@
 
         // 날짜 라벨 — 일별이면 요일 함께, 월별이면 'YYYY년 M월'
         const dowKR = ['일','월','화','수','목','금','토'];
-        let dateLabel = keys[i];
+        const rawKey = String(keys[i] == null ? '' : keys[i]);
+        let dateLabel = rawKey || '날짜 없음';
         let dateExtra = '';
-        if (TREND_MODE === 'monthly'){
-          const m = keys[i].split('-');
-          dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
-        } else {
-          const d = new Date(keys[i]);
-          if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
+        if (rawKey){
+          if (TREND_MODE === 'monthly'){
+            const m = rawKey.split('-');
+            if (m.length >= 2) dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
+          } else {
+            const d = new Date(rawKey);
+            if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
+          }
         }
 
         tip.innerHTML =
-          '<div class="tt-date">📅 '+dateLabel+' '+dateExtra+'</div>'
+          '<div class="tt-date">📅 <span>'+dateLabel+'</span> '+dateExtra+'</div>'
           + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
           + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
       });
@@ -991,18 +1038,17 @@
         const link = r['링크'] ? `<a class="lk" href="${escAttr(r['링크'])}" target="_blank" rel="noopener noreferrer">↗</a>` : '<span class="lk" style="opacity:.3">-</span>';
         return '<div class="post-row">'
           + '<div class="no">'+idx+'</div>'
-          + '<div><div class="thumb-cell">'+thumb+'</div></div>'
+          + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
           + '<div class="title-wrap">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-            + '<div class="meta-line">'+(r.postid ? escHtml(r.postid) : '-')+'</div>'
           + '</div>'
+          + '<div><div class="thumb-cell">'+thumb+'</div></div>'
           + '<div>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</div>'
           + '<div>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</div>'
-          + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
           + '<div class="num-cell">'+fmt(r.totalVisit)+'</div>'
           + '<div class="num-cell">'+fmt(r.weeklyVisitor)+'</div>'
           + '<div class="num-cell">'+fmt(r.monthlyVisitor)+'</div>'
-          + '<div class="num-cell" style="color:'+(Number(r.inbound)>=20?'var(--green)':'var(--text)')+'">'+fmt(r.inbound)+'</div>'
+          + (function(){ const ib = actualInbound(r); return '<div class="num-cell" style="color:'+(ib>=20?'var(--green)':'var(--text)')+'">'+fmt(ib)+'</div>'; })()
           + '<div>'+link+'</div>'
           + '<div><button class="btn-detail" data-postid="'+escAttr(r.postid||'')+'" data-idx="'+(start+i)+'">상세</button></div>'
         + '</div>';
@@ -1020,7 +1066,7 @@
     const rows = SCOPED_ROWS;
     const tot = rows.reduce((s,r)=>s+Number(r.totalVisit||0),0);
     const wk  = rows.reduce((s,r)=>s+Number(r.weeklyVisitor||0),0);
-    const ib  = rows.reduce((s,r)=>s+Number(r.inbound||0),0);
+    const ib  = rows.reduce((s,r)=>s+actualInbound(r),0);
     const cats = Array.from(new Set(rows.map(r=>r.category||'미분류')));
     const avg = rows.length ? Math.round(tot/rows.length) : 0;
     const cvr = tot > 0 ? (ib/tot*100).toFixed(2) + '%' : '0%';
@@ -1057,10 +1103,21 @@
     try{
       setStatus('연결 중...');
       const data = await MktProxy.blogList();
-      render(data.rows || []);
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+      CURRENT_ROWS = data.rows || [];
+      await loadInboundCountsForCurrent();
+      refreshAll();
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
     }catch(err){
-      setStatus('연결 실패: ' + err.message, 'err');
+      // 진단: 프록시 자체가 살아있는지 health로 확인
+      let hint = '';
+      try {
+        await MktProxy.health();
+        hint = ' · ⚠ 프록시는 정상 — blog 모듈 코드/배포 확인 필요';
+      } catch (_) {
+        hint = ' · ⚠ 프록시 자체 응답 없음 — URL/재배포 확인';
+      }
+      setStatus('연결 실패: ' + err.message + hint, 'err');
+      console.error('[MktProxy] blog.list 실패:', err);
       render(SAMPLE_BLOG);
     }
   }
@@ -1095,8 +1152,8 @@
     });
   });
   // 기간 조회: 사용자 직접 선택
-  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; refreshAll(); });
-  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; refreshAll(); });
+  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
+  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
   // ── 상세보기 드로어 ──────────────────────────────
@@ -1137,6 +1194,7 @@
     setText('d-meta-postid', row.postid || '-');
     setText('d-meta-svc',    row.service || '-');
     setText('d-meta-cat',    row.category || '-');
+    setText('d-meta-utm',    row.utm_term || '-');
     setText('d-meta-date',   fmtDate(row['날짜']));
 
     // 원문 링크
@@ -1148,6 +1206,48 @@
     $('detail-overlay').classList.add('open');
     $('detail-drawer').setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+
+    // 인바운드 인입 날짜 로드 (utm_term 매칭)
+    loadInboundDates(row.utm_term);
+  }
+
+  // ── 인바운드 인입 날짜 (세일즈맵 utm_term 매칭) ───────
+  async function loadInboundDates(utm_term){
+    const target = $('d-inbound-list');
+    const counter = $('d-inbound-count');
+    counter.textContent = '';
+    if (!utm_term){
+      target.innerHTML = '<div class="d-timeline-stub">utm_term 정보가 없어 매칭할 수 없습니다.</div>';
+      return;
+    }
+    if (!MktProxy.getUrl()){
+      target.innerHTML = '<div class="d-timeline-stub">프록시 미연결 — 연결 후 자동 표시</div>';
+      return;
+    }
+    target.innerHTML = '<div class="d-timeline-stub">불러오는 중...</div>';
+    try{
+      const data = await MktProxy.blogInboundDates(utm_term);
+      if (!data.count){
+        target.innerHTML = '<div class="d-timeline-stub">매칭되는 인바운드 없음 (utm_term: ' + escAttr(utm_term) + ')</div>';
+        return;
+      }
+      counter.textContent = '· ' + data.count + '건';
+      let html = '<div class="inbound-wrap">';
+      html += '<div class="inbound-summary"><span>매칭 utm_term: <code style="font-family:JetBrains Mono,monospace;color:var(--text-2);">'+escHtml(utm_term)+'</code></span><span><span class="num">'+data.count+'</span>건 인입</span></div>';
+      data.items.forEach(function(it){
+        html += '<div class="inbound-item">'
+          + '<div class="iro1">'
+            + '<span class="dt">'+ escHtml(it.datetime || it.date || '-') +'</span>'
+            + (it.service ? '<span class="svc">'+escHtml(it.service)+'</span>' : '')
+          + '</div>'
+          + '<div class="iro2">'+ escHtml(it.company || '-') + (it.manager ? ' <span class="mgr">· '+escHtml(it.manager)+'</span>' : '') +'</div>'
+        + '</div>';
+      });
+      html += '</div>';
+      target.innerHTML = html;
+    }catch(err){
+      target.innerHTML = '<div class="d-timeline-stub" style="color:var(--red); border-color:rgba(255,93,115,.3);">불러오기 실패: '+ escHtml(err.message) +'</div>';
+    }
   }
   function closeDetail(){
     $('detail-drawer').classList.remove('open');
@@ -1220,6 +1320,50 @@
 
   // ── 상세보기 편집 모드 ────────────────────────────
   let CURRENT_DETAIL_ROW = null;
+  let INBOUND_COUNTS = {};   // utm_term → 인바운드 인입 건수 (제출일자 기간 필터 적용됨)
+  function actualInbound(r){
+    const u = String(r && r.utm_term || '').trim();
+    if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u)){
+      return Number(INBOUND_COUNTS[u]) || 0;
+    }
+    return Number(r && r.inbound) || 0;
+  }
+  async function loadInboundCountsForCurrent(){
+    if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
+    // 인바운드 = utm_term 매칭 + 세일즈맵 '제출 일자' 가 선택 기간 내인 것
+    const ds = $('date-start').value, de = $('date-end').value;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+    try{
+      const r = await MktProxy.blogInboundCounts(params);
+      INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
+      const matched = Object.keys(INBOUND_COUNTS).length;
+      console.log('[blog] inboundCounts (제출일자):', { req:params, utm_terms:matched, total:r&&r.total, echo:{from:r&&r.from, to:r&&r.to} });
+      if (params.from && r && r.from && r.from !== params.from){
+        console.warn('[blog] ⚠ GAS 응답이 from 필터를 무시 — modules/blog.gs 재배포 필요');
+      } else if (params.from && r && !('from' in r)){
+        console.warn('[blog] ⚠ GAS 응답에 from 에코 없음 — 구버전 사용 중. 재배포 필요');
+      }
+    }catch(err){
+      const msg = String(err && err.message || err);
+      console.error('[blog] inboundCounts 호출 실패:', msg);
+      // unknown_action → GAS 재배포 안됨 (Blog_inboundCounts 함수 누락)
+      if (msg.indexOf('unknown_action') >= 0){
+        console.error('[blog] 🛑 GAS 에 blog.inboundCounts 라우트 없음 — modules/blog.gs (Blog_inboundCounts 함수) 추가 후 재배포 필요!');
+        const statusEl = $('status');
+        if (statusEl){
+          const cur = statusEl.textContent;
+          if (cur.indexOf('blog.inboundCounts 없음') < 0){
+            statusEl.textContent = cur + ' · ⚠ blog.inboundCounts 없음 → GAS 재배포 필요';
+            statusEl.className = 'status err';
+            statusEl.title = 'modules/blog.gs 에 Blog_inboundCounts 함수가 없거나 라우트가 등록되지 않음. 재배포 필요.\n' + msg;
+          }
+        }
+      }
+      INBOUND_COUNTS = {};
+    }
+  }
 
   function populateEditSelects(){
     if (!CURRENT_DETAIL_ROW) return;
@@ -1227,6 +1371,7 @@
     const categories = getCategories();
     const curSvc = String(CURRENT_DETAIL_ROW.service || '');
     const curCat = String(CURRENT_DETAIL_ROW.category || '');
+    const curUtm = String(CURRENT_DETAIL_ROW.utm_term || '');
     // 현재 값이 옵션 목록에 없으면 맨 앞에 추가
     if (curSvc && services.indexOf(curSvc) < 0) services.unshift(curSvc);
     if (curCat && categories.indexOf(curCat) < 0) categories.unshift(curCat);
@@ -1234,6 +1379,7 @@
       services.map(s => `<option value="${escAttr(s)}" ${s===curSvc?'selected':''}>${escHtml(s)}</option>`).join('');
     $('d-cat-select').innerHTML = '<option value="">— 선택 —</option>' +
       categories.map(c => `<option value="${escAttr(c)}" ${c===curCat?'selected':''}>${escHtml(c)}</option>`).join('');
+    $('d-utm-input').value = curUtm;
   }
 
   function setEditBanner(text, kind){
@@ -1267,9 +1413,11 @@
     if (!CURRENT_DETAIL_ROW) return;
     const newSvc = $('d-svc-select').value;
     const newCat = $('d-cat-select').value;
+    const newUtm = $('d-utm-input').value.trim();
     const oldSvc = String(CURRENT_DETAIL_ROW.service || '');
     const oldCat = String(CURRENT_DETAIL_ROW.category || '');
-    if (newSvc === oldSvc && newCat === oldCat){
+    const oldUtm = String(CURRENT_DETAIL_ROW.utm_term || '');
+    if (newSvc === oldSvc && newCat === oldCat && newUtm === oldUtm){
       setEditBanner('변경된 값이 없습니다.', '');
       return;
     }
@@ -1290,15 +1438,17 @@
 
     try{
       const params = { postid: CURRENT_DETAIL_ROW.postid };
-      if (newSvc !== oldSvc) params.service = newSvc;
+      if (newSvc !== oldSvc) params.service  = newSvc;
       if (newCat !== oldCat) params.category = newCat;
+      if (newUtm !== oldUtm) params.utm_term = newUtm;
       const res = await MktProxy.blogUpdate(params);
 
       // 로컬 데이터 갱신
       const updateLocal = function (row) {
         if (!row || String(row.postid) !== String(CURRENT_DETAIL_ROW.postid)) return;
-        if (params.service !== undefined) row.service = params.service;
+        if (params.service  !== undefined) row.service  = params.service;
         if (params.category !== undefined) row.category = params.category;
+        if (params.utm_term !== undefined) row.utm_term = params.utm_term;
       };
       CURRENT_ROWS.forEach(updateLocal);
       SCOPED_ROWS.forEach(updateLocal);
