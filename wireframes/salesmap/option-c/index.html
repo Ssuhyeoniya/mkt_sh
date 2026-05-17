@@ -616,7 +616,7 @@
   $('ch-modal-back').addEventListener('click', closeChModal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChModal(); });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', () => load());
 </script>
 </body>
 </html>

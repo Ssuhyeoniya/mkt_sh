@@ -130,7 +130,6 @@
       </div>
 
       <button id="btn-apply" class="btn-apply">조회</button>
-      <button id="btn-refresh" class="ghost-btn" title="GAS 프록시에서 다시 불러오기">↻ 새로고침</button>
 
       <div style="flex:1"></div>
 
@@ -618,11 +617,12 @@
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; MktProxy.salesmapClearCache(); load(); });
   $('btn-reset-w').addEventListener('click', resetWidths);
   $('btn-export').addEventListener('click', exportCSV);
-  $('btn-refresh').addEventListener('click', load);
 
-  // 조회 버튼: 필터 적용
+  // 조회 버튼: 필터 적용 (캐시 데이터 재렌더)
   function applySearch(){ readApplied(); PAGE = 1; rerender(); }
   $('btn-apply').addEventListener('click', applySearch);
+
+  // 새로고침 버튼: 캐시 비우고 GAS 재조회 (명시적 클릭으로만 동작)
   $('btn-refresh').addEventListener('click', () => load(true));
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
 
@@ -650,7 +650,7 @@
   $('drawer-back').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', () => load());
 </script>
 </body>
 </html>
