@@ -89,9 +89,7 @@
     </div>
 
     <nav class="opt-tabs">
-      <a href="../option-a/">시안 A · Power Table</a>
-      <a href="../option-b/">시안 B · Funnel</a>
-      <a class="active" href="./">시안 C · Bento</a>
+      <a class="active" href="./">IB / OB 종합 · Bento Insights</a>
     </nav>
 
     <!-- KPI -->
@@ -211,21 +209,8 @@
   </main>
 </div>
 
-<!-- 상세보기 모달 -->
-<div class="modal-back" id="modal-back"></div>
-<div class="modal" id="modal" role="dialog" aria-modal="true">
-  <div class="modal-head">
-    <div>
-      <div class="eyebrow">고객사 상세 · TOTAL 시트 24개 필드</div>
-      <h3 id="modal-title">-</h3>
-      <div class="meta-tags" id="modal-meta"></div>
-    </div>
-    <button class="modal-close" id="modal-close">×</button>
-  </div>
-  <div class="modal-body" id="modal-body"></div>
-</div>
-
 <script src="../sample-data.js"></script>
+<script src="../_detail-drawer.js"></script>
 <script src="../shared.js"></script>
 <script src="../proxy-client.js"></script>
 <script>
@@ -470,10 +455,6 @@
   $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); rerender(); });
   $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; rerender(); });
   $('btn-export').addEventListener('click', () => alert('CSV 내보내기 (목업)'));
-
-  $('modal-close').addEventListener('click', IBOB.closeModal);
-  $('modal-back').addEventListener('click', IBOB.closeModal);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') IBOB.closeModal(); });
 
   window.addEventListener('DOMContentLoaded', () => load());
   load();

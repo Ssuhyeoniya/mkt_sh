@@ -112,24 +112,11 @@
 
   function openModal(r){
     if (!r) return;
-    document.getElementById('modal-title').textContent = r['고객사명'] || '(이름 없음)';
-    const tags = [chTag(r['CH']), statusTag(r['성약']), r['기업구분'] ? `<span class="tag-mini tag-none">${esc(r['기업구분'])}</span>` : '', r['고객사 분류'] ? `<span class="tag-mini tag-none">등급 ${esc(r['고객사 분류'])}</span>` : ''].filter(Boolean).join(' ');
-    document.getElementById('modal-meta').innerHTML = tags;
-    const FULL_KEYS = new Set(['주소','트래킹 경로(UTM)','상세 경로']);
-    document.getElementById('modal-body').innerHTML =
-      `<div class="field-grid">` +
-      window.IBOB_ALL_COLS.map(k => {
-        const v = r[k];
-        const full = FULL_KEYS.has(k) ? ' full' : '';
-        return `<div class="field${full}"><div class="k">${esc(k)}</div><div class="v">${esc(v == null || v === '' ? '-' : v)}</div></div>`;
-      }).join('') +
-      `</div>`;
-    document.getElementById('modal').classList.add('open');
-    document.getElementById('modal-back').classList.add('open');
+    if (window.MktIbobDrawer) { window.MktIbobDrawer.open(r); return; }
+    console.warn('[ib-ob] MktIbobDrawer 미로드 — _detail-drawer.js 가 필요합니다.');
   }
   function closeModal(){
-    document.getElementById('modal').classList.remove('open');
-    document.getElementById('modal-back').classList.remove('open');
+    if (window.MktIbobDrawer) window.MktIbobDrawer.close();
   }
 
   /* ─ 필터 (검색 + 성약 상태 + CH) ─ */
