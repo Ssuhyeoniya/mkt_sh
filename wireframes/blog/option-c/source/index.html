@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared.css">
+<link rel="stylesheet" href="../../shared.css?v=20260512-3">
 <style>
   .source-wrap{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
@@ -27,7 +27,7 @@
   .source-bar .right{ display:flex; align-items:center; gap:6px; }
   .source-bar .pill{
     font-family:'JetBrains Mono', monospace; font-size:11px;
-    background:#1a1e25; border:1px solid var(--line); padding:2px 8px; border-radius:4px;
+    background:var(--panel-2); border:1px solid var(--line); padding:2px 8px; border-radius:4px;
     color:var(--text-2);
   }
   .source-bar a, .source-bar button{
@@ -36,7 +36,14 @@
     cursor:pointer;
   }
   .source-bar a:hover, .source-bar button:hover{ color:#fff; border-color:var(--accent); }
-  .source-iframe{ flex:1; width:100%; border:0; background:#fff; }
+  .source-iframe{
+    flex:1; width:100%; border:0; background:#fff;
+    overscroll-behavior:contain;   /* iframe 내부 스크롤이 끝에 도달해도 부모로 전파 안 함 */
+  }
+  /* iframe 컨테이너에서도 스크롤 체이닝 차단 */
+  .source-wrap{ overscroll-behavior:contain; }
+  /* iframe 위에 마우스가 있을 때 body 스크롤 잠금 */
+  body.source-iframe-hover{ overflow:hidden; }
 </style>
 </head>
 <body>
@@ -49,7 +56,7 @@
     <a class="nav-item" href="../../../dashboard/">대시보드</a>
     <div class="nav-section">인바운드</div>
     <a class="nav-item">IB / OB 분석</a>
-    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item" href="../../../ib-ob/">IB / OB 종합</a>
     <a class="nav-item" href="../../../salesmap/">세일즈맵</a>
     <div class="nav-section">고객사 관리</div>
     <a class="nav-item">성약</a>
@@ -111,6 +118,10 @@
 <script>
   const wrap = document.querySelector('.source-wrap');
   const btn  = document.getElementById('btn-fullscreen');
+  const iframeEl = document.getElementById('source-iframe');
+  // iframe 위에 마우스가 있는 동안 페이지 스크롤 잠금
+  iframeEl.addEventListener('mouseenter', function(){ document.body.classList.add('source-iframe-hover'); });
+  iframeEl.addEventListener('mouseleave', function(){ document.body.classList.remove('source-iframe-hover'); });
   btn.addEventListener('click', function(){
     if (!document.fullscreenElement){
       (wrap.requestFullscreen ? wrap.requestFullscreen() :

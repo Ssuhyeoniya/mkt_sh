@@ -9,6 +9,36 @@
  */
 (function () {
   const STORAGE_KEY = 'mkt_gas_url';
+  const CACHE_PREFIX = 'mkt_cache_';
+  // 캐시는 localStorage 에 저장 → 탭/브라우저 종료 후에도 유지.
+  // 새로고침 버튼(MktProxy.invalidateAll) 으로만 명시 무효화.
+  // TTL 은 안전망 차원에서 7일.
+  const CACHE_TTL    = 7 * 24 * 60 * 60 * 1000;
+
+  function _ssGet(key){
+    try {
+      const raw = localStorage.getItem(CACHE_PREFIX + key);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj.t !== 'number') return null;
+      if (Date.now() - obj.t > CACHE_TTL) return null;
+      return obj.d;
+    } catch (_) { return null; }
+  }
+  function _ssSet(key, data){
+    try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), d: data })); }
+    catch (_) {}
+  }
+  function _ssClear(){
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && k.indexOf(CACHE_PREFIX) === 0) keys.push(k);
+      }
+      keys.forEach(function(k){ localStorage.removeItem(k); });
+    } catch (_) {}
+  }
 
   const Proxy = {
     STORAGE_KEY: STORAGE_KEY,
@@ -68,6 +98,9 @@
     },
 
     blogList: async function (params) {
+      const cacheKey = 'blog_list:' + JSON.stringify(params || {});
+      const cached = _ssGet(cacheKey);
+      if (cached) return cached;
       const r = await this.call('blog.list', params);
       const data = r.data || {};
       // 방어: GAS 미배포 환경/구버전 대비 — 제목 공백 행 제외
@@ -78,6 +111,7 @@
         });
         data.total = data.rows.length;
       }
+      _ssSet(cacheKey, data);
       return data;
     },
     blogSummary: async function () {
@@ -108,15 +142,40 @@
       else this._inboundCache.clear();
     },
     _countsCacheMap: null,
-    blogInboundCounts: async function (params) {
+    /**
+     * 동기 캐시 조회 — 페이지 측에서 이중 렌더(낙관 + 실제) 를 피할 때 사용.
+     * @returns {Object|null} 캐시된 응답 데이터 또는 null
+     */
+    blogInboundCountsCached: function (params) {
       params = params || {};
       const key = (params.from || '') + '|' + (params.to || '');
       if (!this._countsCacheMap) this._countsCacheMap = new Map();
-      const cached = this._countsCacheMap.get(key);
-      if (cached && (Date.now() - cached.t) < this._inboundCacheTtl) return cached.d;
+      const mem = this._countsCacheMap.get(key);
+      if (mem && (Date.now() - mem.t) < this._inboundCacheTtl) return mem.d;
+      const disk = _ssGet('inbound_counts:' + key);
+      if (disk) {
+        this._countsCacheMap.set(key, { d: disk, t: Date.now() });
+        return disk;
+      }
+      return null;
+    },
+    blogInboundCounts: async function (params) {
+      params = params || {};
+      const cached = this.blogInboundCountsCached(params);
+      if (cached) return cached;
+      const key = (params.from || '') + '|' + (params.to || '');
       const r = await this.call('blog.inboundCounts', params);
       this._countsCacheMap.set(key, { d: r.data, t: Date.now() });
+      _ssSet('inbound_counts:' + key, r.data);
       return r.data;
+    },
+    /**
+     * 모든 캐시(메모리 + localStorage) 무효화 — 새로고침 버튼 핸들러에서 호출
+     */
+    invalidateAll: function () {
+      if (this._inboundCache && this._inboundCache.clear) this._inboundCache.clear();
+      if (this._countsCacheMap && this._countsCacheMap.clear) this._countsCacheMap.clear();
+      _ssClear();
     },
     health: async function () {
       const r = await this.call('health');

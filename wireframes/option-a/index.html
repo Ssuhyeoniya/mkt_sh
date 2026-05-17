@@ -7,35 +7,41 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0b0d10; --panel:#12151a; --line:#1f242c; --muted:#7a8290; --text:#e6e8eb; --accent:#7c5cff; --green:#3ddc97; --red:#ff5d73; --amber:#ffb648; }
+  :root {
+    --bg:#f6f7fb; --panel:#ffffff; --panel-2:#f3f5f9; --line:#e2e5ec; --line-2:#cbd0d9;
+    --muted:#6b7280; --text:#0f172a; --text-2:#374151;
+    --accent:#6d4eff; --accent-2:#8a72ff;
+    --green:#16a34a; --red:#dc2626; --amber:#d97706; --blue:#2563eb;
+    --hover-bg:#eef0f5; --pill-bg:#f0f2f7;
+  }
   html,body{ background:var(--bg); color:var(--text); font-family:'Pretendard',sans-serif; }
-  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
   .muted{ color:var(--muted); }
   .num{ font-family:'JetBrains Mono', monospace; }
-  .chip{ font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); }
-  .nav-item{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; color:#c4c9d3; font-size:13.5px; }
-  .nav-item:hover{ background:#1a1e25; }
-  .nav-item.active{ background:#1a1e25; color:#fff; }
-  .nav-sub{ font-size:12.5px; padding-left:28px; color:#9aa3b1; }
-  .nav-sub:hover{ color:#fff; }
+  .chip{ font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--text-2); background:var(--panel); }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; color:var(--text-2); font-size:13.5px; }
+  .nav-item:hover{ background:var(--hover-bg); color:var(--text); }
+  .nav-item.active{ background:var(--hover-bg); color:var(--text); font-weight:600; }
+  .nav-sub{ font-size:12.5px; padding-left:28px; color:var(--muted); }
+  .nav-sub:hover{ color:var(--text); }
   .dot{ width:6px; height:6px; border-radius:999px; display:inline-block; }
   .grid-bg{
     background-image:
-      linear-gradient(transparent 95%, rgba(255,255,255,.05) 95%),
-      linear-gradient(90deg, transparent 95%, rgba(255,255,255,.05) 95%);
+      linear-gradient(transparent 95%, rgba(15,23,42,.05) 95%),
+      linear-gradient(90deg, transparent 95%, rgba(15,23,42,.05) 95%);
     background-size: 24px 24px;
   }
   .bar{ background: linear-gradient(180deg, var(--accent), #4b35cc); border-radius:3px 3px 0 0; }
   .spark path { fill:none; stroke:var(--accent); stroke-width:1.6; }
-  .spark .area{ fill:rgba(124,92,255,.15); stroke:none; }
+  .spark .area{ fill:rgba(109,78,255,.12); stroke:none; }
 </style>
 </head>
 <body class="min-h-screen">
 <div class="flex">
   <!-- Sidebar -->
-  <aside class="w-[240px] min-h-screen border-r border-[var(--line)] p-4 sticky top-0">
+  <aside class="w-[240px] min-h-screen border-r border-[var(--line)] p-4 sticky top-0" style="background:var(--panel)">
     <div class="flex items-center gap-2 mb-6">
-      <div class="w-7 h-7 rounded-md" style="background:linear-gradient(135deg,#7c5cff,#3ddc97)"></div>
+      <div class="w-7 h-7 rounded-md" style="background:linear-gradient(135deg,#6d4eff,#16a34a)"></div>
       <div class="font-semibold">Marketing CRM</div>
     </div>
     <div class="text-[11px] muted uppercase tracking-wider mb-2">Overview</div>
@@ -43,7 +49,7 @@
 
     <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">인바운드</div>
     <a class="nav-item">IB / OB 분석</a>
-    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item" href="./ib-ob/">IB / OB 종합</a>
     <a class="nav-item" href="../salesmap/">세일즈맵</a>
 
     <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">고객사 관리</div>
@@ -84,22 +90,22 @@
       <div class="panel p-5">
         <div class="text-[12px] muted">신규 인바운드</div>
         <div class="num text-[28px] mt-1">1,284</div>
-        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--green); border-color:rgba(61,220,151,.3)">▲ 12.4%</span><span class="text-[11.5px] muted">전월 대비</span></div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--green); border-color:rgba(22,163,74,.35)">▲ 12.4%</span><span class="text-[11.5px] muted">전월 대비</span></div>
       </div>
       <div class="panel p-5">
         <div class="text-[12px] muted">성약 건수</div>
         <div class="num text-[28px] mt-1">187</div>
-        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--green); border-color:rgba(61,220,151,.3)">▲ 6.1%</span><span class="text-[11.5px] muted">전월 대비</span></div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--green); border-color:rgba(22,163,74,.35)">▲ 6.1%</span><span class="text-[11.5px] muted">전월 대비</span></div>
       </div>
       <div class="panel p-5">
         <div class="text-[12px] muted">이탈률</div>
         <div class="num text-[28px] mt-1">3.2%</div>
-        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--red); border-color:rgba(255,93,115,.3)">▼ 0.4%p</span><span class="text-[11.5px] muted">전월 대비</span></div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--red); border-color:rgba(220,38,38,.35)">▼ 0.4%p</span><span class="text-[11.5px] muted">전월 대비</span></div>
       </div>
       <div class="panel p-5">
         <div class="text-[12px] muted">광고 ROAS</div>
         <div class="num text-[28px] mt-1">412%</div>
-        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--amber); border-color:rgba(255,182,72,.3)">▲ 3.0%</span><span class="text-[11.5px] muted">전월 대비</span></div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--amber); border-color:rgba(217,119,6,.35)">▲ 3.0%</span><span class="text-[11.5px] muted">전월 대비</span></div>
       </div>
     </section>
 
@@ -118,18 +124,18 @@
         </div>
         <div class="h-[220px] grid-bg flex items-end gap-2 px-2">
           <!-- placeholder bars -->
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:40%"></div><div class="w-1/2 rounded-t" style="height:30%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:55%"></div><div class="w-1/2 rounded-t" style="height:38%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:48%"></div><div class="w-1/2 rounded-t" style="height:42%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:65%"></div><div class="w-1/2 rounded-t" style="height:50%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:72%"></div><div class="w-1/2 rounded-t" style="height:55%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:60%"></div><div class="w-1/2 rounded-t" style="height:45%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:80%"></div><div class="w-1/2 rounded-t" style="height:62%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:70%"></div><div class="w-1/2 rounded-t" style="height:58%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:85%"></div><div class="w-1/2 rounded-t" style="height:60%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:78%"></div><div class="w-1/2 rounded-t" style="height:65%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:90%"></div><div class="w-1/2 rounded-t" style="height:70%; background:#3ddc97"></div></div>
-          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:82%"></div><div class="w-1/2 rounded-t" style="height:72%; background:#3ddc97"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:40%"></div><div class="w-1/2 rounded-t" style="height:30%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:55%"></div><div class="w-1/2 rounded-t" style="height:38%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:48%"></div><div class="w-1/2 rounded-t" style="height:42%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:65%"></div><div class="w-1/2 rounded-t" style="height:50%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:72%"></div><div class="w-1/2 rounded-t" style="height:55%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:60%"></div><div class="w-1/2 rounded-t" style="height:45%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:80%"></div><div class="w-1/2 rounded-t" style="height:62%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:70%"></div><div class="w-1/2 rounded-t" style="height:58%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:85%"></div><div class="w-1/2 rounded-t" style="height:60%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:78%"></div><div class="w-1/2 rounded-t" style="height:65%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:90%"></div><div class="w-1/2 rounded-t" style="height:70%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:82%"></div><div class="w-1/2 rounded-t" style="height:72%; background:#16a34a"></div></div>
         </div>
       </div>
       <div class="panel p-5">
@@ -188,11 +194,11 @@
         <div class="space-y-2">
           <div>
             <div class="flex justify-between text-[12.5px]"><span class="muted">인앱</span><span class="num">ROAS 380%</span></div>
-            <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:78%; background:var(--accent)"></div></div>
+            <div class="h-1.5 bg-[#eef0f5] rounded mt-1"><div class="h-1.5 rounded" style="width:78%; background:var(--accent)"></div></div>
           </div>
           <div>
             <div class="flex justify-between text-[12.5px]"><span class="muted">CORP</span><span class="num">ROAS 442%</span></div>
-            <div class="h-1.5 bg-[#1a1e25] rounded mt-1"><div class="h-1.5 rounded" style="width:90%; background:var(--green)"></div></div>
+            <div class="h-1.5 bg-[#eef0f5] rounded mt-1"><div class="h-1.5 rounded" style="width:90%; background:var(--green)"></div></div>
           </div>
         </div>
       </div>
@@ -206,22 +212,22 @@
       </div>
       <div class="grid grid-cols-4 gap-3">
         <div class="rounded-lg border border-[var(--line)] p-3">
-          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
           <div class="text-[12.5px]">블로그 포스트 · 신규 캠페인 회고</div>
           <div class="text-[11px] muted mt-1">조회 12.4k · 5/8</div>
         </div>
         <div class="rounded-lg border border-[var(--line)] p-3">
-          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
           <div class="text-[12.5px]">인스타 릴스 · 봄 프로모션</div>
           <div class="text-[11px] muted mt-1">좋아요 3.2k · 5/7</div>
         </div>
         <div class="rounded-lg border border-[var(--line)] p-3">
-          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
           <div class="text-[12.5px]">링크드인 · B2B 케이스</div>
           <div class="text-[11px] muted mt-1">반응 412 · 5/6</div>
         </div>
         <div class="rounded-lg border border-[var(--line)] p-3">
-          <div class="aspect-video rounded bg-[#1a1e25] grid-bg mb-2"></div>
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
           <div class="text-[12.5px]">블로그 · 분기 리포트</div>
           <div class="text-[11px] muted mt-1">조회 8.7k · 5/3</div>
         </div>

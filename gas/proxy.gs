@@ -39,6 +39,9 @@ function handle_(e) {
   // salesmap
   try { reg_('salesmap.list',    Salesmap_list);    } catch (_) {}
   try { reg_('salesmap.summary', Salesmap_summary); } catch (_) {}
+  // ibob (IB/OB 종합 · TOTAL 시트)
+  try { reg_('ibob.list',    Ibob_list);    } catch (_) {}
+  try { reg_('ibob.summary', Ibob_summary); } catch (_) {}
   // 추후 추가 모듈도 위 패턴으로 등록
 
   const action = String(params.action || '').trim();

@@ -6,14 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css">
+<link rel="stylesheet" href="../shared.css?v=20260512-3">
 <style>
   /* Option B: Card Grid — 썸네일 우선, 시각적 콘텐츠 검토 */
   .card-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
   @media (max-width:1280px){ .card-grid{ grid-template-columns:repeat(2,1fr); } }
   .post-card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:all .2s; cursor:pointer; }
   .post-card:hover{ transform:translateY(-2px); border-color:var(--accent); box-shadow:0 8px 32px rgba(124,92,255,.15); }
-  .post-card .cover{ aspect-ratio:16/9; background:#1a1e25 center/cover no-repeat; position:relative; }
+  .post-card .cover{ aspect-ratio:16/9; background:var(--panel-2) center/cover no-repeat; position:relative; }
   .post-card .cover .rank{ position:absolute; top:10px; left:10px; background:rgba(0,0,0,.7); color:#fff; padding:3px 9px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px; backdrop-filter:blur(6px); }
   .post-card .cover .badge{ position:absolute; top:10px; right:10px; background:rgba(124,92,255,.9); color:#fff; padding:3px 9px; border-radius:6px; font-size:11px; backdrop-filter:blur(6px); }
   .post-card .body{ padding:14px 16px 16px; }
@@ -39,7 +39,7 @@
     <a class="nav-item" href="../../dashboard/">대시보드</a>
     <div class="nav-section">인바운드</div>
     <a class="nav-item">IB / OB 분석</a>
-    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item" href="../../ib-ob/">IB / OB 종합</a>
     <a class="nav-item" href="../../salesmap/">세일즈맵</a>
     <div class="nav-section">고객사 관리</div>
     <a class="nav-item">성약</a>
@@ -103,7 +103,7 @@
   </main>
 </div>
 
-<script src="../proxy-client.js?v=20260510-19"></script>
+<script src="../proxy-client.js?v=20260512-3"></script>
 <script>
   let CURRENT_ROWS = [];
   let ACTIVE_CAT = '';

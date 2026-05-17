@@ -11,8 +11,8 @@
   /* Option A: Power Table — 운영 콘솔, 컬럼 리사이즈 자유 */
   .table-wrap{ overflow:auto; max-height:calc(100vh - 320px); }
   .table-wrap::-webkit-scrollbar{ height:10px; width:10px; }
-  .table-wrap::-webkit-scrollbar-thumb{ background:#262c35; border-radius:99px; }
-  .smap-table tbody tr.selected td{ background:rgba(124,92,255,.07); }
+  .table-wrap::-webkit-scrollbar-thumb{ background:var(--line-2); border-radius:99px; }
+  .smap-table tbody tr.selected td{ background:rgba(109,78,255,.08); }
   .row-action{ width:24px; height:24px; border:1px solid var(--line); border-radius:6px; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
   .row-action:hover{ color:var(--accent); border-color:var(--accent); }
 </style>
@@ -27,7 +27,7 @@
     <a class="nav-item" href="../../dashboard/">대시보드</a>
     <div class="nav-section">인바운드</div>
     <a class="nav-item">IB / OB 분석</a>
-    <a class="nav-item">IB / OB 종합</a>
+    <a class="nav-item" href="../../ib-ob/">IB / OB 종합</a>
     <a class="nav-item active" href="../">세일즈맵</a>
     <div class="nav-section">고객사 관리</div>
     <a class="nav-item">성약</a>
@@ -46,9 +46,12 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
-        <h1>세일즈맵 · 리드 로우테이블</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+          <h1>세일즈맵 · 리드 로우테이블</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -78,7 +81,6 @@
       <input id="from" type="date"/>
       <span class="muted text-[12px]">~</span>
       <input id="to" type="date"/>
-      <button id="btn-refresh">↻ 새로고침</button>
       <button id="btn-export">⇩ CSV</button>
       <button id="btn-reset-w" title="컬럼 너비 초기화">↔ 너비 초기화</button>
     </div>
