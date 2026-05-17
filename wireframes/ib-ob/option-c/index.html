@@ -7,6 +7,42 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
+<style>
+  /* C안 전용: 퍼널 + 인입 차트 2-컬럼 */
+  .insight-row{ display:grid; grid-template-columns: 1fr 1.4fr; gap:12px; margin-bottom:14px; }
+  .insight-row > .panel{ padding:16px 18px; }
+  .insight-row .ttl{ font-size:13px; font-weight:600; }
+  .insight-row .sub{ font-size:11.5px; color:var(--muted); }
+  .insight-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+
+  /* 인입 차트 컨트롤 */
+  .chart-ctrls{ display:flex; gap:6px; flex-wrap:wrap; }
+  .seg{ display:inline-flex; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:2px; gap:2px; }
+  .seg button{ background:transparent; border:0; color:var(--muted); font-size:11.5px; padding:5px 10px; border-radius:6px; cursor:pointer; }
+  .seg button.active{ background:var(--accent); color:#fff; font-weight:500; }
+  .seg button:hover:not(.active){ color:var(--text); }
+
+  /* 막대 차트 */
+  .bar-chart{ display:flex; gap:10px; align-items:flex-end; height:160px; padding:8px 4px 0; overflow-x:auto; }
+  .bar-chart .col{ flex:0 0 auto; min-width:48px; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; }
+  .bar-chart .col-pair{ display:flex; gap:4px; align-items:flex-end; flex:1; width:100%; justify-content:center; }
+  .bar-chart .bar-stack{
+    width:18px; display:flex; flex-direction:column-reverse;
+    border-radius:4px 4px 0 0; overflow:hidden; min-height:2px;
+    position:relative;
+  }
+  .bar-chart .bar-stack.compare{ opacity:.78; }
+  .bar-chart .seg-ib{ background:#2563eb; }
+  .bar-chart .seg-ob{ background:#0d9488; }
+  .bar-chart .bar-stack.compare .seg-ib{ background:#94b8f0; }
+  .bar-chart .bar-stack.compare .seg-ob{ background:#7fc7be; }
+  .bar-chart .x-lbl{ font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  .bar-chart .col-total{ font-size:10.5px; color:var(--text-2); font-family:'JetBrains Mono',monospace; }
+
+  .legend-row{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; margin-top:8px; color:var(--text-2); }
+  .legend-row .swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; vertical-align:-1px; margin-right:5px; }
+  .compare-note{ font-size:10.5px; color:var(--muted); margin-top:4px; }
+</style>
 </head>
 <body>
 <div class="shell">
@@ -37,11 +73,19 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">인바운드 · IB / OB 종합</div>
-        <h1>IB / OB 종합 · Bento Insights</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">인바운드 · IB / OB 종합 · TOTAL 시트</div>
+          <h1>IB / OB 종합 · Bento Insights</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="GAS 재요청">↻ 새로고침</button>
       </div>
-      <div class="text-[12px] muted">시트 · <span class="num">TOTAL</span> · 24개 컬럼 동기화</div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 표시 중</span>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL 붙여넣기 → [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
     </div>
 
     <nav class="opt-tabs">
@@ -53,7 +97,44 @@
     <!-- KPI -->
     <section class="kpi-grid" id="kpi"></section>
 
-    <!-- Bento: 4셀 (인지채널 도넛 · 유입구분 도넛 · 시도 랭킹 · 기업구분 분포) -->
+    <!-- 전환 퍼널 + 인입 일자 추이 -->
+    <section class="insight-row">
+      <div class="panel">
+        <div class="insight-head">
+          <div>
+            <div class="ttl">전환 퍼널</div>
+            <div class="sub">IB 인입 → 최초 협의 → 계약 날인 → 성약</div>
+          </div>
+          <span class="chip muted">필터 적용 후 집계</span>
+        </div>
+        <div class="funnel" id="funnel"></div>
+      </div>
+
+      <div class="panel">
+        <div class="insight-head">
+          <div>
+            <div class="ttl">인입 일자 추이</div>
+            <div class="sub">IB 인입 일자 기준 · 단위/비교 토글</div>
+          </div>
+          <div class="chart-ctrls">
+            <div class="seg" id="seg-unit">
+              <button data-u="day">일별</button>
+              <button class="active" data-u="week">주차별</button>
+              <button data-u="year">연도별</button>
+            </div>
+            <div class="seg" id="seg-cmp">
+              <button class="active" data-c="none">비교 없음</button>
+              <button data-c="mom">전월대비</button>
+              <button data-c="yoy">전년대비</button>
+            </div>
+          </div>
+        </div>
+        <div class="bar-chart" id="bar-chart"></div>
+        <div class="legend-row" id="legend"></div>
+      </div>
+    </section>
+
+    <!-- Bento: 4셀 (인지채널 도넛 · 서비스 인입 구분 도넛 · 시도 랭킹 · 기업구분 분포) -->
     <section class="bento">
       <div class="cell">
         <div class="title">인지채널 비중</div>
@@ -61,9 +142,9 @@
         <div class="flex items-center gap-4 mt-3" id="donut-aware"></div>
       </div>
       <div class="cell">
-        <div class="title">유입구분 비중</div>
-        <div class="sub">실제 유입 경로 (웹폼 · 콜 · 제휴 …)</div>
-        <div class="flex items-center gap-4 mt-3" id="donut-inflow"></div>
+        <div class="title">서비스별 인입 건수 · 비중</div>
+        <div class="sub">서비스 인입 구분 기준</div>
+        <div class="flex items-center gap-4 mt-3" id="donut-service"></div>
       </div>
       <div class="cell">
         <div class="title">시도 랭킹</div>
@@ -146,14 +227,23 @@
 
 <script src="../sample-data.js"></script>
 <script src="../shared.js"></script>
+<script src="../proxy-client.js"></script>
 <script>
 (function(){
   const $ = id => document.getElementById(id);
   const PAGE_SIZE = 10;
   let PAGE = 1;
-  let STATE = { q:'', status:'all', ch:'all' };
+  let STATE = { q:'', status:'all', ch:'all', unit:'week', cmp:'none' };
+  let ROWS = window.SAMPLE_IBOB.slice();
   const PALETTE = ['#6d4eff','#2563eb','#16a34a','#d97706','#db2777','#0d9488','#94a3b8'];
 
+  function setStatus(t, k){
+    const el = $('status'); if (!el) return;
+    el.className = 'status ' + (k || '');
+    el.textContent = t;
+  }
+
+  /* ── KPI ── */
   function renderKPI(rows){
     const k = IBOB.computeKPI(rows);
     $('kpi').innerHTML = [
@@ -165,8 +255,101 @@
     ].map(([l,v,s]) => `<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${s}</div></div>`).join('');
   }
 
+  /* ── 전환 퍼널 ── */
+  function renderFunnel(rows){
+    const ibIn = rows.filter(r => r['IB 인입 일자']).length;
+    const meet = rows.filter(r => r['최초 협의 일자']).length;
+    const sign = rows.filter(r => r['계약서 날인 일자']).length;
+    const conv = rows.filter(r => r['성약'] === 'Y' || r['성약'] === '성약').length;
+    const base = ibIn || 1;
+    const stages = [
+      { lbl:'IB 인입',   val:ibIn, rate:100, color:'#2563eb' },
+      { lbl:'최초 협의', val:meet, rate:Math.round(meet*100/base), color:'#6d4eff' },
+      { lbl:'계약 날인', val:sign, rate:Math.round(sign*100/base), color:'#d97706' },
+      { lbl:'성약',      val:conv, rate:Math.round(conv*100/base), color:'#16a34a' }
+    ];
+    $('funnel').innerHTML = stages.map(s => `
+      <div class="stage">
+        <div class="lbl">${s.lbl}</div>
+        <div class="num-big">${s.val}</div>
+        <div class="rate">
+          <span class="num" style="color:${s.color}; font-weight:600; min-width:38px">${s.rate}%</span>
+          <span class="bar"><i style="width:${s.rate}%; background:${s.color}"></i></span>
+        </div>
+      </div>`).join('');
+  }
+
+  /* ── 인입 일자 추이 (단위 + 비교 막대) ── */
+  function groupKey(dateStr, week, unit){
+    if (unit === 'week')  return String(week || '').replace('2026-','');
+    if (unit === 'year')  return String(dateStr || '').slice(0,4) || '-';
+    return String(dateStr || '').slice(5,10); // MM-DD
+  }
+  function aggregateBy(rows, unit){
+    const map = {};
+    rows.forEach(r => {
+      if (!r['IB 인입 일자']) return;
+      const k = groupKey(r['IB 인입 일자'], r['주차'], unit);
+      if (!map[k]) map[k] = { ib:0, ob:0 };
+      const ch = String(r['CH']||'').toUpperCase();
+      if (ch === 'IB') map[k].ib++;
+      else if (ch === 'OB') map[k].ob++;
+    });
+    return Object.keys(map).sort().map(k => ({ key:k, ib:map[k].ib, ob:map[k].ob }));
+  }
+  function compareSeries(series, cmp){
+    // 데모용 가짜 비교값 (실데이터 연결 시 동일 단위의 직전 월/년 집계로 대체)
+    if (cmp === 'none') return series.map(d => Object.assign({}, d, { cIb:null, cOb:null }));
+    const factor = cmp === 'mom' ? 0.75 : 0.60;
+    return series.map(d => ({
+      key: d.key, ib: d.ib, ob: d.ob,
+      cIb: Math.max(0, Math.round(d.ib * factor)),
+      cOb: Math.max(0, Math.round(d.ob * factor))
+    }));
+  }
+  function renderBarChart(rows){
+    const series = compareSeries(aggregateBy(rows, STATE.unit), STATE.cmp);
+    const max = Math.max(1, ...series.map(d => Math.max(d.ib + d.ob, (d.cIb||0) + (d.cOb||0))));
+    const showCmp = STATE.cmp !== 'none';
+
+    $('bar-chart').innerHTML = series.length ? series.map(d => {
+      const curTotal = d.ib + d.ob;
+      const cmpTotal = (d.cIb||0) + (d.cOb||0);
+      function stack(ib, ob, isCmp){
+        const total = ib + ob;
+        const h = Math.round(total / max * 100);
+        return `
+          <div class="bar-stack ${isCmp?'compare':''}" style="height:${h}%" title="${isCmp?'비교':'현재'} · IB ${ib} / OB ${ob}">
+            <div class="seg-ib" style="height:${total ? (ib*100/total) : 0}%"></div>
+            <div class="seg-ob" style="height:${total ? (ob*100/total) : 0}%"></div>
+          </div>`;
+      }
+      const tot = showCmp ? `${curTotal} · ${cmpTotal}` : `${curTotal}`;
+      return `
+        <div class="col">
+          <div class="col-total">${tot}</div>
+          <div class="col-pair">
+            ${stack(d.ib, d.ob, false)}
+            ${showCmp ? stack(d.cIb, d.cOb, true) : ''}
+          </div>
+          <div class="x-lbl">${IBOB.esc(d.key)}</div>
+        </div>`;
+    }).join('') : '<div class="empty" style="width:100%">표시할 인입 데이터가 없습니다.</div>';
+
+    const cmpLbl = STATE.cmp === 'mom' ? '전월' : (STATE.cmp === 'yoy' ? '전년' : '');
+    const legend = [
+      `<span><span class="swatch" style="background:#2563eb"></span>IB (현재)</span>`,
+      `<span><span class="swatch" style="background:#0d9488"></span>OB (현재)</span>`,
+      showCmp ? `<span><span class="swatch" style="background:#94b8f0"></span>IB (${cmpLbl})</span>` : '',
+      showCmp ? `<span><span class="swatch" style="background:#7fc7be"></span>OB (${cmpLbl})</span>` : '',
+      showCmp ? `<span class="compare-note ml-auto">※ 비교값은 데모용 (실데이터 연결 시 동일 단위의 직전 ${cmpLbl} 집계로 대체)</span>` : ''
+    ].filter(Boolean).join('');
+    $('legend').innerHTML = legend;
+  }
+
+  /* ── Bento: 도넛 / 랭킹 ── */
   function renderDonut(targetId, rows, key){
-    const dist = IBOB.distribute(rows, key).slice(0, 5);
+    const dist = IBOB.distribute(rows, key).slice(0, 6);
     const total = dist.reduce((s,d) => s + d.count, 0) || 1;
     let acc = 0;
     const segs = dist.map((d, i) => {
@@ -203,12 +386,14 @@
   }
 
   function rerender(){
-    const filtered = IBOB.applyFilter(window.SAMPLE_IBOB, STATE.q, STATE.status, STATE.ch);
+    const filtered = IBOB.applyFilter(ROWS, STATE.q, STATE.status, STATE.ch);
     renderKPI(filtered);
-    renderDonut('donut-aware',  filtered, '인지채널');
-    renderDonut('donut-inflow', filtered, '유입구분');
-    renderRank('rank-region',   filtered, '시도', 5);
-    renderRank('rank-firm',     filtered, '기업구분', 5);
+    renderFunnel(filtered);
+    renderBarChart(filtered);
+    renderDonut('donut-aware',   filtered, '인지채널');
+    renderDonut('donut-service', filtered, '서비스 인입 구분');
+    renderRank('rank-region',    filtered, '시도', 5);
+    renderRank('rank-firm',      filtered, '기업구분', 5);
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     if (PAGE > totalPages) PAGE = totalPages;
     $('pg-info').textContent = PAGE + ' / ' + totalPages;
@@ -219,6 +404,54 @@
 
   IBOB.buildHeader();
   rerender();
+
+  /* ── GAS 프록시 연결 / 데이터 로드 ── */
+  async function load(force){
+    const url = (window.MktProxy && MktProxy.getUrl()) || '';
+    $('gas-url').value = url;
+    $('btn-disconnect').style.display = url ? '' : 'none';
+    if (!url){
+      if (window.MktProxy) MktProxy.ibobClearCache();
+      ROWS = window.SAMPLE_IBOB.slice();
+      setStatus('데모 데이터 표시 중 (' + ROWS.length + '건)', 'demo');
+      PAGE = 1; rerender();
+      return;
+    }
+    try {
+      setStatus(force ? '새로고침 중…' : '불러오는 중…');
+      const data = await MktProxy.ibobListCached(force);
+      ROWS = (data && data.rows) || [];
+      const tag = data && data._fromCache ? ' · 캐시됨' : '';
+      setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
+      PAGE = 1; rerender();
+    } catch (err) {
+      setStatus('연결 실패: ' + err.message + ' (데모로 대체)', 'err');
+      ROWS = window.SAMPLE_IBOB.slice();
+      PAGE = 1; rerender();
+    }
+  }
+
+  /* ── 이벤트 바인딩 ── */
+  $('btn-connect').addEventListener('click', () => {
+    const v = $('gas-url').value.trim(); if (!v) return;
+    MktProxy.setUrl(v); MktProxy.ibobClearCache(); load(true);
+  });
+  $('btn-disconnect').addEventListener('click', () => {
+    MktProxy.setUrl(''); $('gas-url').value = ''; $('btn-disconnect').style.display = 'none';
+    MktProxy.ibobClearCache(); load();
+  });
+  $('btn-refresh').addEventListener('click', () => load(true));
+  function bindSeg(rootId, key){
+    $(rootId).addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      $(rootId).querySelectorAll('button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      STATE[key] = b.dataset[key === 'unit' ? 'u' : 'c'];
+      rerender();
+    });
+  }
+  bindSeg('seg-unit', 'unit');
+  bindSeg('seg-cmp',  'cmp');
 
   $('ch-chips').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -241,6 +474,9 @@
   $('modal-close').addEventListener('click', IBOB.closeModal);
   $('modal-back').addEventListener('click', IBOB.closeModal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') IBOB.closeModal(); });
+
+  window.addEventListener('DOMContentLoaded', () => load());
+  load();
 })();
 </script>
 </body>
