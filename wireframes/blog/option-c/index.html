@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260512-1">
+<link rel="stylesheet" href="../shared.css?v=20260512-3">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -754,7 +754,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260512-1"></script>
+<script src="../proxy-client.js?v=20260512-3"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -810,6 +810,7 @@
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
     ACTIVE_RANGE = String(days);
+    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
     refreshAll();
     loadInboundCountsForCurrent().then(refreshAll);
   }
@@ -817,6 +818,7 @@
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
+    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
     refreshAll();
     loadInboundCountsForCurrent().then(refreshAll);
   }
@@ -1197,11 +1199,20 @@
     });
   });
   // 기간 조회: 사용자 직접 선택
-  // 날짜 변경: 먼저 현재 INBOUND_COUNTS 로 즉시 재렌더 → 사용자 체감 지연 제거
-  // 이후 새 기간의 inbound 카운트를 받아 다시 한 번만 재렌더 (캐시 히트면 한 번만 렌더)
+  // 날짜 변경 시: 캐시 히트면 단일 동기 렌더, 미스면 낙관 렌더 후 fetch → 재렌더.
+  // 또한 picker change 가 빠르게 연속 발생할 때를 위해 80ms 디바운스 적용.
+  let _dateChangeTimer = null;
   function onDateChange(){
-    ACTIVE_RANGE='';
-    refreshAll();
+    if (_dateChangeTimer) clearTimeout(_dateChangeTimer);
+    _dateChangeTimer = setTimeout(applyDateChange, 80);
+  }
+  function applyDateChange(){
+    ACTIVE_RANGE = '';
+    if (loadInboundCountsForCurrent_sync()){
+      refreshAll();          // 캐시 히트 → 단일 렌더로 종료
+      return;
+    }
+    refreshAll();             // 미스: 낙관 렌더
     loadInboundCountsForCurrent().then(refreshAll);
   }
   $('date-start').addEventListener('change', onDateChange);
@@ -1522,6 +1533,20 @@
       return Number(INBOUND_COUNTS[u]) || 0;
     }
     return Number(r && r.inbound) || 0;
+  }
+  // 동기 캐시 조회 → 히트 시 INBOUND_COUNTS 갱신하고 true 반환. 미스면 false
+  function loadInboundCountsForCurrent_sync(){
+    if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return true; }
+    const ds = $('date-start').value, de = $('date-end').value;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+    const cached = MktProxy.blogInboundCountsCached(params);
+    if (cached){
+      INBOUND_COUNTS = (cached && cached.counts) ? cached.counts : {};
+      return true;
+    }
+    return false;
   }
   async function loadInboundCountsForCurrent(){
     if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
