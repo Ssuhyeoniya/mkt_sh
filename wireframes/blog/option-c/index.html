@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css">
+<link rel="stylesheet" href="../shared.css?v=20260512-3">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -25,7 +25,7 @@
     background:var(--panel); border:1px solid var(--line); border-radius:8px;
     padding:6px 12px; color:var(--text-2); font-size:12px; cursor:pointer;
   }
-  .date-filter .qbtn:hover{ border-color:var(--accent-2); color:#fff; }
+  .date-filter .qbtn:hover{ border-color:var(--accent-2); color:var(--accent); }
   .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .date-filter .clear{
     background:transparent; border:1px solid var(--line); border-radius:8px;
@@ -68,7 +68,7 @@
     background:transparent; border:1px solid var(--line); color:var(--muted);
     cursor:pointer; line-height:1.3;
   }
-  .a-panel .ph .more-btn:hover{ color:#fff; border-color:var(--accent); }
+  .a-panel .ph .more-btn:hover{ color:var(--accent); border-color:var(--accent); }
   .a-panel .ph .eyebrow{
     display:block; font-size:11.5px; color:var(--muted);
     line-height:1.5; margin:0 0 4px;
@@ -113,29 +113,29 @@
     font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:11.5px;
     flex-shrink:0; white-space:nowrap;
   }
-  .cat-bar .track{ height:6px; background:#1a1e25; border-radius:99px; overflow:hidden; }
+  .cat-bar .track{ height:6px; background:var(--panel-2); border-radius:99px; overflow:hidden; }
   .cat-bar .fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent),#9c83ff); }
 
   /* 시간 추이: 탭 + 툴팁 */
-  .trend-tabs{ display:inline-flex; gap:0; background:#1a1e25; padding:2px; border-radius:7px; flex-shrink:0; }
+  .trend-tabs{ display:inline-flex; gap:0; background:var(--panel-2); padding:2px; border-radius:7px; flex-shrink:0; }
   .trend-tab{
     font-size:11px; padding:4px 10px; border-radius:5px;
     background:transparent; border:0; color:var(--muted); cursor:pointer; line-height:1.3;
   }
-  .trend-tab:hover{ color:#fff; }
+  .trend-tab:hover{ color:var(--accent); }
   .trend-tab.active{ background:var(--accent); color:#fff; }
   .trend-wrap{ position:relative; }
+  /* 툴팁: position:fixed 로 부모(.a-panel) 의 overflow:hidden 을 탈출 → 차트 영역 바깥에서도 전체 표시 */
   .trend-tooltip{
-    position:absolute; top:0; pointer-events:none;
-    background:#1a1e25; border:1px solid var(--line-2); border-radius:8px;
+    position:fixed; pointer-events:none;
+    background:var(--panel); border:1px solid var(--line-2); border-radius:8px;
     padding:8px 10px; font-size:11px; color:var(--text);
-    box-shadow:0 6px 20px rgba(0,0,0,.5);
-    transform:translateX(-50%) translateY(-100%);
-    margin-top:-6px;
-    display:none; z-index:5; white-space:nowrap; min-width:130px;
+    box-shadow:0 6px 20px rgba(15,23,42,.12);
+    transform:translateX(-50%);
+    display:none; z-index:1000; white-space:nowrap; min-width:130px;
   }
   .trend-tooltip .tt-date{
-    color:#fff; font-weight:600; font-size:12px;
+    color:var(--text); font-weight:600; font-size:12px;
     margin-bottom:6px; font-family:'JetBrains Mono',monospace;
     padding-bottom:6px; border-bottom:1px solid var(--line);
     display:flex; align-items:center; gap:6px;
@@ -149,7 +149,7 @@
 
   /* ── 더보기 모달 (전체 발행글 랭킹) ───────────── */
   .modal-overlay{
-    position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px);
+    position:fixed; inset:0; background:rgba(15,23,42,.40); backdrop-filter:blur(4px);
     display:flex; align-items:center; justify-content:center; z-index:100;
     animation:fadeIn .15s ease;
   }
@@ -157,7 +157,7 @@
   .modal-content{
     background:var(--panel); border:1px solid var(--line); border-radius:14px;
     width:600px; max-width:92vw; max-height:80vh;
-    display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,.5);
+    display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(15,23,42,.20);
     animation:popIn .18s ease;
   }
   @keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
@@ -169,11 +169,11 @@
   .modal-head .eyebrow{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
   .modal-head h3{ font-size:15px; font-weight:600; margin:2px 0 0; line-height:1.3; }
   .modal-close{
-    width:30px; height:30px; border-radius:7px; background:#1a1e25;
+    width:30px; height:30px; border-radius:7px; background:var(--panel-2);
     border:1px solid var(--line); color:var(--muted); cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center; font-size:13px;
   }
-  .modal-close:hover{ color:#fff; border-color:var(--accent); }
+  .modal-close:hover{ color:var(--accent); border-color:var(--accent); }
   .modal-body{ flex:1; overflow-y:auto; padding:8px 20px 16px; }
   .modal-row{
     display:flex; align-items:center; gap:12px;
@@ -253,7 +253,7 @@
 
   /* ── 상세보기 드로어 (우→좌 슬라이드) ─────────────── */
   .detail-overlay{
-    position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(3px);
+    position:fixed; inset:0; background:rgba(15,23,42,.30); backdrop-filter:blur(3px);
     z-index:90; opacity:0; pointer-events:none; transition:opacity .22s ease;
   }
   .detail-overlay.open{ opacity:1; pointer-events:auto; }
@@ -264,7 +264,7 @@
     z-index:100; transform:translateX(100%);
     transition:transform .28s cubic-bezier(.2,.8,.2,1);
     display:flex; flex-direction:column;
-    box-shadow:-8px 0 32px rgba(0,0,0,.45);
+    box-shadow:-8px 0 32px rgba(15,23,42,.15);
   }
   .detail-drawer.open{ transform:translateX(0); }
   .drawer-head{
@@ -273,24 +273,24 @@
   }
   .drawer-head .eyebrow{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
   .drawer-close{
-    width:30px; height:30px; border-radius:7px; background:#1a1e25;
+    width:30px; height:30px; border-radius:7px; background:var(--panel-2);
     border:1px solid var(--line); color:var(--muted); cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center; font-size:13px;
   }
-  .drawer-close:hover{ color:#fff; border-color:var(--accent); }
+  .drawer-close:hover{ color:var(--accent); border-color:var(--accent); }
   .drawer-body{ flex:1; overflow-y:auto; }
   .drawer-foot{
     padding:14px 18px; border-top:1px solid var(--line);
     display:flex; gap:8px; justify-content:flex-end; flex-shrink:0;
   }
   .drawer-foot .btn-secondary{ background:transparent; border:1px solid var(--line); color:var(--text-2); padding:8px 14px; border-radius:8px; font-size:12.5px; cursor:pointer; text-decoration:none; }
-  .drawer-foot .btn-secondary:hover{ border-color:var(--accent-2); color:#fff; }
+  .drawer-foot .btn-secondary:hover{ border-color:var(--accent-2); color:var(--accent); }
   .drawer-foot .btn-primary{ background:var(--accent); border:0; color:#fff; padding:8px 14px; border-radius:8px; font-size:12.5px; cursor:pointer; font-weight:500; }
   .drawer-foot .btn-primary:hover{ background:var(--accent-2); }
 
   /* 편집 모드: select 스타일 */
   .d-select{
-    background:#1a1e25; border:1px solid var(--line); border-radius:6px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:6px;
     padding:5px 9px; color:var(--text); font-size:12px; outline:0;
     color-scheme:dark; max-width:100%;
   }
@@ -307,19 +307,11 @@
   .d-edit-banner.err{ background:rgba(255,93,115,.1); border-color:rgba(255,93,115,.3); color:#ffb1bb; }
   .d-edit-banner.ok{ background:rgba(61,220,151,.1); border-color:rgba(61,220,151,.3); color:#a3edcc; }
 
-  /* 옵션 설정 버튼 */
-  .opt-btn{
-    background:transparent; border:1px solid var(--line); color:var(--muted);
-    padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer;
-    line-height:1.3; flex-shrink:0;
-  }
-  .opt-btn:hover{ border-color:var(--accent); color:#fff; }
-
   /* 옵션 설정 모달 */
   .opt-modal-content{ width:520px; max-width:92vw; }
   .opt-modal-content textarea{
     width:100%; min-height:120px; resize:vertical;
-    background:#1a1e25; border:1px solid var(--line); border-radius:8px;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
     padding:10px 12px; color:var(--text); font-size:12.5px;
     font-family:'JetBrains Mono', monospace; outline:0;
     line-height:1.6;
@@ -335,7 +327,7 @@
   /* Compact List 형태 (시안 B) */
   .d-head{ padding:18px 18px 12px; }
   .d-head .row1{ display:flex; gap:12px; align-items:flex-start; }
-  .d-head .row1 .thumb{ width:80px; height:60px; border-radius:8px; background:#1a1e25; flex-shrink:0; overflow:hidden; }
+  .d-head .row1 .thumb{ width:80px; height:60px; border-radius:8px; background:var(--panel-2); flex-shrink:0; overflow:hidden; }
   .d-head .row1 .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
   .d-head .row1 .info{ min-width:0; flex:1; }
   .d-head .row1 .info .ttl{ font-size:14.5px; font-weight:600; line-height:1.4; margin:0 0 5px; }
@@ -347,16 +339,16 @@
   .d-tags .cat{ font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(124,92,255,.15); color:#b8a6ff; border:1px solid rgba(124,92,255,.3); }
 
   .d-kpi{ display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; padding:14px 18px; }
-  .d-kpi .c{ background:#1a1e25; border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .d-kpi .c{ background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:12px; }
   .d-kpi .c .l{ font-size:11px; color:var(--muted); }
   .d-kpi .c .v{ font-size:18px; font-weight:600; margin-top:2px; font-family:'JetBrains Mono', monospace; }
 
   .d-section{ padding:14px 18px; border-top:1px solid var(--line); }
   .d-section .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
   .d-section .body{ font-size:12.5px; color:var(--text-2); line-height:1.6; }
-  .d-timeline-stub{ font-size:11.5px; color:var(--muted); padding:14px; background:#1a1e25; border-radius:8px; border:1px dashed var(--line-2); text-align:center; }
+  .d-timeline-stub{ font-size:11.5px; color:var(--muted); padding:14px; background:var(--panel-2); border-radius:8px; border:1px dashed var(--line-2); text-align:center; }
   /* 인바운드 인입 리스트 */
-  .inbound-wrap{ background:#1a1e25; border:1px solid var(--line-2); border-radius:8px; max-height:220px; overflow-y:auto; }
+  .inbound-wrap{ background:var(--panel-2); border:1px solid var(--line-2); border-radius:8px; max-height:220px; overflow-y:auto; }
   .inbound-item{ padding:9px 12px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:3px; }
   .inbound-item:last-child{ border-bottom:0; }
   .inbound-item .iro1{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -366,6 +358,30 @@
   .inbound-item .iro2 .mgr{ color:var(--muted); }
   .inbound-summary{ padding:8px 12px; border-bottom:1px solid var(--line); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; }
   .inbound-summary .num{ color:var(--accent); font-family:'JetBrains Mono', monospace; font-weight:600; }
+
+  /* 상세 드로어 일자별 인바운드 미니 차트 */
+  .d-daily-card{
+    background:var(--panel-2); border:1px solid var(--line-2); border-radius:8px;
+    padding:10px 12px;
+  }
+  .d-daily-card .d-daily-meta{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color:var(--muted); margin-bottom:6px;
+  }
+  .d-daily-card .d-daily-meta .num{ color:var(--accent); font-family:'JetBrains Mono',monospace; font-weight:600; }
+  .d-daily-chart-svg{ width:100%; height:120px; display:block; }
+  .d-daily-chart-svg .bar{ fill:var(--green); }
+  .d-daily-chart-svg .bar:hover{ fill:var(--accent); }
+  .d-daily-chart-svg .axis-line{ stroke:var(--line); stroke-width:1; }
+  .d-daily-chart-svg text{ font-size:9px; fill:var(--muted); font-family:'JetBrains Mono',monospace; }
+  .d-daily-bar-tip{
+    position:fixed; pointer-events:none; z-index:1000;
+    background:var(--panel); border:1px solid var(--line-2); border-radius:6px;
+    padding:5px 8px; font-size:11px; color:var(--text); white-space:nowrap;
+    box-shadow:0 4px 12px rgba(15,23,42,.15);
+    display:none; transform:translateX(-50%);
+  }
+  .d-daily-bar-tip .num{ color:var(--accent); font-family:'JetBrains Mono',monospace; font-weight:600; }
 
   .d-meta{ padding:14px 18px 18px; border-top:1px solid var(--line); }
   .d-meta .section-h{ font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
@@ -384,9 +400,9 @@
   /* 행 높이 40px × 10행 = 400px = 한번에 보이는 영역 */
   .post-row{ height:40px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
   .post-row:last-child{ border-bottom:0; }
-  .post-row:hover{ background:rgba(255,255,255,.02); }
+  .post-row:hover{ background:var(--hover-bg); }
   .post-row .no{ font-family:'JetBrains Mono',monospace; color:var(--muted); font-size:11.5px; text-align:center; }
-  .post-row .thumb-cell{ width:44px; height:28px; border-radius:5px; overflow:hidden; background:#1a1e25; display:flex; align-items:center; justify-content:center; }
+  .post-row .thumb-cell{ width:44px; height:28px; border-radius:5px; overflow:hidden; background:var(--panel-2); display:flex; align-items:center; justify-content:center; }
   .post-row .thumb-cell img{ width:100%; height:100%; object-fit:cover; display:block; }
   .post-row .thumb-cell .ph{ color:#3a4150; font-size:14px; }
   .post-row .title-wrap{ min-width:0; }
@@ -411,7 +427,7 @@
     font-size:12px; padding:5px 10px; min-width:30px; border-radius:6px; cursor:pointer;
     font-family:'JetBrains Mono',monospace;
   }
-  .pager button:hover:not(:disabled):not(.active){ border-color:var(--accent-2); color:#fff; }
+  .pager button:hover:not(:disabled):not(.active){ border-color:var(--accent-2); color:var(--accent); }
   .pager button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .pager button:disabled{ opacity:.3; cursor:not-allowed; }
   .pager .ellipsis{ padding:5px 4px; color:var(--muted); }
@@ -446,9 +462,13 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">SNS · 블로그</div>
-        <h1>블로그 성과 분석</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">SNS · 블로그</div>
+          <h1>블로그 성과 분석</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
+        <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">⚙ 옵션</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -456,7 +476,6 @@
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
       </div>
-      <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">⚙ 옵션</button>
     </div>
 
     <!-- 카테고리 네비게이션 -->
@@ -643,6 +662,12 @@
       <div class="c"><div class="l">인바운드</div><div class="v" id="d-inbound" style="color:var(--green)">-</div></div>
     </div>
     <div class="d-section">
+      <div class="section-h">일자별 인바운드 현황 <span style="font-weight:400; color:var(--muted); margin-left:4px;" id="d-daily-range"></span></div>
+      <div id="d-daily-chart">
+        <div class="d-timeline-stub">utm_term 정보가 필요합니다.</div>
+      </div>
+    </div>
+    <div class="d-section">
       <div class="section-h">본문 요약</div>
       <div class="body" id="d-summary">-</div>
     </div>
@@ -729,7 +754,7 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260510-19"></script>
+<script src="../proxy-client.js?v=20260512-3"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -785,12 +810,16 @@
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
     ACTIVE_RANGE = String(days);
+    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
+    refreshAll();
     loadInboundCountsForCurrent().then(refreshAll);
   }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
+    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
+    refreshAll();
     loadInboundCountsForCurrent().then(refreshAll);
   }
   function updateRangeInfo(){
@@ -899,12 +928,12 @@
     const W = 360, H = 260, P_T = 10, P_B = 26, P_L = 40, P_R = 8;
     const innerW = W - P_L - P_R;
     const innerH = H - P_T - P_B;
-    const maxV = Math.max.apply(null, visits.concat([1]));
-    const maxI = Math.max.apply(null, inbounds.concat([1]));
+    // Y축은 두 시리즈를 모두 표현하기 위해 공통 최댓값 사용 — Y축 라벨/그리드와 라인이 항상 동일 스케일로 매핑됨
+    const maxY = Math.max.apply(null, visits.concat(inbounds).concat([1]));
 
     const x  = i => P_L + i * (innerW / Math.max(keys.length - 1, 1));
-    const yV = v => P_T + innerH - (v / maxV) * innerH;   // 총방문 (좌측 Y축 기준)
-    const yI = v => P_T + innerH - (v / maxI) * innerH;   // 인바운드 (별도 정규화)
+    const yV = v => P_T + innerH - (v / maxY) * innerH;   // 총방문
+    const yI = v => P_T + innerH - (v / maxY) * innerH;   // 인바운드 — 동일 Y 스케일
 
     const pathV = keys.map((k,i)=> (i?'L':'M') + x(i).toFixed(1) + ',' + yV(visits[i]).toFixed(1)).join(' ');
     const pathI = keys.map((k,i)=> (i?'L':'M') + x(i).toFixed(1) + ',' + yI(inbounds[i]).toFixed(1)).join(' ');
@@ -912,11 +941,11 @@
 
     let html = '';
 
-    // Y축 grid + 좌측 라벨 (총방문 기준 5눈금)
+    // Y축 grid + 좌측 라벨 (공통 maxY 기준 5눈금)
     for (let i = 0; i <= 4; i++){
       const yPos = P_T + (innerH * i / 4);
-      const val  = maxV * (1 - i/4);
-      html += '<line x1="'+P_L+'" y1="'+yPos+'" x2="'+(W-P_R)+'" y2="'+yPos+'" stroke="rgba(255,255,255,.05)" stroke-width="1"/>';
+      const val  = maxY * (1 - i/4);
+      html += '<line x1="'+P_L+'" y1="'+yPos+'" x2="'+(W-P_R)+'" y2="'+yPos+'" stroke="rgba(15,23,42,.06)" stroke-width="1"/>';
       html += '<text x="'+(P_L-5)+'" y="'+(yPos+3)+'" font-size="9" fill="#7a8290" text-anchor="end">'+fmtK(val)+'</text>';
     }
     // 영역 + 라인
@@ -939,9 +968,9 @@
       const halfW = (innerW / Math.max(keys.length-1, 1)) / 2;
       html += '<g class="hover-grp" data-i="'+i+'">';
       html += '<rect x="'+(x(i)-halfW).toFixed(1)+'" y="'+P_T+'" width="'+(halfW*2).toFixed(1)+'" height="'+innerH+'" fill="transparent" pointer-events="all"/>';
-      html += '<line class="hv" x1="'+cx+'" y1="'+P_T+'" x2="'+cx+'" y2="'+(P_T+innerH)+'" stroke="rgba(255,255,255,.18)" stroke-width="1" opacity="0"/>';
-      html += '<circle class="hd" cx="'+cx+'" cy="'+yV(visits[i]).toFixed(1)+'" r="3.5" fill="#7c5cff" stroke="#0b0d10" stroke-width="1.5" opacity="0"/>';
-      html += '<circle class="hd" cx="'+cx+'" cy="'+yI(inbounds[i]).toFixed(1)+'" r="3.5" fill="#3ddc97" stroke="#0b0d10" stroke-width="1.5" opacity="0"/>';
+      html += '<line class="hv" x1="'+cx+'" y1="'+P_T+'" x2="'+cx+'" y2="'+(P_T+innerH)+'" stroke="rgba(15,23,42,.25)" stroke-width="1" opacity="0"/>';
+      html += '<circle class="hd" cx="'+cx+'" cy="'+yV(visits[i]).toFixed(1)+'" r="3.5" fill="#7c5cff" stroke="#ffffff" stroke-width="1.5" opacity="0"/>';
+      html += '<circle class="hd" cx="'+cx+'" cy="'+yI(inbounds[i]).toFixed(1)+'" r="3.5" fill="#3ddc97" stroke="#ffffff" stroke-width="1.5" opacity="0"/>';
       html += '</g>';
     });
 
@@ -953,10 +982,14 @@
       g.addEventListener('mouseenter', function(){
         g.querySelectorAll('.hd, .hv').forEach(function(el){ el.setAttribute('opacity','1'); });
         const rect = svg.getBoundingClientRect();
-        const wrap = svg.parentNode.getBoundingClientRect();
         const ratioX = rect.width / W;
-        const xPx = rect.left - wrap.left + x(i) * ratioX;
+        const ratioY = rect.height / H;
+        // position:fixed 기준 viewport 좌표
+        const xPx = rect.left + x(i) * ratioX;
+        // 데이터 포인트(visits)의 Y 위치 + 12px 아래
+        const yPx = rect.top  + yV(visits[i]) * ratioY + 12;
         tip.style.left = xPx + 'px';
+        tip.style.top  = yPx + 'px';
         tip.style.display = 'block';
 
         // 날짜 라벨 — 일별이면 요일 함께, 월별이면 'YYYY년 M월'
@@ -975,7 +1008,7 @@
         }
 
         tip.innerHTML =
-          '<div class="tt-date">📅 <span>'+dateLabel+'</span> '+dateExtra+'</div>'
+          '<div class="tt-date"><span>'+dateLabel+'</span> '+dateExtra+'</div>'
           + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
           + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
       });
@@ -984,6 +1017,11 @@
         tip.style.display = 'none';
       });
     });
+    // 스크롤 시 fixed 툴팁이 차트와 따로 노는 현상 방지
+    if (!renderTrend._scrollBound) {
+      window.addEventListener('scroll', function(){ tip.style.display = 'none'; }, { passive:true });
+      renderTrend._scrollBound = true;
+    }
   }
 
   // ── table + pagination ───────────────────────────
@@ -1098,6 +1136,7 @@
     if (!url){
       setStatus('데모 데이터 표시 중', 'demo');
       render(SAMPLE_BLOG);
+      openDetailFromUrl();
       return;
     }
     try{
@@ -1107,6 +1146,7 @@
       await loadInboundCountsForCurrent();
       refreshAll();
       setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
+      openDetailFromUrl();
     }catch(err){
       // 진단: 프록시 자체가 살아있는지 health로 확인
       let hint = '';
@@ -1125,7 +1165,14 @@
   $('btn-connect').addEventListener('click', function(){
     const v = $('gas-url').value.trim();
     if (!v) return;
-    MktProxy.setUrl(v); load();
+    MktProxy.setUrl(v);
+    MktProxy.invalidateAll();
+    load();
+  });
+  $('btn-refresh').addEventListener('click', function(){
+    MktProxy.invalidateAll();
+    setStatus('새로고침 중...');
+    load();
   });
   $('btn-disconnect').addEventListener('click', function(){
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
@@ -1152,9 +1199,36 @@
     });
   });
   // 기간 조회: 사용자 직접 선택
-  $('date-start').addEventListener('change', function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
-  $('date-end').addEventListener('change',   function(){ ACTIVE_RANGE=''; loadInboundCountsForCurrent().then(refreshAll); });
+  // 날짜 변경 시: 캐시 히트면 단일 동기 렌더, 미스면 낙관 렌더 후 fetch → 재렌더.
+  // 또한 picker change 가 빠르게 연속 발생할 때를 위해 80ms 디바운스 적용.
+  let _dateChangeTimer = null;
+  function onDateChange(){
+    if (_dateChangeTimer) clearTimeout(_dateChangeTimer);
+    _dateChangeTimer = setTimeout(applyDateChange, 80);
+  }
+  function applyDateChange(){
+    ACTIVE_RANGE = '';
+    if (loadInboundCountsForCurrent_sync()){
+      refreshAll();          // 캐시 히트 → 단일 렌더로 종료
+      return;
+    }
+    refreshAll();             // 미스: 낙관 렌더
+    loadInboundCountsForCurrent().then(refreshAll);
+  }
+  $('date-start').addEventListener('change', onDateChange);
+  $('date-end').addEventListener('change',   onDateChange);
   $('btn-clear-date').addEventListener('click', clearDateRange);
+
+  // URL ?postid=XXX 로 진입 시 해당 글의 상세 드로어를 자동 오픈
+  function openDetailFromUrl(){
+    try {
+      const params = new URLSearchParams(location.search);
+      const pid = params.get('postid');
+      if (!pid) return;
+      const row = (CURRENT_ROWS || []).find(function(r){ return String(r.postid||'') === String(pid); });
+      if (row) openDetail(row);
+    } catch (_) {}
+  }
 
   // ── 상세보기 드로어 ──────────────────────────────
   function openDetail(row){
@@ -1211,24 +1285,154 @@
     loadInboundDates(row.utm_term);
   }
 
+  // 일자별 인바운드 미니 차트 — 조회 기간(date-start/date-end)에 맞춰 일 단위 카운트
+  function renderDailyInboundChart(items, utm_term){
+    const target = $('d-daily-chart');
+    const rangeEl = $('d-daily-range');
+    if (!items || !items.length){
+      target.innerHTML = '<div class="d-timeline-stub">매칭되는 인바운드 없음</div>';
+      rangeEl.textContent = '';
+      return;
+    }
+
+    // 1) 인입 datetime → 'YYYY-MM-DD' 추출
+    const dates = items.map(function(it){
+      const raw = String(it.datetime || it.date || '');
+      const m = raw.match(/\d{4}-\d{2}-\d{2}/);
+      return m ? m[0] : '';
+    }).filter(Boolean);
+    if (!dates.length){
+      target.innerHTML = '<div class="d-timeline-stub">유효한 인입 일자가 없습니다.</div>';
+      rangeEl.textContent = '';
+      return;
+    }
+
+    // 2) 조회 기간 결정: date-start/date-end 픽커 값. 비어있으면 인입 일자의 min/max 사용
+    const dsPicker = $('date-start').value;
+    const dePicker = $('date-end').value;
+    const sortedDates = dates.slice().sort();
+    const fromStr = dsPicker || sortedDates[0];
+    const toStr   = dePicker || sortedDates[sortedDates.length-1];
+
+    // 3) 기간 내 일별 카운트
+    const counts = {};
+    dates.forEach(function(d){
+      if (d >= fromStr && d <= toStr){
+        counts[d] = (counts[d] || 0) + 1;
+      }
+    });
+
+    // 4) 기간 내 모든 일자 시리즈 생성 (0건도 포함)
+    const series = [];
+    const start = new Date(fromStr);
+    const end   = new Date(toStr);
+    if (isNaN(start) || isNaN(end) || end < start){
+      target.innerHTML = '<div class="d-timeline-stub">유효한 기간이 아닙니다.</div>';
+      rangeEl.textContent = '';
+      return;
+    }
+    const dayMs = 86400000;
+    const days = Math.min(Math.floor((end - start)/dayMs) + 1, 366);  // 안전 상한 1년
+    for (let i = 0; i < days; i++){
+      const d = new Date(start.getTime() + i*dayMs);
+      const k = d.toISOString().slice(0,10);
+      series.push({ date:k, count: counts[k] || 0 });
+    }
+
+    const totalInPeriod = series.reduce(function(s,x){ return s + x.count; }, 0);
+    rangeEl.textContent = '· ' + fromStr + ' ~ ' + toStr + ' · ' + totalInPeriod + '건';
+
+    // 5) SVG 막대 그래프 생성
+    const W = 420, H = 120, P_T = 8, P_B = 22, P_L = 26, P_R = 6;
+    const innerW = W - P_L - P_R;
+    const innerH = H - P_T - P_B;
+    const maxC = Math.max.apply(null, series.map(function(x){ return x.count; }).concat([1]));
+    const n = series.length;
+    const barW = Math.max(1, innerW / n - 1);
+    const step = innerW / n;
+
+    let inner = '';
+    // Y축 그리드 (3 눈금)
+    for (let i = 0; i <= 2; i++){
+      const yPos = P_T + (innerH * i / 2);
+      const val  = maxC * (1 - i/2);
+      inner += '<line class="axis-line" x1="'+P_L+'" y1="'+yPos+'" x2="'+(W-P_R)+'" y2="'+yPos+'"/>';
+      inner += '<text x="'+(P_L-4)+'" y="'+(yPos+3)+'" text-anchor="end">'+Math.round(val)+'</text>';
+    }
+    // 막대
+    series.forEach(function(x, i){
+      const h = (x.count / maxC) * innerH;
+      const barX = P_L + i*step + (step - barW)/2;
+      const barY = P_T + innerH - h;
+      inner += '<rect class="bar" x="'+barX.toFixed(1)+'" y="'+barY.toFixed(1)
+        +'" width="'+barW.toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)
+        +'" data-date="'+x.date+'" data-count="'+x.count+'">'
+        + '<title>'+x.date+' · '+x.count+'건</title>'
+        + '</rect>';
+    });
+    // X축 라벨 (시작/중간/끝)
+    const labelIdx = [0, Math.floor(n/2), n-1];
+    labelIdx.forEach(function(i){
+      if (i < 0 || i >= n) return;
+      const cx = P_L + i*step + step/2;
+      inner += '<text x="'+cx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+ series[i].date.slice(5) +'</text>';
+    });
+
+    target.innerHTML =
+      '<div class="d-daily-card">'
+      + '<div class="d-daily-meta"><span>매칭 utm_term: <code style="font-family:JetBrains Mono,monospace;color:var(--text-2);">'+escHtml(utm_term||'-')+'</code></span><span>최대 <span class="num">'+maxC+'</span>건/일</span></div>'
+      + '<svg class="d-daily-chart-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+inner+'</svg>'
+      + '</div>';
+
+    // 호버 툴팁
+    const tip = (function(){
+      let el = document.getElementById('d-daily-bar-tip');
+      if (!el){
+        el = document.createElement('div');
+        el.id = 'd-daily-bar-tip';
+        el.className = 'd-daily-bar-tip';
+        document.body.appendChild(el);
+      }
+      return el;
+    })();
+    target.querySelectorAll('rect.bar').forEach(function(rect){
+      rect.addEventListener('mouseenter', function(e){
+        const r = rect.getBoundingClientRect();
+        tip.innerHTML = '<div>'+rect.dataset.date+'</div><div><span class="num">'+rect.dataset.count+'</span>건</div>';
+        tip.style.left = (r.left + r.width/2) + 'px';
+        tip.style.top  = (r.top - 8) + 'px';
+        tip.style.transform = 'translate(-50%, -100%)';
+        tip.style.display = 'block';
+      });
+      rect.addEventListener('mouseleave', function(){ tip.style.display = 'none'; });
+    });
+  }
+
   // ── 인바운드 인입 날짜 (세일즈맵 utm_term 매칭) ───────
   async function loadInboundDates(utm_term){
     const target = $('d-inbound-list');
     const counter = $('d-inbound-count');
+    const dailyTarget = $('d-daily-chart');
+    const dailyRange = $('d-daily-range');
     counter.textContent = '';
+    if (dailyRange) dailyRange.textContent = '';
     if (!utm_term){
       target.innerHTML = '<div class="d-timeline-stub">utm_term 정보가 없어 매칭할 수 없습니다.</div>';
+      if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub">utm_term 정보가 필요합니다.</div>';
       return;
     }
     if (!MktProxy.getUrl()){
       target.innerHTML = '<div class="d-timeline-stub">프록시 미연결 — 연결 후 자동 표시</div>';
+      if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub">프록시 미연결 — 연결 후 자동 표시</div>';
       return;
     }
     target.innerHTML = '<div class="d-timeline-stub">불러오는 중...</div>';
+    if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub">불러오는 중...</div>';
     try{
       const data = await MktProxy.blogInboundDates(utm_term);
       if (!data.count){
         target.innerHTML = '<div class="d-timeline-stub">매칭되는 인바운드 없음 (utm_term: ' + escAttr(utm_term) + ')</div>';
+        renderDailyInboundChart([], utm_term);
         return;
       }
       counter.textContent = '· ' + data.count + '건';
@@ -1245,8 +1449,10 @@
       });
       html += '</div>';
       target.innerHTML = html;
+      renderDailyInboundChart(data.items, utm_term);
     }catch(err){
       target.innerHTML = '<div class="d-timeline-stub" style="color:var(--red); border-color:rgba(255,93,115,.3);">불러오기 실패: '+ escHtml(err.message) +'</div>';
+      if (dailyTarget) dailyTarget.innerHTML = '<div class="d-timeline-stub" style="color:var(--red);">불러오기 실패</div>';
     }
   }
   function closeDetail(){
@@ -1328,6 +1534,20 @@
     }
     return Number(r && r.inbound) || 0;
   }
+  // 동기 캐시 조회 → 히트 시 INBOUND_COUNTS 갱신하고 true 반환. 미스면 false
+  function loadInboundCountsForCurrent_sync(){
+    if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return true; }
+    const ds = $('date-start').value, de = $('date-end').value;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+    const cached = MktProxy.blogInboundCountsCached(params);
+    if (cached){
+      INBOUND_COUNTS = (cached && cached.counts) ? cached.counts : {};
+      return true;
+    }
+    return false;
+  }
   async function loadInboundCountsForCurrent(){
     if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
     // 인바운드 = utm_term 매칭 + 세일즈맵 '제출 일자' 가 선택 기간 내인 것
@@ -1350,7 +1570,7 @@
       console.error('[blog] inboundCounts 호출 실패:', msg);
       // unknown_action → GAS 재배포 안됨 (Blog_inboundCounts 함수 누락)
       if (msg.indexOf('unknown_action') >= 0){
-        console.error('[blog] 🛑 GAS 에 blog.inboundCounts 라우트 없음 — modules/blog.gs (Blog_inboundCounts 함수) 추가 후 재배포 필요!');
+        console.error('[blog] GAS 에 blog.inboundCounts 라우트 없음 — modules/blog.gs (Blog_inboundCounts 함수) 추가 후 재배포 필요! ');
         const statusEl = $('status');
         if (statusEl){
           const cur = statusEl.textContent;

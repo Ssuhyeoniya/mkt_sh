@@ -14,7 +14,7 @@
   .view-toggle button.active{ background:var(--accent); color:#fff; }
   .seg{ display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:2px; }
   .seg button{ background:transparent; border:0; color:var(--muted); font-size:12px; padding:5px 10px; border-radius:7px; cursor:pointer; }
-  .seg button.active{ background:#1a1e25; color:var(--text); }
+  .seg button.active{ background:var(--hover-bg); color:var(--text); }
   .table-wrap{ overflow:auto; max-height:60vh; }
   .col-color-strip{ width:6px; align-self:stretch; border-radius:3px; }
 </style>
@@ -48,9 +48,12 @@
 
   <main class="main">
     <div class="page-head">
-      <div>
-        <div class="page-eyebrow">인바운드 · 세일즈맵</div>
-        <h1>세일즈맵 · CRM 파이프라인</h1>
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">인바운드 · 세일즈맵</div>
+          <h1>세일즈맵 · CRM 파이프라인</h1>
+        </div>
+        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -208,7 +211,7 @@
     { key:'utm_content',     label:'utm_content',  w:140,  mono:true },
     { key:'utm_term',        label:'utm_term',     w:140,  mono:true }
   ];
-  const COL_HUES = ['#7c5cff','#3ddc97','#4ea3ff','#ffb648','#ff7ab6','#ff5d73','#9c83ff','#7ee9bf','#9ccaff','#ffd99a','#c4c9d3'];
+  const COL_HUES = ['#6d4eff','#16a34a','#2563eb','#d97706','#db2777','#dc2626','#8a72ff','#22c55e','#3b82f6','#f59e0b','#94a3b8'];
   const W_KEY = 'smap_col_widths_v1';
 
   let CURRENT = [];
@@ -615,6 +618,7 @@
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; MktProxy.salesmapClearCache(); load(); });
   $('btn-reset-w').addEventListener('click', resetWidths);
   $('btn-export').addEventListener('click', exportCSV);
+  $('btn-refresh').addEventListener('click', load);
 
   // 조회 버튼: 필터 적용
   function applySearch(){ readApplied(); PAGE = 1; rerender(); }
