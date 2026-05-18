@@ -51,6 +51,30 @@ a{ color:inherit; text-decoration:none; }
 .opt-btn{ background:transparent; border:1px solid var(--line); color:var(--muted); padding:6px 10px; border-radius:8px; font-size:12px; cursor:pointer; line-height:1.3; flex-shrink:0; }
 .opt-btn:hover{ border-color:var(--accent); color:var(--accent); }
 
+/* date-filter (세일즈맵과 동일 패턴) */
+.date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.date-filter .lbl{ font-size:12px; color:var(--muted); margin-right:2px; }
+.date-filter input[type="date"]{
+  background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  padding:6px 10px; color:var(--text); font-size:12.5px; outline:0;
+  color-scheme:light; font-family:'JetBrains Mono',monospace;
+}
+.date-filter input[type="date"]:focus{ border-color:var(--accent); }
+.date-filter input[type="date"]::-webkit-calendar-picker-indicator{ cursor:pointer; opacity:.6; }
+.date-filter .sep{ color:var(--muted); padding:0 2px; }
+.date-filter .qbtn{
+  background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  padding:6px 12px; color:var(--text-2); font-size:12px; cursor:pointer;
+}
+.date-filter .qbtn:hover{ border-color:var(--accent-2); color:var(--text); }
+.date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.date-filter .clear{
+  background:transparent; border:1px solid var(--line); border-radius:8px;
+  padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
+}
+.date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
+.date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
+
 /* sub option tabs */
 .opt-tabs{ display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:3px; gap:2px; margin-bottom:18px; }
 .opt-tabs a{ font-size:12.5px; padding:6px 14px; border-radius:7px; color:var(--muted); }
