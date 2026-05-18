@@ -36,7 +36,7 @@
   .rank-row .bar > i{ display:block; height:100%; background:var(--accent); border-radius:99px; }
   .rank-row .v{ width:42px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-2); }
   /* 관심 서비스 비중 표 */
-  .svc-card{ display:flex; align-items:flex-start; gap:18px; }
+  .svc-card{ display:flex; align-items:center; gap:18px; }
   .svc-table{ flex:1; min-width:0; }
   .svc-table-head{
     display:grid; grid-template-columns:1fr 54px 54px; gap:8px;
@@ -215,15 +215,18 @@
           <div class="svc-table">
             <div class="svc-table-head">
               <span>서비스</span>
-              <span>비중</span>
               <span>건수</span>
+              <span>비중</span>
             </div>
             <div class="donut-legend" id="svc-legend"></div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- 유입경로 랭킹 -->
+    <!-- UTM 분석 -->
+    <section class="grid-3">
+      <!-- 유입경로 랭킹 (아래 블럭으로 이동) -->
       <div class="panel panel-pad">
         <div class="panel-title">
           <h3>유입경로 TOP 5</h3>
@@ -234,10 +237,6 @@
         </div>
         <div id="ch-rank"></div>
       </div>
-    </section>
-
-    <!-- UTM 분석 -->
-    <section class="grid-3">
       <div class="panel panel-pad">
         <div class="panel-title"><h3>utm_source TOP 6</h3></div>
         <div id="utm-source"></div>
@@ -500,8 +499,8 @@
     $('svc-legend').innerHTML = arr.slice(0, 8).map((x,i) => `
       <div class="row">
         <span class="lbl"><span class="dot" style="background:${HUES[i % HUES.length]}"></span><span class="name" title="${esc(x.name)}">${esc(x.name)}</span></span>
-        <span class="pct">${Math.round(x.count*100/total)}%</span>
         <span class="cnt">${x.count}</span>
+        <span class="pct">${Math.round(x.count*100/total)}%</span>
       </div>`).join('');
   }
 
