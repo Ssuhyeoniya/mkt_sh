@@ -192,20 +192,43 @@
       </div>
     </section>
 
-    <!-- Filter -->
-    <div class="filter">
-      <div class="chip-row" id="status-chips">
-        <button class="chip-toggle active" data-st="all">성약 전체</button>
-        <button class="chip-toggle" data-st="y">성약</button>
-        <button class="chip-toggle" data-st="mid">협의중</button>
-        <button class="chip-toggle" data-st="drop">드롭</button>
+    <!-- Filter — 서비스 / UTM / 검색 + 조회 -->
+    <div class="filter-block">
+      <div class="row">
+        <span class="ms-tag">서비스</span>
+        <div class="ms-dropdown" id="ms-svc">
+          <button class="ms-trigger" type="button">
+            <span class="ms-text">서비스 전체</span>
+            <span class="ms-caret">▾</span>
+          </button>
+          <div class="ms-panel" id="ms-svc-panel"></div>
+        </div>
       </div>
-      <div class="search">
-        <span style="color:var(--muted)">⌕</span>
-        <input id="q" type="text" placeholder="고객사 · 주소 · 키워드 · UTM"/>
+      <div class="row">
+        <span class="ms-tag utm">UTM</span>
+        <div class="ms-dropdown" id="ms-utm">
+          <button class="ms-trigger" type="button">
+            <span class="ms-text">UTM 전체</span>
+            <span class="ms-caret">▾</span>
+          </button>
+          <div class="ms-panel" id="ms-utm-panel"></div>
+        </div>
       </div>
-      <div style="flex:1"></div>
-      <button class="ghost-btn" id="btn-reset">↔ 너비 초기화</button>
+      <div class="row">
+        <select id="search-field" class="search-field">
+          <option value="고객사명">고객사명</option>
+          <option value="시도">시도</option>
+          <option value="지역구">지역구</option>
+          <option value="동리">동리</option>
+        </select>
+        <div class="search-input">
+          <span style="color:var(--muted)">⌕</span>
+          <input id="q" type="text" placeholder="검색 키워드 입력..."/>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-apply" id="btn-apply">조회</button>
+      </div>
     </div>
 
     <!-- Table -->
@@ -249,8 +272,11 @@
   const $ = id => document.getElementById(id);
   const PAGE_SIZE = 10;
   let PAGE = 1;
+  // PENDING: 입력 중인 필터값 (조회 버튼 누르기 전)
+  let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'' };
+  // STATE: 실제 적용 중인 필터값 + 즉시 반영되는 기간/단위/비교
   let STATE = {
-    q:'', status:'all',
+    services:[], utm:[], searchField:'고객사명', searchQuery:'',
     dateStart:'', dateEnd:'', activeRange:'',
     unit:'week', cmp:''   // cmp: '' | 'mom' | 'yoy'
   };
@@ -294,9 +320,27 @@
     $('range-info').textContent = (!STATE.dateStart && !STATE.dateEnd) ? '전체 기간' : `${STATE.dateStart||'...'} ~ ${STATE.dateEnd||'...'}`;
   }
 
-  /* ── 필터 (기간 + 성약 + 검색) ── CH 토글 제거됨 */
+  /* ── 필터 (서비스 + UTM + 필드검색 + 기간) ── */
+  function parseUtmSource(s){
+    if (!s) return '';
+    const m = String(s).match(/utm_source=([^&\s]+)/i);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
   function applyAll(rows){
-    let out = IBOB.applyFilter(rows, STATE.q, STATE.status, 'all');
+    let out = rows.slice();
+    if (STATE.services.length){
+      const set = new Set(STATE.services);
+      out = out.filter(r => set.has(String(r['서비스 인입 구분']||'')));
+    }
+    if (STATE.utm.length){
+      const set = new Set(STATE.utm);
+      out = out.filter(r => set.has(parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'));
+    }
+    if (STATE.searchQuery){
+      const q = STATE.searchQuery.toLowerCase();
+      const f = STATE.searchField;
+      out = out.filter(r => String(r[f]||'').toLowerCase().indexOf(q) >= 0);
+    }
     if (STATE.dateStart || STATE.dateEnd){
       out = out.filter(r => {
         const d = String(r['IB 인입 일자']||'').slice(0,10);
@@ -357,9 +401,10 @@
       if (!r['IB 인입 일자']) return;
       const k = groupKey(r['IB 인입 일자'], r['주차'], unit);
       if (!map[k]) map[k] = { ib:0, ob:0 };
-      const ch = String(r['CH']||'').toUpperCase();
-      if (ch === 'IB') map[k].ib++;
-      else if (ch === 'OB') map[k].ob++;
+      const ch = String(r['CH']||'').trim().toUpperCase();
+      // 빈/미지정 CH 는 IB 로 카운트 (페이지가 IB/OB 종합 — 모든 인입 카운트가 누락되지 않도록)
+      if (ch === 'OB') map[k].ob++;
+      else map[k].ib++;
     });
     return Object.keys(map).sort().map(k => ({ key:k, ib:map[k].ib, ob:map[k].ob }));
   }
@@ -474,7 +519,58 @@
     IBOB.renderTable(filtered.slice((PAGE-1)*PAGE_SIZE, PAGE*PAGE_SIZE));
   }
 
+  /* ── 다중선택 드롭다운 (서비스 / UTM) ── */
+  function buildMSPanel(panelId, allLabel, items){
+    $(panelId).innerHTML =
+      `<label class="ms-item ms-all"><input type="checkbox" data-all checked /><span>${IBOB.esc(allLabel)}</span></label>` +
+      `<div class="ms-divider"></div>` +
+      items.map(v => `<label class="ms-item"><input type="checkbox" value="${IBOB.esc(v)}" /><span>${IBOB.esc(v)}</span></label>`).join('') ||
+      `<div class="ms-item muted">옵션 없음</div>`;
+  }
+  function bindMS(rootId, panelId, triggerLabel, pendingKey){
+    const root = $(rootId);
+    const panel = $(panelId);
+    const triggerText = root.querySelector('.ms-text');
+    root.querySelector('.ms-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.ms-dropdown.open').forEach(d => { if (d !== root) d.classList.remove('open'); });
+      root.classList.toggle('open');
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('change', e => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.type !== 'checkbox') return;
+      const items = panel.querySelectorAll('input[type="checkbox"]:not([data-all])');
+      const allBox = panel.querySelector('input[data-all]');
+      if (t.dataset.all !== undefined){
+        items.forEach(i => i.checked = false);
+        t.checked = true;
+      } else {
+        const checked = [...items].filter(i => i.checked);
+        allBox.checked = checked.length === 0;
+      }
+      const checked = [...items].filter(i => i.checked);
+      if (checked.length === 0) triggerText.textContent = triggerLabel;
+      else if (checked.length === 1) triggerText.textContent = checked[0].value;
+      else triggerText.textContent = checked.length + '개 선택';
+      PENDING[pendingKey] = checked.map(i => i.value);
+    });
+  }
+  function fillFilterPanels(rows){
+    const svcs = Array.from(new Set(rows.map(r => String(r['서비스 인입 구분']||'')).filter(Boolean))).sort();
+    const utms = Array.from(new Set(rows.map(r => parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'))).sort();
+    buildMSPanel('ms-svc-panel', '서비스 전체', svcs);
+    buildMSPanel('ms-utm-panel', 'UTM 전체',     utms);
+  }
+
   IBOB.buildHeader();
+  IBOB.attachCellSelection();   // 셀 클릭/Ctrl+C·V/Ctrl·Shift+Space
+  bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', 'services');
+  bindMS('ms-utm', 'ms-utm-panel', 'UTM 전체',     'utm');
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+  });
+  fillFilterPanels(ROWS);
   rerender();
 
   /* ── GAS 프록시 연결 / 데이터 로드 ── */
@@ -486,6 +582,7 @@
       if (window.MktProxy) MktProxy.ibobClearCache();
       ROWS = window.SAMPLE_IBOB.slice();
       setStatus('데모 데이터 표시 중 (' + ROWS.length + '건)', 'demo');
+      fillFilterPanels(ROWS);
       PAGE = 1; rerender();
       return;
     }
@@ -495,10 +592,12 @@
       ROWS = (data && data.rows) || [];
       const tag = data && data._fromCache ? ' · 캐시됨' : '';
       setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
+      fillFilterPanels(ROWS);
       PAGE = 1; rerender();
     } catch (err) {
       setStatus('연결 실패: ' + err.message + ' (데모로 대체)', 'err');
       ROWS = window.SAMPLE_IBOB.slice();
+      fillFilterPanels(ROWS);
       PAGE = 1; rerender();
     }
   }
@@ -533,14 +632,21 @@
     rerender();
   });
 
-  $('status-chips').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    $('status-chips').querySelectorAll('button').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    STATE.status = b.dataset.st; PAGE = 1; rerender();
-  });
+  // 검색 입력 — PENDING 에 보관, 조회 클릭 시 적용
+  $('search-field').addEventListener('change', () => { PENDING.searchField = $('search-field').value; });
+  $('q').addEventListener('input',  () => { PENDING.searchQuery = $('q').value.trim(); });
+  $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
 
-  // 기간 조회
+  function applySearch(){
+    STATE.services    = PENDING.services.slice();
+    STATE.utm         = PENDING.utm.slice();
+    STATE.searchField = PENDING.searchField;
+    STATE.searchQuery = PENDING.searchQuery;
+    PAGE = 1; rerender();
+  }
+  $('btn-apply').addEventListener('click', applySearch);
+
+  // 기간 조회 (즉시 적용)
   document.querySelectorAll('.qbtn').forEach(b => {
     b.addEventListener('click', () => setQuickRange(Number(b.dataset.range)));
   });
@@ -552,8 +658,6 @@
   });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
-  $('q').addEventListener('input', e => { STATE.q = e.target.value; PAGE = 1; rerender(); });
-  $('btn-reset').addEventListener('click', IBOB.resetWidths);
   $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); rerender(); });
   $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; rerender(); });
   $('btn-export').addEventListener('click', () => alert('CSV 내보내기 (목업)'));
