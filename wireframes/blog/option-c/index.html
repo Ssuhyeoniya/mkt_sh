@@ -27,6 +27,16 @@
   }
   .date-filter .qbtn:hover{ border-color:var(--accent-2); color:var(--accent); }
   .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-filter .qbtn.pending{ border-style:dashed; border-color:var(--accent-2); color:var(--accent); }
+  .date-filter .apply{
+    background:var(--accent); border:1px solid var(--accent); border-radius:8px;
+    padding:6px 14px; color:#fff; font-size:12.5px; font-weight:600; cursor:pointer;
+    margin-left:4px;
+  }
+  .date-filter .apply:hover{ background:#6a4ce6; border-color:#6a4ce6; }
+  .date-filter .apply:disabled{ opacity:.55; cursor:default; }
+  .date-filter .apply.pending{ box-shadow:0 0 0 2px rgba(124,92,255,.25); }
+  .date-filter input[type="date"].pending{ border-color:var(--accent); }
   .date-filter .clear{
     background:transparent; border:1px solid var(--line); border-radius:8px;
     padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
@@ -495,6 +505,7 @@
       <button class="qbtn" data-range="30">30일</button>
       <button class="qbtn" data-range="90">90일</button>
       <button class="qbtn" data-range="365">1년</button>
+      <button class="apply" id="btn-apply-date">조회</button>
       <button class="clear" id="btn-clear-date">초기화</button>
       <span class="range-info" id="range-info"></span>
     </div>
@@ -760,7 +771,15 @@
   let CURRENT_ROWS = [];   // 전체
   let SCOPED_ROWS = [];    // 기간 필터 적용 후
   let CURRENT_PAGE = 1;
-  let ACTIVE_RANGE = '';   // '7' | '30' | '90' | '365' | ''(상세)
+  let ACTIVE_RANGE = '';        // 적용된 빠른선택 ('7'|'30'|'90'|'365'|'')
+  let PENDING_RANGE = '';       // 입력만 되고 아직 조회 안 한 빠른선택
+  // STATS_DAILY 시트 데이터 (현재 적용된 기간) — 시간 추이 및 기간 필터의 기준
+  let STATS_DAILY_ROWS = [];
+  // 인바운드 일자별 raw (현재 적용된 기간) — 시간 추이 인바운드 라인 기준
+  let INBOUND_BY_DATE_ROWS = [];
+  // 현재 적용된 기간 (조회 시점 스냅샷) — 입력값과 분리
+  let APPLIED_DATE_START = '';
+  let APPLIED_DATE_END   = '';
 
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
   function fmtDate(d){ if (!d) return '-'; return String(d).slice(0,10); }
@@ -787,50 +806,83 @@
     d.setHours(0,0,0,0);
     return d;
   }
+  // 기간 필터: STATS_DAILY 시트의 일자별 방문 기록을 기준으로
+  // 선택 기간에 방문 데이터가 있는 postid 만 통과
   function applyDateFilter(rows){
-    const ds = $('date-start').value;
-    const de = $('date-end').value;
+    const ds = APPLIED_DATE_START;
+    const de = APPLIED_DATE_END;
     if (!ds && !de) return rows.slice();
+    // STATS_DAILY 가 비어있으면 (GAS 미배포/시트 없음 등) — 발행일 기준 fallback
+    if (!STATS_DAILY_ROWS.length){
+      return rows.filter(function(r){
+        const d = String(r['날짜']||'').slice(0,10);
+        return d && (!ds || d >= ds) && (!de || d <= de);
+      });
+    }
+    const statsPidSet = {};
+    for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+      const r = STATS_DAILY_ROWS[i];
+      if (!r || !r.postid) continue;
+      statsPidSet[String(r.postid)] = true;
+    }
     return rows.filter(function(r){
-      // ① 발행일 기준 매칭
-      const d = String(r['날짜']||'').slice(0,10);
-      const publishedInPeriod = d && (!ds || d >= ds) && (!de || d <= de);
-      if (publishedInPeriod) return true;
-      // ② 인바운드 인입일자 기준 매칭 — INBOUND_COUNTS 가 서버에서 from/to 필터된 결과이므로
-      //    utm_term 이 INBOUND_COUNTS 에 있고 카운트가 0보다 크면 해당 기간에 인입된 글
-      const u = String(r.utm_term || '').trim();
-      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u) && (Number(INBOUND_COUNTS[u]) || 0) > 0) return true;
-      return false;
+      const pid = String(r.postid || '').trim();
+      return pid && statsPidSet[pid];
     });
   }
-  function setQuickRange(days){
+  // 입력만 세팅 (조회 버튼 클릭 전까지 반영 안 함)
+  function setQuickRangeInput(days){
     const end = yesterday();
     const start = new Date(end);
     start.setDate(start.getDate() - (days - 1));
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
-    ACTIVE_RANGE = String(days);
-    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
-    refreshAll();
-    loadInboundCountsForCurrent().then(refreshAll);
+    PENDING_RANGE = String(days);
+    updatePendingState();
   }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
-    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
-    refreshAll();
-    loadInboundCountsForCurrent().then(refreshAll);
+    PENDING_RANGE = '';
+    APPLIED_DATE_START = '';
+    APPLIED_DATE_END   = '';
+    updatePendingState();
+    loadStatsAndInboundForCurrent().then(refreshAll);
+  }
+  // 조회 버튼 클릭 시 호출 — 입력값을 실제 적용 상태로 반영하고 데이터 재조회
+  function applyPeriodQuery(){
+    APPLIED_DATE_START = $('date-start').value || '';
+    APPLIED_DATE_END   = $('date-end').value || '';
+    ACTIVE_RANGE = PENDING_RANGE;
+    PENDING_RANGE = '';
+    updatePendingState();
+    loadStatsAndInboundForCurrent().then(refreshAll);
+  }
+  // 입력값이 적용값과 다르면 "대기 중" 표시
+  function isDirty(){
+    return ($('date-start').value || '') !== APPLIED_DATE_START
+        || ($('date-end').value   || '') !== APPLIED_DATE_END;
+  }
+  function updatePendingState(){
+    const dirty = isDirty();
+    $('date-start').classList.toggle('pending', dirty);
+    $('date-end').classList.toggle('pending', dirty);
+    $('btn-apply-date').classList.toggle('pending', dirty);
+    document.querySelectorAll('.qbtn').forEach(function(b){
+      const isActive  = !dirty && b.dataset.range === ACTIVE_RANGE && !!ACTIVE_RANGE;
+      const isPending = dirty && b.dataset.range === PENDING_RANGE && !!PENDING_RANGE;
+      b.classList.toggle('active', isActive);
+      b.classList.toggle('pending', isPending);
+    });
   }
   function updateRangeInfo(){
-    const ds = $('date-start').value;
-    const de = $('date-end').value;
-    document.querySelectorAll('.qbtn').forEach(function(b){
-      b.classList.toggle('active', b.dataset.range === ACTIVE_RANGE);
-    });
+    const ds = APPLIED_DATE_START;
+    const de = APPLIED_DATE_END;
     const info = $('range-info');
     if (!ds && !de) info.textContent = '전체 기간';
     else info.textContent = `${ds || '...'} ~ ${de || '...'}`;
+    updatePendingState();
   }
 
   function applyFilter(rows){
@@ -906,15 +958,32 @@
   }
 
   function renderTrend(rows){
-    // 일/월별 집계 — 합산: 총방문(totalVisit), 인바운드(inbound)
-    const map = {};
+    // STATS_DAILY 시트의 일자별 visitors 와 인바운드 일자별 raw 를 기준으로 집계
+    // - rows: 현재 화면에 보이는 포스트 (SCOPED_ROWS) — postid / utm_term 매칭에 사용
+    // - 일별: YYYY-MM-DD 단위, 월별: YYYY-MM 단위
     const sliceLen = (TREND_MODE === 'monthly') ? 7 : 10;
+    const visiblePid = {};
+    const visibleUtm = {};
     rows.forEach(function(r){
-      const k = String(r['날짜']||'').slice(0, sliceLen);
-      if (!k) return;
+      const pid = String(r.postid || '').trim();
+      if (pid) visiblePid[pid] = true;
+      const u = String(r.utm_term || '').trim();
+      if (u) visibleUtm[u] = true;
+    });
+    const map = {};
+    STATS_DAILY_ROWS.forEach(function(s){
+      if (!s || !s.date) return;
+      if (!visiblePid[String(s.postid)]) return;
+      const k = s.date.slice(0, sliceLen);
       if (!map[k]) map[k] = { totalVisit:0, inbound:0 };
-      map[k].totalVisit += Number(r.totalVisit||0);
-      map[k].inbound    += actualInbound(r);
+      map[k].totalVisit += Number(s.visitors) || 0;
+    });
+    INBOUND_BY_DATE_ROWS.forEach(function(b){
+      if (!b || !b.date) return;
+      if (!visibleUtm[String(b.utm_term)]) return;
+      const k = b.date.slice(0, sliceLen);
+      if (!map[k]) map[k] = { totalVisit:0, inbound:0 };
+      map[k].inbound += 1;
     });
     const keys   = Object.keys(map).sort();
     const svg    = $('trend');
@@ -1135,7 +1204,9 @@
 
     if (!url){
       setStatus('데모 데이터 표시 중', 'demo');
-      render(SAMPLE_BLOG);
+      CURRENT_ROWS = SAMPLE_BLOG;
+      await loadStatsAndInboundForCurrent();
+      refreshAll();
       openDetailFromUrl();
       return;
     }
@@ -1143,9 +1214,9 @@
       setStatus('연결 중...');
       const data = await MktProxy.blogList();
       CURRENT_ROWS = data.rows || [];
-      await loadInboundCountsForCurrent();
+      await loadStatsAndInboundForCurrent();
       refreshAll();
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종 · STATS_DAILY ' + STATS_DAILY_ROWS.length + '행', 'ok');
       openDetailFromUrl();
     }catch(err){
       // 진단: 프록시 자체가 살아있는지 health로 확인
@@ -1158,7 +1229,9 @@
       }
       setStatus('연결 실패: ' + err.message + hint, 'err');
       console.error('[MktProxy] blog.list 실패:', err);
-      render(SAMPLE_BLOG);
+      CURRENT_ROWS = SAMPLE_BLOG;
+      await loadStatsAndInboundForCurrent();
+      refreshAll();
     }
   }
 
@@ -1192,31 +1265,24 @@
     });
   });
 
-  // 기간 조회: 빠른 선택 버튼
+  // 기간 조회: 빠른 선택 버튼 — 입력만 세팅, 실제 반영은 [조회] 버튼
   document.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      setQuickRange(parseInt(btn.dataset.range, 10));
+      setQuickRangeInput(parseInt(btn.dataset.range, 10));
     });
   });
-  // 기간 조회: 사용자 직접 선택
-  // 날짜 변경 시: 캐시 히트면 단일 동기 렌더, 미스면 낙관 렌더 후 fetch → 재렌더.
-  // 또한 picker change 가 빠르게 연속 발생할 때를 위해 80ms 디바운스 적용.
-  let _dateChangeTimer = null;
-  function onDateChange(){
-    if (_dateChangeTimer) clearTimeout(_dateChangeTimer);
-    _dateChangeTimer = setTimeout(applyDateChange, 80);
-  }
-  function applyDateChange(){
-    ACTIVE_RANGE = '';
-    if (loadInboundCountsForCurrent_sync()){
-      refreshAll();          // 캐시 히트 → 단일 렌더로 종료
-      return;
-    }
-    refreshAll();             // 미스: 낙관 렌더
-    loadInboundCountsForCurrent().then(refreshAll);
-  }
-  $('date-start').addEventListener('change', onDateChange);
-  $('date-end').addEventListener('change',   onDateChange);
+  // 데이트피커 직접 입력 — 값 변경 시 "대기 중" 상태로만 표시
+  function onDateInputChange(){ updatePendingState(); }
+  $('date-start').addEventListener('change', onDateInputChange);
+  $('date-end').addEventListener('change',   onDateInputChange);
+  $('date-start').addEventListener('input',  onDateInputChange);
+  $('date-end').addEventListener('input',    onDateInputChange);
+  // 조회 버튼: 입력값을 실제 적용 → 데이터 재조회 → 화면 갱신
+  $('btn-apply-date').addEventListener('click', applyPeriodQuery);
+  // Enter 키로도 조회
+  ['date-start','date-end'].forEach(function(id){
+    $(id).addEventListener('keydown', function(e){ if (e.key === 'Enter') applyPeriodQuery(); });
+  });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
   // URL ?postid=XXX 로 진입 시 해당 글의 상세 드로어를 자동 오픈
@@ -1581,6 +1647,79 @@
           }
         }
       }
+      INBOUND_COUNTS = {};
+    }
+  }
+
+  // STATS_DAILY + INBOUND_BY_DATE 동시 로드 — 조회 버튼 / 초기 로드 / 초기화 시 호출
+  async function loadStatsAndInboundForCurrent(){
+    const ds = APPLIED_DATE_START;
+    const de = APPLIED_DATE_END;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+
+    // 데모 모드 (프록시 미연결): SAMPLE_STATS_DAILY / SAMPLE_INBOUND_BY_DATE 클라이언트 필터
+    if (!MktProxy.getUrl()){
+      const sd = (window.SAMPLE_STATS_DAILY || []).filter(function(r){
+        if (ds && r.date < ds) return false;
+        if (de && r.date > de) return false;
+        return true;
+      });
+      const ib = (window.SAMPLE_INBOUND_BY_DATE || []).filter(function(r){
+        if (ds && r.date < ds) return false;
+        if (de && r.date > de) return false;
+        return true;
+      });
+      STATS_DAILY_ROWS = sd;
+      INBOUND_BY_DATE_ROWS = ib;
+      // 데모에서는 INBOUND_COUNTS 도 자체 집계 (utm_term → count)
+      INBOUND_COUNTS = {};
+      ib.forEach(function(r){
+        const u = String(r.utm_term||'').trim();
+        if (!u) return;
+        INBOUND_COUNTS[u] = (INBOUND_COUNTS[u] || 0) + 1;
+      });
+      return;
+    }
+
+    // 실서버 모드 — 세 엔드포인트 병렬 호출
+    const tasks = [
+      MktProxy.blogStatsDaily(params).then(function(r){
+        STATS_DAILY_ROWS = (r && r.rows) ? r.rows : [];
+      }).catch(function(err){
+        console.error('[blog] statsDaily 호출 실패:', err && err.message || err);
+        STATS_DAILY_ROWS = [];
+        const msg = String(err && err.message || err);
+        if (msg.indexOf('unknown_action') >= 0){
+          const statusEl = $('status');
+          if (statusEl && statusEl.textContent.indexOf('blog.statsDaily 없음') < 0){
+            statusEl.textContent = statusEl.textContent + ' · ⚠ blog.statsDaily 없음 → GAS 재배포 필요';
+            statusEl.className = 'status err';
+          }
+        }
+      }),
+      MktProxy.blogInboundByDate(params).then(function(r){
+        INBOUND_BY_DATE_ROWS = (r && r.rows) ? r.rows : [];
+      }).catch(function(err){
+        console.error('[blog] inboundByDate 호출 실패:', err && err.message || err);
+        INBOUND_BY_DATE_ROWS = [];
+      }),
+      loadInboundCountsForCurrentApplied()
+    ];
+    await Promise.all(tasks);
+  }
+  // 적용된 기간(APPLIED_*) 기준으로 inboundCounts 로드 — 기존 함수가 picker 값을 직접 읽어
+  // 시그니처를 유지하기 어려워 별도 래퍼로 우회
+  async function loadInboundCountsForCurrentApplied(){
+    if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
+    const params = {};
+    if (APPLIED_DATE_START) params.from = APPLIED_DATE_START;
+    if (APPLIED_DATE_END)   params.to   = APPLIED_DATE_END;
+    try {
+      const r = await MktProxy.blogInboundCounts(params);
+      INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
+    } catch (err) {
       INBOUND_COUNTS = {};
     }
   }
