@@ -53,7 +53,6 @@
           <div class="page-eyebrow">인바운드 · 세일즈맵</div>
           <h1>세일즈맵 · CRM 파이프라인</h1>
         </div>
-        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -130,7 +129,6 @@
       </div>
 
       <button id="btn-apply" class="btn-apply">조회</button>
-      <button id="btn-refresh" class="ghost-btn" title="GAS 프록시에서 다시 불러오기">↻ 새로고침</button>
 
       <div style="flex:1"></div>
 
@@ -152,6 +150,7 @@
           <div class="left">
             <span class="text-[13px] font-medium">리드 테이블</span>
             <span class="chip" id="result-count">0건</span>
+            <span class="text-[11.5px] muted ml-2">셀 클릭 · Ctrl+C 복사 · Shift+Space 행 · Ctrl+Space 열 · 더블클릭 상세</span>
           </div>
           <div class="right">
             <div class="pager">
@@ -161,6 +160,7 @@
             </div>
             <button class="ghost-btn" id="btn-reset-w">↔ 너비 초기화</button>
             <button class="ghost-btn" id="btn-export">⇩ CSV</button>
+            <button class="ghost-btn" id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -191,6 +191,7 @@
 </aside>
 
 <script src="../proxy-client.js"></script>
+<script src="../../table-grid.js"></script>
 <script>
   const COLS = [
     { key:'_no',             label:'NO',           w: 56,  align:'right' },
@@ -528,8 +529,9 @@
         return `<td class="${cls}" style="${align}" title="${esc(typeof v==='string' ? v : '')}">${html}</td>`;
       }).join('') + '</tr>';
     }).join('');
+    // 더블클릭 → 상세 드로어 (싱글클릭은 셀 선택)
     tbody.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => openDrawer(rows[Number(tr.dataset.i)]));
+      tr.addEventListener('dblclick', () => openDrawer(rows[Number(tr.dataset.i)]));
     });
   }
 
@@ -566,6 +568,16 @@
     a.href = URL.createObjectURL(blob);
     a.download = 'salesmap_'+todayStr()+'.csv';
     a.click();
+  }
+
+  function exportExcel(){
+    const rows = applyFilter(CURRENT);
+    const headers = COLS.map(c => c.label);
+    const data = rows.map((r, i) => COLS.map(c => {
+      const v = c.key === '_no' ? (r._no != null ? r._no : (i+1)) : r[c.key];
+      return v == null ? '' : v;
+    }));
+    TableGrid.exportExcel({ headers, rows: data, filename: 'salesmap_'+todayStr()+'.xls' });
   }
 
   function rerender(){
@@ -607,6 +619,7 @@
 
   // events
   buildHeader();
+  TableGrid.attach(document.getElementById('tbl'));
   bindMS('ms-svc', 'ms-svc-panel', '서비스 전체');
   bindMS('ms-ch',  'ms-ch-panel',  '유입경로 전체');
   // 외부 클릭 시 드롭다운 닫기
@@ -618,12 +631,11 @@
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; MktProxy.salesmapClearCache(); load(); });
   $('btn-reset-w').addEventListener('click', resetWidths);
   $('btn-export').addEventListener('click', exportCSV);
-  $('btn-refresh').addEventListener('click', load);
+  $('btn-export-xls').addEventListener('click', exportExcel);
 
   // 조회 버튼: 필터 적용
   function applySearch(){ readApplied(); PAGE = 1; rerender(); }
   $('btn-apply').addEventListener('click', applySearch);
-  $('btn-refresh').addEventListener('click', () => load(true));
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
 
   // 기간 조회
