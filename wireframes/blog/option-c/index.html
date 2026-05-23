@@ -1289,18 +1289,31 @@
 
     const rows = SCOPED_ROWS;
 
-    // 조회수: 기간 내 visByPid 의 모든 합 = 조회 기간 내 조회 수 총 합.
-    // 인바운드: 기간 내 INBOUND_BY_DATE 의 모든 row = 조회 기간 내 인입 합계.
-    // (rows 가 아니라 idx 자체에서 합산 → 정확한 '기간 총량' + 빠름.)
+    // 게시글에 귀속되는 attribution set — CURRENT_ROWS 의 postid / utm_term.
+    // 블로그와 무관한 트래픽(예: 광고/타 캠페인의 utm_term, 삭제된 게시글의 stats)
+    // 은 KPI 총량에서 제외해야 '기간 내 블로그 조회수/인바운드' 가 된다.
+    const pidAttr = Object.create(null);
+    const utmAttr = Object.create(null);
+    for (let i = 0; i < CURRENT_ROWS.length; i++){
+      const pid = String(CURRENT_ROWS[i].postid || '');
+      const utm = String(CURRENT_ROWS[i].utm_term || '').trim();
+      if (pid) pidAttr[pid] = true;
+      if (utm) utmAttr[utm] = true;
+    }
+    // 조회수: 기간 내 visByPid 중 블로그 게시글에 매칭되는 pid 만 합산
+    // 인바운드: 기간 내 ibByUtm 중 블로그 게시글에 매칭되는 utm_term 만 합산
+    //   (INBOUND_BY_DATE_ROWS.length 를 그대로 쓰면 블로그 미매칭 트래픽까지
+    //    포함되어 305건처럼 부풀려진 값이 나옴)
     let tot = 0, ib = 0;
     if (idx.hasStats){
       const vp = idx.visByPid;
-      for (const k in vp) tot += vp[k];
+      for (const k in vp) if (pidAttr[k]) tot += vp[k];
     } else {
       for (let i = 0; i < rows.length; i++) tot += +rows[i].totalVisit || 0;
     }
     if (idx.hasIb){
-      ib = INBOUND_BY_DATE_ROWS.length;
+      const iu = idx.ibByUtm;
+      for (const u in iu) if (utmAttr[u]) ib += iu[u];
     } else {
       for (let i = 0; i < rows.length; i++) ib += +rows[i].inbound || 0;
     }
