@@ -860,7 +860,8 @@
       return !!(pid && statsPidSet[pid]);
     });
   }
-  // 입력만 세팅 (수동 날짜 변경 등) — 빠른선택 버튼은 setQuickRangeApply 로 즉시 적용.
+  // 입력만 세팅 (조회 버튼 클릭 전까지 반영 안 함).
+  // 빠른선택 버튼/수동 입력 모두 PENDING 상태로만 표시되고, 실제 적용은 조회 버튼이 한다.
   function setQuickRangeInput(days){
     const end = yesterday();
     const start = new Date(end);
@@ -869,12 +870,6 @@
     $('date-end').value   = ymd(end);
     PENDING_RANGE = String(days);
     updatePendingState();
-  }
-  // 빠른선택 버튼 / 초기 디폴트 기간: 입력 세팅 후 즉시 조회까지 적용
-  // (사용자가 '7일' 누르고 '조회' 까지 또 눌러야 하는 혼란 제거)
-  function setQuickRangeApply(days){
-    setQuickRangeInput(days);
-    applyPeriodQuery();
   }
   function clearDateRange(){
     $('date-start').value = '';
@@ -1510,10 +1505,10 @@
     });
   });
 
-  // 기간 조회: 빠른 선택 버튼 → 입력 세팅 + 즉시 조회 (조회 버튼 추가 클릭 불필요)
+  // 기간 조회: 빠른 선택 버튼 — 입력만 세팅, 실제 반영은 [조회] 버튼
   document.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      setQuickRangeApply(parseInt(btn.dataset.range, 10));
+      setQuickRangeInput(parseInt(btn.dataset.range, 10));
     });
   });
   // 데이트피커 직접 입력 — 값 변경 시 "대기 중" 상태로만 표시

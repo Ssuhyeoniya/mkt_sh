@@ -629,6 +629,7 @@
     });
   }
 
+  // 입력만 세팅 (조회 버튼 클릭 전까지 반영 안 함)
   function setQuickRangeInput(days){
     const end = yesterday();
     const start = new Date(end);
@@ -637,11 +638,6 @@
     $('date-end').value   = ymdStr(end);
     PENDING_RANGE = String(days);
     updatePendingState();
-  }
-  // 빠른선택 버튼 / 디폴트: 입력 세팅 후 즉시 조회 적용 (조회 버튼 추가 클릭 불필요)
-  function setQuickRangeApply(days){
-    setQuickRangeInput(days);
-    applyPeriodQuery();
   }
   function clearDateRange(){
     $('date-start').value = '';
@@ -1738,10 +1734,10 @@
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
 
-  // 기간 조회: 빠른 선택 버튼 → 입력 세팅 + 즉시 조회 (조회 버튼 추가 클릭 불필요)
+  // 기간 조회: 빠른 선택 버튼 → 입력만 PENDING. 실제 반영은 조회 버튼 클릭 시
   document.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      setQuickRangeApply(parseInt(btn.dataset.range, 10));
+      setQuickRangeInput(parseInt(btn.dataset.range, 10));
     });
   });
   function onDateInputChange(){
