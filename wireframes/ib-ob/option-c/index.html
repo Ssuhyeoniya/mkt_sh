@@ -2,15 +2,19 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>IB/OB 종합 시안 C · Bento Insights · 마케팅 CRM</title>
+<title>IB / OB 종합 · 마케팅 CRM</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
 <style>
-  /* C안 전용: 퍼널 + 인입 차트 2-컬럼 */
+  /* 메인 컨테이너 — 콘텐츠 폭 제한, 가로 스크롤 방지 */
+  .main{ min-width:0; }
+  .main > section, .main > div.filter, .main > div.date-filter, .main > .panel { max-width:100%; }
+
+  /* 인사이트 2-컬럼 (퍼널 + 인입 추이) */
   .insight-row{ display:grid; grid-template-columns: 1fr 1.4fr; gap:12px; margin-bottom:14px; }
-  .insight-row > .panel{ padding:16px 18px; }
+  .insight-row > .panel{ padding:16px 18px; min-width:0; overflow:hidden; }
   .insight-row .ttl{ font-size:13px; font-weight:600; }
   .insight-row .sub{ font-size:11.5px; color:var(--muted); }
   .insight-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
@@ -22,26 +26,49 @@
   .seg button.active{ background:var(--accent); color:#fff; font-weight:500; }
   .seg button:hover:not(.active){ color:var(--text); }
 
-  /* 막대 차트 */
-  .bar-chart{ display:flex; gap:10px; align-items:flex-end; height:160px; padding:8px 4px 0; overflow-x:auto; }
-  .bar-chart .col{ flex:0 0 auto; min-width:48px; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; }
-  .bar-chart .col-pair{ display:flex; gap:4px; align-items:flex-end; flex:1; width:100%; justify-content:center; }
-  .bar-chart .bar-stack{
-    width:18px; display:flex; flex-direction:column-reverse;
-    border-radius:4px 4px 0 0; overflow:hidden; min-height:2px;
-    position:relative;
+  /* 막대 차트 — 픽셀 기반 높이로 안정화 */
+  .bar-chart{
+    display:flex; gap:14px; align-items:flex-end;
+    height:170px; padding:8px 4px 0;
+    overflow-x:auto; overflow-y:hidden;
   }
-  .bar-chart .bar-stack.compare{ opacity:.78; }
-  .bar-chart .seg-ib{ background:#2563eb; }
-  .bar-chart .seg-ob{ background:#0d9488; }
+  .bar-chart .col{ flex:0 0 auto; min-width:54px; display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .bar-chart .col-pair{ display:flex; gap:5px; align-items:flex-end; justify-content:center; }
+  .bar-chart .bar-stack{
+    width:22px; display:flex; flex-direction:column-reverse;
+    border-radius:4px 4px 0 0; overflow:hidden; min-height:3px;
+  }
+  .bar-chart .bar-stack.compare{ opacity:.82; }
+  .bar-chart .seg-ib{ background:#2563eb; width:100%; }
+  .bar-chart .seg-ob{ background:#0d9488; width:100%; }
   .bar-chart .bar-stack.compare .seg-ib{ background:#94b8f0; }
   .bar-chart .bar-stack.compare .seg-ob{ background:#7fc7be; }
   .bar-chart .x-lbl{ font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
-  .bar-chart .col-total{ font-size:10.5px; color:var(--text-2); font-family:'JetBrains Mono',monospace; }
+  .bar-chart .col-total{ font-size:10.5px; color:var(--text-2); font-family:'JetBrains Mono',monospace; min-height:14px; }
 
   .legend-row{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; margin-top:8px; color:var(--text-2); }
   .legend-row .swatch{ width:10px; height:10px; border-radius:3px; display:inline-block; vertical-align:-1px; margin-right:5px; }
-  .compare-note{ font-size:10.5px; color:var(--muted); margin-top:4px; }
+  .compare-note{ font-size:10.5px; color:var(--muted); margin-left:auto; }
+
+  /* 테이블 패널 — 컨테이너 폭 제한 + 내부 가로 스크롤 */
+  .table-panel{ min-width:0; overflow:hidden; }
+  .table-panel .table-wrap{ overflow:auto; max-height:60vh; }
+
+  /* === 반응형 === */
+  /* 1100px 이하 — 인사이트 2-col → 1-col 2-row, Bento 4-col → 1-col 4-row */
+  @media (max-width: 1100px){
+    .insight-row{ grid-template-columns: 1fr; }
+    .bento{ grid-template-columns: 1fr; }
+  }
+  /* 720px 이하 — 퍼널 4-col → 1-col 4-row */
+  @media (max-width: 720px){
+    .funnel{ grid-template-columns: 1fr !important; }
+    .funnel .stage::after{ display:none; }
+    .kpi-grid{ grid-template-columns: repeat(2, 1fr); }
+    .main{ padding:18px 14px; }
+    .sidebar{ display:none; }
+    .conn{ min-width:0; width:100%; flex-wrap:wrap; }
+  }
 </style>
 </head>
 <body>
@@ -76,7 +103,7 @@
       <div style="display:flex; align-items:flex-end; gap:10px;">
         <div>
           <div class="page-eyebrow">인바운드 · IB / OB 종합 · TOTAL 시트</div>
-          <h1>IB / OB 종합 · Bento Insights</h1>
+          <h1>IB / OB 종합</h1>
         </div>
         <button class="opt-btn" id="btn-refresh" title="GAS 재요청">↻ 새로고침</button>
       </div>
@@ -88,11 +115,19 @@
       </div>
     </div>
 
-    <nav class="opt-tabs">
-      <a href="../option-a/">시안 A · Power Table</a>
-      <a href="../option-b/">시안 B · Funnel</a>
-      <a class="active" href="./">시안 C · Bento</a>
-    </nav>
+    <!-- 기간 조회 (세일즈맵 동일 패턴 — IB 인입 일자 기준) -->
+    <div class="date-filter">
+      <span class="lbl">기간</span>
+      <input type="date" id="date-start" />
+      <span class="sep">~</span>
+      <input type="date" id="date-end" />
+      <button class="qbtn" data-range="7">7일</button>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <button class="clear" id="btn-clear-date">초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
 
     <!-- KPI -->
     <section class="kpi-grid" id="kpi"></section>
@@ -123,7 +158,6 @@
               <button data-u="year">연도별</button>
             </div>
             <div class="seg" id="seg-cmp">
-              <button class="active" data-c="none">비교 없음</button>
               <button data-c="mom">전월대비</button>
               <button data-c="yoy">전년대비</button>
             </div>
@@ -134,17 +168,17 @@
       </div>
     </section>
 
-    <!-- Bento: 4셀 (인지채널 도넛 · 서비스 인입 구분 도넛 · 시도 랭킹 · 기업구분 분포) -->
+    <!-- Bento: 4셀 (인지채널 · 서비스별 인입 · 시도 랭킹 · 기업구분 분포) -->
     <section class="bento">
       <div class="cell">
         <div class="title">인지채널 비중</div>
         <div class="sub">고객사가 인지하게 된 채널</div>
-        <div class="flex items-center gap-4 mt-3" id="donut-aware"></div>
+        <div class="flex items-center gap-4 mt-3 flex-wrap" id="donut-aware"></div>
       </div>
       <div class="cell">
         <div class="title">서비스별 인입 건수 · 비중</div>
         <div class="sub">서비스 인입 구분 기준</div>
-        <div class="flex items-center gap-4 mt-3" id="donut-service"></div>
+        <div class="flex items-center gap-4 mt-3 flex-wrap" id="donut-service"></div>
       </div>
       <div class="cell">
         <div class="title">시도 랭킹</div>
@@ -158,35 +192,53 @@
       </div>
     </section>
 
-    <!-- Filter -->
-    <div class="filter">
-      <div class="chip-row" id="ch-chips">
-        <button class="chip-toggle active" data-ch="all">CH 전체</button>
-        <button class="chip-toggle" data-ch="IB">IB</button>
-        <button class="chip-toggle" data-ch="OB">OB</button>
+    <!-- Filter — 서비스 / UTM / 검색 + 조회 -->
+    <div class="filter-block">
+      <div class="row">
+        <span class="ms-tag">서비스</span>
+        <div class="ms-dropdown" id="ms-svc">
+          <button class="ms-trigger" type="button">
+            <span class="ms-text">서비스 전체</span>
+            <span class="ms-caret">▾</span>
+          </button>
+          <div class="ms-panel" id="ms-svc-panel"></div>
+        </div>
       </div>
-      <div class="chip-row" id="status-chips">
-        <button class="chip-toggle active" data-st="all">성약 전체</button>
-        <button class="chip-toggle" data-st="y">성약</button>
-        <button class="chip-toggle" data-st="mid">협의중</button>
-        <button class="chip-toggle" data-st="drop">드롭</button>
+      <div class="row">
+        <span class="ms-tag utm">UTM</span>
+        <div class="ms-dropdown" id="ms-utm">
+          <button class="ms-trigger" type="button">
+            <span class="ms-text">UTM 전체</span>
+            <span class="ms-caret">▾</span>
+          </button>
+          <div class="ms-panel" id="ms-utm-panel"></div>
+        </div>
       </div>
-      <div class="search">
-        <span style="color:var(--muted)">⌕</span>
-        <input id="q" type="text" placeholder="고객사 · 주소 · 키워드 · UTM"/>
+      <div class="row">
+        <select id="search-field" class="search-field">
+          <option value="고객사명">고객사명</option>
+          <option value="시도">시도</option>
+          <option value="지역구">지역구</option>
+          <option value="동리">동리</option>
+        </select>
+        <div class="search-input">
+          <span style="color:var(--muted)">⌕</span>
+          <input id="q" type="text" placeholder="검색 키워드 입력..."/>
+        </div>
       </div>
-      <div style="flex:1"></div>
-      <button class="ghost-btn" id="btn-reset">↔ 너비 초기화</button>
+      <div class="actions">
+        <button class="btn-apply" id="btn-apply">조회</button>
+      </div>
     </div>
 
     <!-- Table -->
     <section>
-      <div class="panel" style="overflow:hidden">
+      <div class="panel table-panel">
         <div class="toolbar">
           <div class="left">
             <span class="text-[13px] font-medium">리드 테이블</span>
             <span class="chip" id="result-count">0건</span>
-            <span class="text-[11.5px] muted">우측 [상세보기] 클릭 시 24개 필드 전체 확인</span>
+            <span class="text-[11.5px] muted">우측 [상세보기] 클릭 시 24필드 드로어 표시</span>
           </div>
           <div class="right">
             <div class="pager">
@@ -197,7 +249,7 @@
             <button class="ghost-btn" id="btn-export">⇩ CSV</button>
           </div>
         </div>
-        <div class="table-wrap" style="max-height:48vh">
+        <div class="table-wrap">
           <table class="ibob-table" id="tbl">
             <colgroup id="cg"></colgroup>
             <thead><tr id="th-row"></tr></thead>
@@ -207,25 +259,12 @@
       </div>
     </section>
 
-    <div class="text-center muted py-4" style="font-size:11.5px;">시안 C · Bento Insights · 분포 인사이트 + 컴팩트 테이블 + 상세보기 모달</div>
+    <div class="text-center muted py-4" style="font-size:11.5px;">IB / OB 종합 · 분포 인사이트 + 컴팩트 테이블 + 상세보기 드로어</div>
   </main>
 </div>
 
-<!-- 상세보기 모달 -->
-<div class="modal-back" id="modal-back"></div>
-<div class="modal" id="modal" role="dialog" aria-modal="true">
-  <div class="modal-head">
-    <div>
-      <div class="eyebrow">고객사 상세 · TOTAL 시트 24개 필드</div>
-      <h3 id="modal-title">-</h3>
-      <div class="meta-tags" id="modal-meta"></div>
-    </div>
-    <button class="modal-close" id="modal-close">×</button>
-  </div>
-  <div class="modal-body" id="modal-body"></div>
-</div>
-
 <script src="../sample-data.js"></script>
+<script src="../_detail-drawer.js"></script>
 <script src="../shared.js"></script>
 <script src="../proxy-client.js"></script>
 <script>
@@ -233,7 +272,14 @@
   const $ = id => document.getElementById(id);
   const PAGE_SIZE = 10;
   let PAGE = 1;
-  let STATE = { q:'', status:'all', ch:'all', unit:'week', cmp:'none' };
+  // PENDING: 입력 중인 필터값 (조회 버튼 누르기 전)
+  let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'' };
+  // STATE: 실제 적용 중인 필터값 + 즉시 반영되는 기간/단위/비교
+  let STATE = {
+    services:[], utm:[], searchField:'고객사명', searchQuery:'',
+    dateStart:'', dateEnd:'', activeRange:'',
+    unit:'week', cmp:''   // cmp: '' | 'mom' | 'yoy'
+  };
   let ROWS = window.SAMPLE_IBOB.slice();
   const PALETTE = ['#6d4eff','#2563eb','#16a34a','#d97706','#db2777','#0d9488','#94a3b8'];
 
@@ -241,6 +287,70 @@
     const el = $('status'); if (!el) return;
     el.className = 'status ' + (k || '');
     el.textContent = t;
+  }
+
+  /* ── 날짜 helpers ── */
+  function ymdStr(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  function yesterday(){ const d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
+  function setQuickRange(days){
+    const end = yesterday();
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
+    $('date-start').value = ymdStr(start);
+    $('date-end').value   = ymdStr(end);
+    STATE.dateStart = ymdStr(start);
+    STATE.dateEnd   = ymdStr(end);
+    STATE.activeRange = String(days);
+    PAGE = 1; rerender();
+  }
+  function clearDateRange(){
+    $('date-start').value = ''; $('date-end').value = '';
+    STATE.dateStart = ''; STATE.dateEnd = ''; STATE.activeRange = '';
+    PAGE = 1; rerender();
+  }
+  function updateRangeInfo(){
+    document.querySelectorAll('.qbtn').forEach(b => {
+      b.classList.toggle('active', b.dataset.range === STATE.activeRange);
+    });
+    $('range-info').textContent = (!STATE.dateStart && !STATE.dateEnd) ? '전체 기간' : `${STATE.dateStart||'...'} ~ ${STATE.dateEnd||'...'}`;
+  }
+
+  /* ── 필터 (서비스 + UTM + 필드검색 + 기간) ── */
+  function parseUtmSource(s){
+    if (!s) return '';
+    const m = String(s).match(/utm_source=([^&\s]+)/i);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function applyAll(rows){
+    let out = rows.slice();
+    if (STATE.services.length){
+      const set = new Set(STATE.services);
+      out = out.filter(r => set.has(String(r['서비스 인입 구분']||'')));
+    }
+    if (STATE.utm.length){
+      const set = new Set(STATE.utm);
+      out = out.filter(r => set.has(parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'));
+    }
+    if (STATE.searchQuery){
+      const q = STATE.searchQuery.toLowerCase();
+      const f = STATE.searchField;
+      out = out.filter(r => String(r[f]||'').toLowerCase().indexOf(q) >= 0);
+    }
+    if (STATE.dateStart || STATE.dateEnd){
+      out = out.filter(r => {
+        const d = String(r['IB 인입 일자']||'').slice(0,10);
+        if (!d) return false;
+        if (STATE.dateStart && d < STATE.dateStart) return false;
+        if (STATE.dateEnd   && d > STATE.dateEnd)   return false;
+        return true;
+      });
+    }
+    return out;
   }
 
   /* ── KPI ── */
@@ -279,9 +389,9 @@
       </div>`).join('');
   }
 
-  /* ── 인입 일자 추이 (단위 + 비교 막대) ── */
+  /* ── 인입 일자 추이 (픽셀 기반 막대) ── */
   function groupKey(dateStr, week, unit){
-    if (unit === 'week')  return String(week || '').replace('2026-','');
+    if (unit === 'week')  return String(week || '').replace(/^\d{4}-/, '');
     if (unit === 'year')  return String(dateStr || '').slice(0,4) || '-';
     return String(dateStr || '').slice(5,10); // MM-DD
   }
@@ -291,58 +401,64 @@
       if (!r['IB 인입 일자']) return;
       const k = groupKey(r['IB 인입 일자'], r['주차'], unit);
       if (!map[k]) map[k] = { ib:0, ob:0 };
-      const ch = String(r['CH']||'').toUpperCase();
-      if (ch === 'IB') map[k].ib++;
-      else if (ch === 'OB') map[k].ob++;
+      const ch = String(r['CH']||'').trim().toUpperCase();
+      // 빈/미지정 CH 는 IB 로 카운트 (페이지가 IB/OB 종합 — 모든 인입 카운트가 누락되지 않도록)
+      if (ch === 'OB') map[k].ob++;
+      else map[k].ib++;
     });
     return Object.keys(map).sort().map(k => ({ key:k, ib:map[k].ib, ob:map[k].ob }));
   }
-  function compareSeries(series, cmp){
-    // 데모용 가짜 비교값 (실데이터 연결 시 동일 단위의 직전 월/년 집계로 대체)
-    if (cmp === 'none') return series.map(d => Object.assign({}, d, { cIb:null, cOb:null }));
+  function withCompare(series, cmp){
+    if (!cmp) return series.map(d => Object.assign({}, d, { cIb:null, cOb:null }));
     const factor = cmp === 'mom' ? 0.75 : 0.60;
     return series.map(d => ({
-      key: d.key, ib: d.ib, ob: d.ob,
+      key:d.key, ib:d.ib, ob:d.ob,
       cIb: Math.max(0, Math.round(d.ib * factor)),
       cOb: Math.max(0, Math.round(d.ob * factor))
     }));
   }
   function renderBarChart(rows){
-    const series = compareSeries(aggregateBy(rows, STATE.unit), STATE.cmp);
+    const series = withCompare(aggregateBy(rows, STATE.unit), STATE.cmp);
     const max = Math.max(1, ...series.map(d => Math.max(d.ib + d.ob, (d.cIb||0) + (d.cOb||0))));
-    const showCmp = STATE.cmp !== 'none';
+    const CHART_H = 120;  // 막대 영역 픽셀 높이
+    const showCmp = !!STATE.cmp;
 
-    $('bar-chart').innerHTML = series.length ? series.map(d => {
-      const curTotal = d.ib + d.ob;
-      const cmpTotal = (d.cIb||0) + (d.cOb||0);
-      function stack(ib, ob, isCmp){
-        const total = ib + ob;
-        const h = Math.round(total / max * 100);
-        return `
-          <div class="bar-stack ${isCmp?'compare':''}" style="height:${h}%" title="${isCmp?'비교':'현재'} · IB ${ib} / OB ${ob}">
-            <div class="seg-ib" style="height:${total ? (ib*100/total) : 0}%"></div>
-            <div class="seg-ob" style="height:${total ? (ob*100/total) : 0}%"></div>
+    if (!series.length){
+      $('bar-chart').innerHTML = '<div class="empty" style="width:100%">표시할 인입 데이터가 없습니다.</div>';
+    } else {
+      $('bar-chart').innerHTML = series.map(d => {
+        function stack(ib, ob, isCmp){
+          const total = ib + ob;
+          const totalPx = Math.max(3, Math.round(total / max * CHART_H));
+          const ibPx = total ? Math.round(ib / total * totalPx) : 0;
+          const obPx = total ? totalPx - ibPx : 0;
+          return `<div class="bar-stack ${isCmp?'compare':''}" style="height:${totalPx}px" title="${isCmp?'비교':'현재'} · IB ${ib} / OB ${ob}">
+            <div class="seg-ib" style="height:${ibPx}px"></div>
+            <div class="seg-ob" style="height:${obPx}px"></div>
           </div>`;
-      }
-      const tot = showCmp ? `${curTotal} · ${cmpTotal}` : `${curTotal}`;
-      return `
-        <div class="col">
-          <div class="col-total">${tot}</div>
-          <div class="col-pair">
-            ${stack(d.ib, d.ob, false)}
-            ${showCmp ? stack(d.cIb, d.cOb, true) : ''}
-          </div>
-          <div class="x-lbl">${IBOB.esc(d.key)}</div>
-        </div>`;
-    }).join('') : '<div class="empty" style="width:100%">표시할 인입 데이터가 없습니다.</div>';
+        }
+        const curTotal = d.ib + d.ob;
+        const cmpTotal = (d.cIb||0) + (d.cOb||0);
+        const tot = showCmp ? `${curTotal} · ${cmpTotal}` : `${curTotal}`;
+        return `
+          <div class="col">
+            <div class="col-total">${tot}</div>
+            <div class="col-pair" style="height:${CHART_H}px">
+              ${stack(d.ib, d.ob, false)}
+              ${showCmp ? stack(d.cIb, d.cOb, true) : ''}
+            </div>
+            <div class="x-lbl">${IBOB.esc(d.key)}</div>
+          </div>`;
+      }).join('');
+    }
 
     const cmpLbl = STATE.cmp === 'mom' ? '전월' : (STATE.cmp === 'yoy' ? '전년' : '');
     const legend = [
-      `<span><span class="swatch" style="background:#2563eb"></span>IB (현재)</span>`,
-      `<span><span class="swatch" style="background:#0d9488"></span>OB (현재)</span>`,
+      `<span><span class="swatch" style="background:#2563eb"></span>IB${showCmp?' (현재)':''}</span>`,
+      `<span><span class="swatch" style="background:#0d9488"></span>OB${showCmp?' (현재)':''}</span>`,
       showCmp ? `<span><span class="swatch" style="background:#94b8f0"></span>IB (${cmpLbl})</span>` : '',
       showCmp ? `<span><span class="swatch" style="background:#7fc7be"></span>OB (${cmpLbl})</span>` : '',
-      showCmp ? `<span class="compare-note ml-auto">※ 비교값은 데모용 (실데이터 연결 시 동일 단위의 직전 ${cmpLbl} 집계로 대체)</span>` : ''
+      showCmp ? `<span class="compare-note">※ 비교값은 데모용 (실데이터 연결 시 직전 ${cmpLbl} 집계로 대체)</span>` : ''
     ].filter(Boolean).join('');
     $('legend').innerHTML = legend;
   }
@@ -386,7 +502,8 @@
   }
 
   function rerender(){
-    const filtered = IBOB.applyFilter(ROWS, STATE.q, STATE.status, STATE.ch);
+    updateRangeInfo();
+    const filtered = applyAll(ROWS);
     renderKPI(filtered);
     renderFunnel(filtered);
     renderBarChart(filtered);
@@ -402,7 +519,58 @@
     IBOB.renderTable(filtered.slice((PAGE-1)*PAGE_SIZE, PAGE*PAGE_SIZE));
   }
 
+  /* ── 다중선택 드롭다운 (서비스 / UTM) ── */
+  function buildMSPanel(panelId, allLabel, items){
+    $(panelId).innerHTML =
+      `<label class="ms-item ms-all"><input type="checkbox" data-all checked /><span>${IBOB.esc(allLabel)}</span></label>` +
+      `<div class="ms-divider"></div>` +
+      items.map(v => `<label class="ms-item"><input type="checkbox" value="${IBOB.esc(v)}" /><span>${IBOB.esc(v)}</span></label>`).join('') ||
+      `<div class="ms-item muted">옵션 없음</div>`;
+  }
+  function bindMS(rootId, panelId, triggerLabel, pendingKey){
+    const root = $(rootId);
+    const panel = $(panelId);
+    const triggerText = root.querySelector('.ms-text');
+    root.querySelector('.ms-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.ms-dropdown.open').forEach(d => { if (d !== root) d.classList.remove('open'); });
+      root.classList.toggle('open');
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('change', e => {
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.type !== 'checkbox') return;
+      const items = panel.querySelectorAll('input[type="checkbox"]:not([data-all])');
+      const allBox = panel.querySelector('input[data-all]');
+      if (t.dataset.all !== undefined){
+        items.forEach(i => i.checked = false);
+        t.checked = true;
+      } else {
+        const checked = [...items].filter(i => i.checked);
+        allBox.checked = checked.length === 0;
+      }
+      const checked = [...items].filter(i => i.checked);
+      if (checked.length === 0) triggerText.textContent = triggerLabel;
+      else if (checked.length === 1) triggerText.textContent = checked[0].value;
+      else triggerText.textContent = checked.length + '개 선택';
+      PENDING[pendingKey] = checked.map(i => i.value);
+    });
+  }
+  function fillFilterPanels(rows){
+    const svcs = Array.from(new Set(rows.map(r => String(r['서비스 인입 구분']||'')).filter(Boolean))).sort();
+    const utms = Array.from(new Set(rows.map(r => parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'))).sort();
+    buildMSPanel('ms-svc-panel', '서비스 전체', svcs);
+    buildMSPanel('ms-utm-panel', 'UTM 전체',     utms);
+  }
+
   IBOB.buildHeader();
+  IBOB.attachCellSelection();   // 셀 클릭/Ctrl+C·V/Ctrl·Shift+Space
+  bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', 'services');
+  bindMS('ms-utm', 'ms-utm-panel', 'UTM 전체',     'utm');
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+  });
+  fillFilterPanels(ROWS);
   rerender();
 
   /* ── GAS 프록시 연결 / 데이터 로드 ── */
@@ -414,6 +582,7 @@
       if (window.MktProxy) MktProxy.ibobClearCache();
       ROWS = window.SAMPLE_IBOB.slice();
       setStatus('데모 데이터 표시 중 (' + ROWS.length + '건)', 'demo');
+      fillFilterPanels(ROWS);
       PAGE = 1; rerender();
       return;
     }
@@ -423,10 +592,12 @@
       ROWS = (data && data.rows) || [];
       const tag = data && data._fromCache ? ' · 캐시됨' : '';
       setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
+      fillFilterPanels(ROWS);
       PAGE = 1; rerender();
     } catch (err) {
       setStatus('연결 실패: ' + err.message + ' (데모로 대체)', 'err');
       ROWS = window.SAMPLE_IBOB.slice();
+      fillFilterPanels(ROWS);
       PAGE = 1; rerender();
     }
   }
@@ -441,39 +612,55 @@
     MktProxy.ibobClearCache(); load();
   });
   $('btn-refresh').addEventListener('click', () => load(true));
-  function bindSeg(rootId, key){
-    $(rootId).addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b) return;
-      $(rootId).querySelectorAll('button').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      STATE[key] = b.dataset[key === 'unit' ? 'u' : 'c'];
-      rerender();
-    });
-  }
-  bindSeg('seg-unit', 'unit');
-  bindSeg('seg-cmp',  'cmp');
 
-  $('ch-chips').addEventListener('click', e => {
+  // 단위 토글 (라디오 동작)
+  $('seg-unit').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    $('ch-chips').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    $('seg-unit').querySelectorAll('button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
-    STATE.ch = b.dataset.ch; PAGE = 1; rerender();
+    STATE.unit = b.dataset.u; rerender();
   });
-  $('status-chips').addEventListener('click', e => {
+
+  // 비교 토글 — MoM/YoY 중 하나만 활성, 같은 버튼 다시 클릭하면 해제(단일 막대)
+  $('seg-cmp').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    $('status-chips').querySelectorAll('button').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    STATE.status = b.dataset.st; PAGE = 1; rerender();
+    const want = b.dataset.c;
+    const wasActive = b.classList.contains('active');
+    $('seg-cmp').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    if (!wasActive){ b.classList.add('active'); STATE.cmp = want; }
+    else { STATE.cmp = ''; }
+    rerender();
   });
-  $('q').addEventListener('input', e => { STATE.q = e.target.value; PAGE = 1; rerender(); });
-  $('btn-reset').addEventListener('click', IBOB.resetWidths);
+
+  // 검색 입력 — PENDING 에 보관, 조회 클릭 시 적용
+  $('search-field').addEventListener('change', () => { PENDING.searchField = $('search-field').value; });
+  $('q').addEventListener('input',  () => { PENDING.searchQuery = $('q').value.trim(); });
+  $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
+
+  function applySearch(){
+    STATE.services    = PENDING.services.slice();
+    STATE.utm         = PENDING.utm.slice();
+    STATE.searchField = PENDING.searchField;
+    STATE.searchQuery = PENDING.searchQuery;
+    PAGE = 1; rerender();
+  }
+  $('btn-apply').addEventListener('click', applySearch);
+
+  // 기간 조회 (즉시 적용)
+  document.querySelectorAll('.qbtn').forEach(b => {
+    b.addEventListener('click', () => setQuickRange(Number(b.dataset.range)));
+  });
+  $('date-start').addEventListener('change', () => {
+    STATE.dateStart = $('date-start').value; STATE.activeRange = ''; PAGE = 1; rerender();
+  });
+  $('date-end').addEventListener('change', () => {
+    STATE.dateEnd = $('date-end').value; STATE.activeRange = ''; PAGE = 1; rerender();
+  });
+  $('btn-clear-date').addEventListener('click', clearDateRange);
+
   $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); rerender(); });
   $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; rerender(); });
   $('btn-export').addEventListener('click', () => alert('CSV 내보내기 (목업)'));
-
-  $('modal-close').addEventListener('click', IBOB.closeModal);
-  $('modal-back').addEventListener('click', IBOB.closeModal);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') IBOB.closeModal(); });
 
   window.addEventListener('DOMContentLoaded', () => load());
   load();

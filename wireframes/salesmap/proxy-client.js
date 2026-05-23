@@ -51,26 +51,49 @@
     return r.data;
   };
 
-  // ── 세션 캐시 (세일즈맵 ↔ 인사이트 탭 전환 시 즉시 표시) ─────
-  // force=true 또는 캐시 미존재 시 GAS 재조회. 새로고침 버튼이 force 호출.
-  const SMAP_CACHE_KEY = 'smap_cache_v1';
+  // ── 영구 캐시 (탭/브라우저 종료·F5 후에도 유지) ───────────
+  // 새로고침 버튼이 명시적으로 invalidate (salesmapClearCache) 할 때만 비움
+  // 안전망 TTL 7일
+  const SMAP_CACHE_PREFIX = 'mkt_cache_smap_';
+  const SMAP_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+  function _smapGet(key){
+    try {
+      const raw = localStorage.getItem(SMAP_CACHE_PREFIX + key);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj.t !== 'number') return null;
+      if (Date.now() - obj.t > SMAP_CACHE_TTL) return null;
+      return obj.d;
+    } catch (_) { return null; }
+  }
+  function _smapSet(key, data){
+    try { localStorage.setItem(SMAP_CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), d: data })); } catch (_) {}
+  }
+  function _smapClear(){
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && k.indexOf(SMAP_CACHE_PREFIX) === 0) keys.push(k);
+      }
+      keys.forEach(function(k){ localStorage.removeItem(k); });
+      // 이전 sessionStorage 캐시 잔재도 함께 정리
+      sessionStorage.removeItem('smap_cache_v1');
+    } catch (_) {}
+  }
+
   window.MktProxy.salesmapListCached = async function (force) {
     if (!force) {
-      try {
-        const cached = sessionStorage.getItem(SMAP_CACHE_KEY);
-        if (cached) {
-          const obj = JSON.parse(cached);
-          if (obj && Array.isArray(obj.rows)) return Object.assign({}, obj, { _fromCache: true });
-        }
-      } catch (_) {}
+      const cached = _smapGet('list');
+      if (cached && Array.isArray(cached.rows)) {
+        return Object.assign({}, cached, { _fromCache: true });
+      }
     }
     const data = await this.salesmapList();
-    try { sessionStorage.setItem(SMAP_CACHE_KEY, JSON.stringify({ rows: data.rows || [], total: data.total || 0, ts: Date.now() })); } catch (_) {}
+    _smapSet('list', { rows: data.rows || [], total: data.total || 0 });
     return data;
   };
-  window.MktProxy.salesmapClearCache = function () {
-    try { sessionStorage.removeItem(SMAP_CACHE_KEY); } catch (_) {}
-  };
+  window.MktProxy.salesmapClearCache = function () { _smapClear(); };
 })();
 
 /**

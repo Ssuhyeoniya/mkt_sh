@@ -62,7 +62,7 @@
   }
   function onResize(e){
     if (!resizeState) return;
-    const w = Math.max(40, resizeState.startW + (e.clientX - resizeState.startX));
+    const w = Math.max(24, resizeState.startW + (e.clientX - resizeState.startX));
     resizeState.col.style.width = w + 'px';
   }
   function endResize(){
@@ -112,24 +112,11 @@
 
   function openModal(r){
     if (!r) return;
-    document.getElementById('modal-title').textContent = r['고객사명'] || '(이름 없음)';
-    const tags = [chTag(r['CH']), statusTag(r['성약']), r['기업구분'] ? `<span class="tag-mini tag-none">${esc(r['기업구분'])}</span>` : '', r['고객사 분류'] ? `<span class="tag-mini tag-none">등급 ${esc(r['고객사 분류'])}</span>` : ''].filter(Boolean).join(' ');
-    document.getElementById('modal-meta').innerHTML = tags;
-    const FULL_KEYS = new Set(['주소','트래킹 경로(UTM)','상세 경로']);
-    document.getElementById('modal-body').innerHTML =
-      `<div class="field-grid">` +
-      window.IBOB_ALL_COLS.map(k => {
-        const v = r[k];
-        const full = FULL_KEYS.has(k) ? ' full' : '';
-        return `<div class="field${full}"><div class="k">${esc(k)}</div><div class="v">${esc(v == null || v === '' ? '-' : v)}</div></div>`;
-      }).join('') +
-      `</div>`;
-    document.getElementById('modal').classList.add('open');
-    document.getElementById('modal-back').classList.add('open');
+    if (window.MktIbobDrawer) { window.MktIbobDrawer.open(r); return; }
+    console.warn('[ib-ob] MktIbobDrawer 미로드 — _detail-drawer.js 가 필요합니다.');
   }
   function closeModal(){
-    document.getElementById('modal').classList.remove('open');
-    document.getElementById('modal-back').classList.remove('open');
+    if (window.MktIbobDrawer) window.MktIbobDrawer.close();
   }
 
   /* ─ 필터 (검색 + 성약 상태 + CH) ─ */
@@ -175,10 +162,166 @@
       .sort((a,b) => b.count - a.count);
   }
 
+  /* ───────── 셀 선택 + 클립보드 (Excel/Sheets 유사) ─────────
+   * - 클릭: 단일 셀 선택
+   * - Ctrl+Space: 활성 셀이 속한 열 전체 선택
+   * - Shift+Space: 활성 셀이 속한 행 전체 선택
+   * - Ctrl+C: 선택 셀 텍스트를 TSV(탭 구분)로 클립보드 복사
+   * - Ctrl+V: 클립보드 텍스트를 선택된 모든 셀에 표시 (로컬 변경 · 시트 미반영)
+   */
+  let ACTIVE_CELL = null;          // { td, tr, rowIdx, colIdx }
+  const SELECTED = new Set();      // 'rowIdx,colIdx'
+  let _cellEvtBound = false;
+
+  function _flashStatus(text, cls){
+    const el = document.getElementById('status');
+    if (!el) { console.log('[ibob]', text); return; }
+    const prev = el.textContent, prevCls = el.className;
+    el.textContent = text;
+    el.className = 'status ' + (cls || 'ok');
+    setTimeout(() => { el.textContent = prev; el.className = prevCls; }, 1800);
+  }
+  function _clearSel(){
+    document.querySelectorAll('.ibob-table tbody td.selected, .ibob-table tbody td.cell-active')
+      .forEach(td => td.classList.remove('selected','cell-active'));
+    SELECTED.clear();
+  }
+  function _cellInfo(td){
+    const tr = td.closest('tr'); if (!tr) return null;
+    const tbody = tr.parentElement; if (!tbody) return null;
+    const trs = Array.from(tbody.querySelectorAll('tr'));
+    const rowIdx = trs.indexOf(tr);
+    const colIdx = Array.from(tr.children).indexOf(td);
+    return { td, tr, rowIdx, colIdx };
+  }
+  function _selectSingle(td){
+    _clearSel();
+    const info = _cellInfo(td); if (!info) return;
+    info.td.classList.add('selected','cell-active');
+    ACTIVE_CELL = info;
+    SELECTED.add(info.rowIdx + ',' + info.colIdx);
+  }
+  function _selectColumn(colIdx){
+    _clearSel();
+    const tbody = document.querySelector('#tbl tbody');
+    Array.from(tbody.querySelectorAll('tr')).forEach((tr, rIdx) => {
+      const td = tr.children[colIdx]; if (!td) return;
+      td.classList.add('selected');
+      SELECTED.add(rIdx + ',' + colIdx);
+    });
+    if (ACTIVE_CELL) ACTIVE_CELL.td.classList.add('cell-active');
+  }
+  function _selectRow(tr){
+    _clearSel();
+    const tbody = tr.parentElement;
+    const rowIdx = Array.from(tbody.querySelectorAll('tr')).indexOf(tr);
+    Array.from(tr.children).forEach((td, colIdx) => {
+      td.classList.add('selected');
+      SELECTED.add(rowIdx + ',' + colIdx);
+    });
+    if (ACTIVE_CELL) ACTIVE_CELL.td.classList.add('cell-active');
+  }
+  function _selectionAsTSV(){
+    const tbody = document.querySelector('#tbl tbody');
+    const trs = Array.from(tbody.querySelectorAll('tr'));
+    const grouped = {};
+    SELECTED.forEach(k => {
+      const [r, c] = k.split(',').map(Number);
+      if (!grouped[r]) grouped[r] = {};
+      const td = trs[r] && trs[r].children[c];
+      grouped[r][c] = td ? td.textContent.trim() : '';
+    });
+    const rows = Object.keys(grouped).map(Number).sort((a,b)=>a-b);
+    return rows.map(r => {
+      const cols = Object.keys(grouped[r]).map(Number).sort((a,b)=>a-b);
+      return cols.map(c => grouped[r][c]).join('\t');
+    }).join('\n');
+  }
+  async function _copySelection(){
+    if (!SELECTED.size) return;
+    const text = _selectionAsTSV();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      _flashStatus('✓ ' + SELECTED.size + '개 셀 복사됨', 'ok');
+    } catch(err){ _flashStatus('복사 실패: ' + err.message, 'err'); }
+  }
+  async function _pasteSelection(){
+    if (!SELECTED.size) return;
+    try {
+      let text = '';
+      if (navigator.clipboard && navigator.clipboard.readText){
+        text = await navigator.clipboard.readText();
+      } else { _flashStatus('이 브라우저는 붙여넣기를 지원하지 않습니다', 'err'); return; }
+      if (text == null) return;
+      const tbody = document.querySelector('#tbl tbody');
+      const trs = Array.from(tbody.querySelectorAll('tr'));
+      // 단순 정책: 클립보드 텍스트 첫 라인의 첫 셀 값을 선택된 모든 셀에 표시 (로컬 변경)
+      const firstVal = String(text).split(/[\r\n]/)[0].split('\t')[0];
+      SELECTED.forEach(k => {
+        const [r, c] = k.split(',').map(Number);
+        const td = trs[r] && trs[r].children[c];
+        if (td) td.textContent = firstVal;
+      });
+      _flashStatus('✓ ' + SELECTED.size + '개 셀에 붙여넣기 (로컬 표시만 · 시트 미반영)', 'ok');
+    } catch(err){ _flashStatus('붙여넣기 실패: ' + err.message, 'err'); }
+  }
+  function attachCellSelection(){
+    const tbl = document.getElementById('tbl');
+    if (!tbl || _cellEvtBound) return;
+    _cellEvtBound = true;
+
+    tbl.addEventListener('click', e => {
+      if (e.target.closest('.detail-btn')) return;       // 상세보기 버튼은 셀 선택 안 함
+      if (e.target.closest('thead')) return;             // 헤더 클릭은 무시 (리사이저용)
+      const td = e.target.closest('td');
+      if (!td) return;
+      _selectSingle(td);
+    });
+
+    document.addEventListener('keydown', e => {
+      const inField = /INPUT|TEXTAREA|SELECT/.test(((e.target||{}).tagName)||'');
+      if (inField) return;
+      const isMod = e.ctrlKey || e.metaKey;
+
+      // Ctrl+Space → 컬럼 전체
+      if (isMod && e.code === 'Space'){
+        if (!ACTIVE_CELL) return;
+        e.preventDefault(); _selectColumn(ACTIVE_CELL.colIdx); return;
+      }
+      // Shift+Space → 행 전체
+      if (e.shiftKey && !isMod && e.code === 'Space'){
+        if (!ACTIVE_CELL) return;
+        e.preventDefault(); _selectRow(ACTIVE_CELL.tr); return;
+      }
+      // Ctrl+C
+      if (isMod && (e.key === 'c' || e.key === 'C')){
+        if (!SELECTED.size) return;
+        e.preventDefault(); _copySelection(); return;
+      }
+      // Ctrl+V
+      if (isMod && (e.key === 'v' || e.key === 'V')){
+        if (!SELECTED.size) return;
+        e.preventDefault(); _pasteSelection(); return;
+      }
+      // Esc → 선택 해제
+      if (e.key === 'Escape'){
+        if (SELECTED.size){ _clearSel(); ACTIVE_CELL = null; }
+      }
+    });
+  }
+
   window.IBOB = {
     esc, fmt, statusTag, channelTag, chTag,
     buildHeader, renderTable, resetWidths,
     openModal, closeModal,
-    applyFilter, computeKPI, distribute
+    applyFilter, computeKPI, distribute,
+    attachCellSelection
   };
 })();

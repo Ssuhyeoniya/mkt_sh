@@ -361,20 +361,22 @@
   function closeDrawer(){ $('drawer').classList.remove('open'); $('drawer-back').classList.remove('open'); }
 
   // ── data load ─────────────────────────────────────────
-  async function load(){
+  async function load(force){
     const url = MktProxy.getUrl();
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
     if (!url){
+      MktProxy.salesmapClearCache && MktProxy.salesmapClearCache();
       setStatus('데모 데이터 표시 중', 'demo');
       render(SAMPLE_SALESMAP);
       return;
     }
     try{
-      setStatus('연결 중...');
-      const data = await MktProxy.salesmapList();
+      setStatus(force ? '새로고침 중...' : '불러오는 중...');
+      const data = await MktProxy.salesmapListCached(force);
       render(data.rows || []);
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건', 'ok');
+      const tag = data._fromCache ? ' · 캐시됨' : '';
+      setStatus('● 연결됨 · ' + (data.total || (data.rows||[]).length) + '건' + tag, 'ok');
     }catch(err){
       setStatus('연결 실패: '+err.message, 'err');
       render(SAMPLE_SALESMAP);
@@ -432,7 +434,7 @@
   $('drawer-back').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', () => load());
 </script>
 </body>
 </html>

@@ -36,6 +36,8 @@ function handle_(e) {
   try { reg_('blog.update',        Blog_update);        } catch (_) {}
   try { reg_('blog.inboundDates',  Blog_inboundDates);  } catch (_) {}
   try { reg_('blog.inboundCounts', Blog_inboundCounts); } catch (_) {}
+  try { reg_('blog.inboundByDate', Blog_inboundByDate); } catch (_) {}
+  try { reg_('blog.statsDaily',    Blog_statsDaily);    } catch (_) {}
   // salesmap
   try { reg_('salesmap.list',    Salesmap_list);    } catch (_) {}
   try { reg_('salesmap.summary', Salesmap_summary); } catch (_) {}

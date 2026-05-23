@@ -275,6 +275,118 @@ function Blog_inboundCounts(params) {
   return { counts: counts, total: total, from: from, to: to };
 }
 
+/**
+ * STATS_DAILY 시트의 일자별 방문 통계 반환
+ *   params.from?   : 'yyyy-MM-dd' 이상
+ *   params.to?     : 'yyyy-MM-dd' 이하
+ *   params.postid? : 특정 postid 만 필터
+ * STATS_DAILY 컬럼: A=date, B=POST_ID, C=visitors, D=impressions, E=search_in, F=etc
+ * 반환: { rows:[{date, postid, visitors, impressions, search_in, etc}], total, from, to }
+ */
+function Blog_statsDaily(params) {
+  params = params || {};
+  const from = String(params.from || '').slice(0, 10);
+  const to   = String(params.to   || '').slice(0, 10);
+  const wantPid = String(params.postid || '').trim();
+
+  const cache = CacheService.getScriptCache();
+  const CACHE_KEY = 'blog_stats_daily_v1';
+  let parsed = null;
+  try {
+    const cached = cache.get(CACHE_KEY);
+    if (cached) parsed = JSON.parse(cached);
+  } catch (_) {}
+
+  if (!parsed) {
+    const SHEET_NAME = 'STATS_DAILY';
+    const sheet = SpreadsheetApp.openById(BLOG_SHEET_ID).getSheetByName(SHEET_NAME);
+    if (!sheet) throw new Error('sheet_not_found:' + SHEET_NAME);
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      parsed = { rows: [] };
+    } else {
+      const lastCol = sheet.getLastColumn();
+      const values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+      const headers = (values[0] || []).map(function (h) { return String(h || '').trim().toLowerCase(); });
+      // 컬럼 위치 — 헤더가 없거나 다를 경우 고정 위치(A,B,C,D,E,F) fallback
+      function findIdx(names, fallback) {
+        for (let i = 0; i < names.length; i++) {
+          const idx = headers.indexOf(names[i]);
+          if (idx >= 0) return idx;
+        }
+        return fallback;
+      }
+      const dateIdx   = findIdx(['date'], 0);
+      const pidIdx    = findIdx(['post_id', 'postid'], 1);
+      const visIdx    = findIdx(['visitors', 'visitor'], 2);
+      const impIdx    = findIdx(['impressions', 'impression'], 3);
+      const srchIdx   = findIdx(['search_in', 'searchin'], 4);
+      const etcIdx    = findIdx(['etc'], 5);
+
+      const rows = [];
+      for (let i = 1; i < values.length; i++) {
+        const r = values[i];
+        const rawDate = r[dateIdx];
+        let date = '';
+        if (rawDate instanceof Date) date = Utilities.formatDate(rawDate, BLOG_TZ, 'yyyy-MM-dd');
+        else if (rawDate) date = String(rawDate).slice(0, 10);
+        if (!date) continue;
+        const pid = r[pidIdx] == null ? '' : String(r[pidIdx]).trim();
+        if (!pid) continue;
+        rows.push({
+          date: date,
+          postid: pid,
+          visitors: blog_num_(r[visIdx]),
+          impressions: blog_num_(r[impIdx]),
+          search_in: blog_num_(r[srchIdx]),
+          etc: blog_num_(r[etcIdx])
+        });
+      }
+      parsed = { rows: rows };
+    }
+    try {
+      const json = JSON.stringify(parsed);
+      if (json.length < 95000) cache.put(CACHE_KEY, json, 300);
+    } catch (_) {}
+  }
+
+  const all = parsed.rows || [];
+  const out = [];
+  for (let i = 0; i < all.length; i++) {
+    const r = all[i];
+    if (from && r.date < from) continue;
+    if (to   && r.date > to)   continue;
+    if (wantPid && r.postid !== wantPid) continue;
+    out.push(r);
+  }
+  return { rows: out, total: out.length, from: from, to: to };
+}
+
+/**
+ * 인바운드(세일즈맵 제출)를 일자별로 집계
+ *   params.from? : 'yyyy-MM-dd' 이상 (제출 날짜 기준)
+ *   params.to?   : 'yyyy-MM-dd' 이하
+ * 반환: { rows:[{date, utm_term}], total, from, to }
+ */
+function Blog_inboundByDate(params) {
+  params = params || {};
+  const from = String(params.from || '').slice(0, 10);
+  const to   = String(params.to   || '').slice(0, 10);
+  const parsed = blog_loadSalesmap_();
+  const list = parsed.rows || [];
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    const r = list[i];
+    const date = (r.d || '').slice(0, 10);
+    if (!date) continue;
+    if (from && date < from) continue;
+    if (to   && date > to)   continue;
+    out.push({ date: date, utm_term: r.u });
+  }
+  return { rows: out, total: out.length, from: from, to: to };
+}
+
 // ── helpers ─────────────────────────────────
 function blog_norm_(v) {
   if (v instanceof Date) return Utilities.formatDate(v, BLOG_TZ, 'yyyy-MM-dd');

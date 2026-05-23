@@ -633,7 +633,7 @@
   $('btn-export').addEventListener('click', exportCSV);
   $('btn-export-xls').addEventListener('click', exportExcel);
 
-  // 조회 버튼: 필터 적용
+  // 조회 버튼: 필터 적용 (캐시 데이터 재렌더)
   function applySearch(){ readApplied(); PAGE = 1; rerender(); }
   $('btn-apply').addEventListener('click', applySearch);
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
@@ -662,7 +662,7 @@
   $('drawer-back').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', () => load());
 </script>
 </body>
 </html>
