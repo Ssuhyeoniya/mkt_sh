@@ -409,8 +409,19 @@
     position:sticky; top:0; z-index:2;   /* 세로 스크롤 시 헤더 고정 */
   }
   .table-head .num-cell{ text-align:right; }
-  /* <td>/<th> 기본 스타일 리셋 — div 와 동일하게 보이게 */
-  .bopt-table th, .bopt-table td{ padding:0; border:0; text-align:left; font-weight:inherit; vertical-align:middle; }
+  /* <td>/<th> 기본 스타일 리셋 — div 와 동일하게 보이게.
+   * display:flex 로 그리드 아이템을 셀 영역에 꽉 채우고(align-self:stretch),
+   * 안의 콘텐츠는 세로 중앙 정렬. 기본 display:table-cell 이면 내용 크기로만
+   * 잡혀 셀 선택 하이라이트가 텍스트에만 걸리는 문제를 해결한다. */
+  .bopt-table th, .bopt-table td{
+    display:flex; align-items:center;
+    min-width:0; padding:0; border:0;
+    text-align:left; font-weight:inherit;
+    align-self:stretch;
+    overflow:hidden;
+  }
+  /* num-cell 은 우측 정렬 */
+  .bopt-table .num-cell{ justify-content:flex-end; }
 
   /* 행 높이 40px × 10행 = 400px = 한번에 보이는 영역 */
   .post-row{ height:40px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
