@@ -545,7 +545,7 @@
         <div class="ph">
           <div class="ph-text">
             <div class="eyebrow">상위 5개</div>
-            <h2>발행글 TOP 5 (누적 방문)</h2>
+            <h2>조회수 TOP 5</h2>
           </div>
           <button class="more-btn" data-more="visit">더보기 →</button>
         </div>
@@ -878,14 +878,37 @@
     updatePendingState();
     loadStatsAndInboundForCurrent().then(refreshAll);
   }
-  // 조회 버튼 클릭 시 호출 — 입력값을 실제 적용 상태로 반영하고 데이터 재조회
+  // 조회 버튼 클릭 시 호출 — 입력값을 실제 적용 상태로 반영하고 데이터 재조회.
+  // 입력값이 적용값과 동일하면 no-op (중복 API/렌더 방지). 비동기 로드 중에는
+  // 버튼을 disabled + '조회 중…' 라벨로 잠가 중복 클릭을 막는다.
+  let _applyInflight = false;
   function applyPeriodQuery(){
-    APPLIED_DATE_START = $('date-start').value || '';
-    APPLIED_DATE_END   = $('date-end').value || '';
+    if (_applyInflight) return;
+    const newStart = $('date-start').value || '';
+    const newEnd   = $('date-end').value   || '';
+    const sameDates = (newStart === APPLIED_DATE_START && newEnd === APPLIED_DATE_END);
+    const samePending = !PENDING_RANGE || PENDING_RANGE === ACTIVE_RANGE;
+    if (sameDates && samePending) return;   // 변경 없음 → 스킵
+
+    APPLIED_DATE_START = newStart;
+    APPLIED_DATE_END   = newEnd;
     ACTIVE_RANGE = PENDING_RANGE;
     PENDING_RANGE = '';
     updatePendingState();
-    loadStatsAndInboundForCurrent().then(refreshAll);
+
+    _applyInflight = true;
+    const btn = $('btn-apply-date');
+    const prevLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '조회 중…';
+    loadStatsAndInboundForCurrent()
+      .then(refreshAll)
+      .catch(function(err){ console.error('[blog] applyPeriodQuery:', err); })
+      .then(function(){
+        _applyInflight = false;
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      });
   }
   // 입력값이 적용값과 다르면 "대기 중" 표시
   function isDirty(){
@@ -953,8 +976,44 @@
       + '</div>';
     }).join('');
   }
-  function renderTop(rows){        renderTopList(rows, 'totalVisit',  $('top-list')); }
-  function renderInboundTop(rows){ renderTopList(rows, actualInbound, $('inbound-list')); }
+  // 조회수 TOP 5 — STATS_DAILY_ROWS (조회 기간 내 일자별 visitors) 를 postid 별 합산.
+  // STATS_DAILY 없을 때(기간 미적용/시트 없음)만 누적 totalVisit 로 fallback.
+  function renderTop(rows){
+    if (!STATS_DAILY_ROWS.length){
+      renderTopList(rows, 'totalVisit', $('top-list'));
+      return;
+    }
+    const sumByPid = {};
+    for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+      const s = STATS_DAILY_ROWS[i];
+      const pid = String(s && s.postid || '');
+      if (!pid) continue;
+      sumByPid[pid] = (sumByPid[pid] || 0) + (Number(s.visitors) || 0);
+    }
+    renderTopList(rows, function(r){
+      const pid = String(r && r.postid || '');
+      return pid && sumByPid[pid] ? sumByPid[pid] : 0;
+    }, $('top-list'));
+  }
+  // 인바운드 TOP 5 — INBOUND_BY_DATE_ROWS (인입 일자 + utm_term) 의 utm_term 별 카운트.
+  // 인입 일자가 조회 기간 내에 있는 건만 포함 (로드 시점에 이미 from/to 필터 적용됨).
+  function renderInboundTop(rows){
+    if (!INBOUND_BY_DATE_ROWS.length){
+      renderTopList(rows, function(r){ return Number(r && r.inbound) || 0; }, $('inbound-list'));
+      return;
+    }
+    const cntByUtm = {};
+    for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+      const b = INBOUND_BY_DATE_ROWS[i];
+      const u = String(b && b.utm_term || '').trim();
+      if (!u) continue;
+      cntByUtm[u] = (cntByUtm[u] || 0) + 1;
+    }
+    renderTopList(rows, function(r){
+      const u = String(r && r.utm_term || '').trim();
+      return u && cntByUtm[u] ? cntByUtm[u] : 0;
+    }, $('inbound-list'));
+  }
 
   function renderCatBars(rows){
     const map = {};
@@ -1871,17 +1930,45 @@
   $('btn-edit-cancel').addEventListener('click', exitEditMode);
   $('btn-edit-save').addEventListener('click', saveEdit);
 
-  // ── 더보기 모달: 전체 발행글 랭킹 (방문 / 인바운드) ──
+  // ── 더보기 모달: 전체 발행글 랭킹 (조회수 / 인바운드) — TOP5 와 동일 산식 ──
   function showTopAll(mode){
     const isInbound = mode === 'inbound';
-    const key = isInbound ? 'inbound' : 'totalVisit';
-    const sorted = SCOPED_ROWS.slice().sort(function(a,b){
-      return Number(b[key]||0) - Number(a[key]||0);
-    });
+    // postid → 기간 합산 조회수
+    const sumByPid = {};
+    if (!isInbound && STATS_DAILY_ROWS.length){
+      for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+        const s = STATS_DAILY_ROWS[i];
+        const pid = String(s && s.postid || '');
+        if (!pid) continue;
+        sumByPid[pid] = (sumByPid[pid] || 0) + (Number(s.visitors) || 0);
+      }
+    }
+    // utm_term → 기간 인바운드 카운트
+    const cntByUtm = {};
+    if (isInbound && INBOUND_BY_DATE_ROWS.length){
+      for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+        const b = INBOUND_BY_DATE_ROWS[i];
+        const u = String(b && b.utm_term || '').trim();
+        if (!u) continue;
+        cntByUtm[u] = (cntByUtm[u] || 0) + 1;
+      }
+    }
+    function getVal(r){
+      if (isInbound){
+        const u = String(r && r.utm_term || '').trim();
+        if (u && cntByUtm[u]) return cntByUtm[u];
+        return INBOUND_BY_DATE_ROWS.length ? 0 : (Number(r && r.inbound) || 0);
+      }
+      const pid = String(r && r.postid || '');
+      if (pid && sumByPid[pid]) return sumByPid[pid];
+      return STATS_DAILY_ROWS.length ? 0 : (Number(r && r.totalVisit) || 0);
+    }
+    const sorted = SCOPED_ROWS.slice().sort(function(a,b){ return getVal(b) - getVal(a); });
+
     document.querySelector('#top-modal .eyebrow').textContent =
-      isInbound ? '전체 발행글 인바운드 랭킹' : '전체 발행글 랭킹';
+      isInbound ? '전체 발행글 인바운드 랭킹' : '전체 발행글 조회수 랭킹';
     document.querySelector('#top-modal h3').textContent =
-      isInbound ? '인바운드 많은 순' : '방문 많은 순';
+      isInbound ? '인바운드 많은 순' : '조회수 많은 순';
 
     const body = $('top-modal-body');
     if (!sorted.length){
@@ -1898,7 +1985,7 @@
               + (r['날짜'] ? '<span>·</span><span>'+fmtDate(r['날짜'])+'</span>' : '')
             + '</div>'
           + '</div>'
-          + '<div class="v">'+fmt(r[key])+'</div>'
+          + '<div class="v">'+fmt(getVal(r))+'</div>'
         + '</div>';
       }).join('');
     }
