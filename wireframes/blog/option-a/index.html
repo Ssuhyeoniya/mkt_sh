@@ -108,8 +108,8 @@
         <option value="weekly_desc">주간 방문 많은 순</option>
         <option value="inbound_desc">유입 많은 순</option>
       </select>
-      <button id="btn-refresh">↻ 새로고침</button>
       <button id="btn-export">⇩ CSV 내보내기</button>
+      <button id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀 내보내기</button>
     </div>
 
     <!-- Table -->
@@ -118,6 +118,7 @@
         <div class="left">
           <span class="text-[13px] font-medium">전체 글 목록</span>
           <span class="chip" id="result-count">0건</span>
+          <span class="text-[11.5px] muted ml-2">셀 클릭 · Ctrl+C 복사 · Shift+Space 행 · Ctrl+Space 열</span>
         </div>
         <div class="right">
           <div class="pager">
@@ -129,7 +130,7 @@
         </div>
       </div>
       <div style="max-height:540px; overflow:auto">
-        <table class="blog-table">
+        <table class="blog-table" id="tbl">
           <thead>
             <tr>
               <th class="col-no">NO</th>
@@ -154,6 +155,7 @@
 </div>
 
 <script src="../proxy-client.js?v=20260512-3"></script>
+<script src="../../table-grid.js"></script>
 <script>
   let CURRENT_ROWS = [];
 
@@ -256,6 +258,17 @@
     }
   }
 
+  function exportExcel(){
+    const rows = applyFilter(CURRENT_ROWS);
+    const headers = ['NO','제목','카테고리','발행일','누적방문','주간','월간','유입','링크'];
+    const data = rows.map(function(r,i){
+      return [i+1, r['제목']||'', r.category||'', fmtDate(r['날짜']),
+              Number(r.totalVisit||0), Number(r.weeklyVisitor||0),
+              Number(r.monthlyVisitor||0), Number(r.inbound||0), r['링크']||''];
+    });
+    TableGrid.exportExcel({ headers, rows: data, filename: 'blog_export_'+new Date().toISOString().slice(0,10)+'.xls' });
+  }
+
   function exportCSV(){
     const rows = applyFilter(CURRENT_ROWS);
     const headers = ['NO','제목','카테고리','발행일','누적방문','주간','월간','유입','링크'];
@@ -282,13 +295,16 @@
     $('btn-disconnect').style.display = 'none';
     load();
   });
-  $('btn-refresh').addEventListener('click', load);
   $('btn-export').addEventListener('click', exportCSV);
+  $('btn-export-xls').addEventListener('click', exportExcel);
   $('q').addEventListener('input',     function(){ render(CURRENT_ROWS); });
   $('cat').addEventListener('change',  function(){ render(CURRENT_ROWS); });
   $('sort').addEventListener('change', function(){ render(CURRENT_ROWS); });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', function(){
+    TableGrid.attach(document.getElementById('tbl'));
+    load();
+  });
 </script>
 </body>
 </html>

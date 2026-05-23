@@ -51,7 +51,6 @@
           <div class="page-eyebrow">인바운드 · 세일즈맵</div>
           <h1>세일즈맵 · 리드 로우테이블</h1>
         </div>
-        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (GAS 재요청)">↻ 새로고침</button>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
@@ -82,6 +81,7 @@
       <span class="muted text-[12px]">~</span>
       <input id="to" type="date"/>
       <button id="btn-export">⇩ CSV</button>
+      <button id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀</button>
       <button id="btn-reset-w" title="컬럼 너비 초기화">↔ 너비 초기화</button>
     </div>
 
@@ -91,7 +91,7 @@
         <div class="left">
           <span class="text-[13px] font-medium">전체 리드 목록</span>
           <span class="chip" id="result-count">0건</span>
-          <span class="text-[11.5px] muted ml-2">⇆ 헤더 우측을 드래그해 컬럼 너비를 조절하세요</span>
+          <span class="text-[11.5px] muted ml-2">⇆ 헤더 우측을 드래그해 컬럼 너비를 조절하세요 · 셀 클릭 후 Ctrl+C 복사 · Shift+Space 행 선택 · Ctrl+Space 열 선택 · 더블클릭 상세</span>
         </div>
         <div class="right">
           <div class="pager">
@@ -130,6 +130,7 @@
 </aside>
 
 <script src="../proxy-client.js"></script>
+<script src="../../table-grid.js"></script>
 <script>
   // 컬럼 정의: 키, 라벨, 기본너비, 정렬타입(text|num|date), 렌더러
   const COLS = [
@@ -307,9 +308,17 @@
         return `<td class="${cls}" style="${align}" title="${esc(typeof v==='string' ? v : '')}">${html}</td>`;
       }).join('') + '</tr>';
     }).join('');
-    // bind row click → drawer
+    // 더블클릭 → 상세 드로어 (싱글클릭은 셀 선택)
     tbody.querySelectorAll('tr').forEach(tr => {
-      tr.addEventListener('click', () => openDrawer(filtered[Number(tr.dataset.i)]));
+      tr.addEventListener('dblclick', () => openDrawer(filtered[Number(tr.dataset.i)]));
+    });
+    // 행 안의 상세 액션 버튼은 단일 클릭으로도 동작
+    tbody.querySelectorAll('.row-action').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const i = Number(btn.dataset.i);
+        openDrawer(filtered[i]);
+      });
     });
   }
 
@@ -374,6 +383,17 @@
     }
   }
 
+  function exportExcel(){
+    const rows = applyFilter(CURRENT);
+    const expCols = COLS.filter(c => c.key !== '_action');
+    const headers = expCols.map(c => c.label);
+    const data = rows.map((r, i) => expCols.map(c => {
+      const v = c.key === '_no' ? (i+1) : r[c.key];
+      return v == null ? '' : v;
+    }));
+    TableGrid.exportExcel({ headers, rows: data, filename: 'salesmap_'+todayStr()+'.xls' });
+  }
+
   function exportCSV(){
     const rows = applyFilter(CURRENT);
     const headers = COLS.filter(c => c.key !== '_action').map(c => c.label);
@@ -393,6 +413,7 @@
 
   // ── events ────────────────────────────────────────────
   buildHeader();
+  TableGrid.attach(document.getElementById('tbl'));
   $('btn-connect').addEventListener('click', () => {
     const v = $('gas-url').value.trim(); if (!v) return;
     MktProxy.setUrl(v); load();
@@ -400,8 +421,8 @@
   $('btn-disconnect').addEventListener('click', () => {
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
-  $('btn-refresh').addEventListener('click', () => load(true));
   $('btn-export').addEventListener('click', exportCSV);
+  $('btn-export-xls').addEventListener('click', exportExcel);
   $('btn-reset-w').addEventListener('click', resetWidths);
   ['q','svc','ch','from','to'].forEach(id => {
     $(id).addEventListener('input',  () => { PAGE = 1; renderTable(CURRENT); });
