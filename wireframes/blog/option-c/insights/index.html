@@ -714,9 +714,18 @@
       // (idx.totalInbounds 는 비블로그 트래픽까지 모두 포함하므로 300+로 부풀려짐)
       const iu = idx.ibByUtm;
       for (const u in iu) if (utmAttr[u]) totalInbound += iu[u];
-      // ── 진단 로그 ─ 매칭/미매칭 utm_term 분포 확인용 (F12 → Console).
-      // utm_term 이 정확히 (trim 후 대소문자 일치) 같은 값만 카운트됨을 보여준다.
+      // ── 진단 로그 ─ 매핑 정확성 검증 (F12 → Console).
+      //   method-1 (KPI 표시값): ibByUtm dict lookup 합산
+      //   method-2 (검증):       INBOUND_BY_DATE_ROWS 원본 순회로 직접 매칭 카운트
+      //   두 값이 같으면 매핑 정확. 다르면 빌드 버그.
       try {
+        let v2 = 0;
+        for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+          const r = INBOUND_BY_DATE_ROWS[i];
+          if (!r || !r.utm_term) continue;
+          const u = String(r.utm_term).trim();
+          if (u && utmAttr[u]) v2++;
+        }
         const matched = [], unmatched = [];
         for (const u in iu){
           (utmAttr[u] ? matched : unmatched).push([u, iu[u]]);
@@ -726,13 +735,26 @@
         const sumM = matched.reduce((s,e)=>s+e[1],0);
         const sumU = unmatched.reduce((s,e)=>s+e[1],0);
         console.groupCollapsed(
-          '[insights] 인바운드 KPI 진단 — 기간 인입 ' + (sumM+sumU) + '건 중 ' +
-          '블로그 매칭 ' + sumM + '건 (표시값), 미매칭 ' + sumU + '건'
+          '[insights] 인바운드 KPI 진단 — ' +
+          '기간 인입 총 ' + INBOUND_BY_DATE_ROWS.length + '건 · ' +
+          '블로그 매칭 ' + sumM + '건 (KPI) · 미매칭 ' + sumU + '건' +
+          (totalInbound === v2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치')
         );
+        console.log('method-1 (dict lookup) :', totalInbound);
+        console.log('method-2 (raw 순회)    :', v2, totalInbound === v2 ? '✓ 일치' : '⚠ 불일치');
         console.log('블로그 게시글 utm_term 개수 :', Object.keys(utmAttr).length);
-        console.log('인바운드 utm_term 개수      :', matched.length + unmatched.length);
+        console.log('인바운드 utm_term 종류      :', matched.length + unmatched.length);
         console.log('매칭 TOP 10  :', matched.slice(0,10));
         console.log('미매칭 TOP 10:', unmatched.slice(0,10));
+        const perPost = [];
+        for (let i = 0; i < ALL_ROWS.length; i++){
+          const r = ALL_ROWS[i];
+          const u = String(r.utm_term || '').trim();
+          const c = u ? (iu[u] || 0) : 0;
+          if (c > 0) perPost.push([r['제목'] || u, u, c]);
+        }
+        perPost.sort((a,b)=>b[2]-a[2]);
+        console.log('게시글별 인바운드 (count > 0, 합:' + perPost.reduce((s,e)=>s+e[2],0) + '):', perPost);
         console.groupEnd();
       } catch(_){}
     } else {
