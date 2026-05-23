@@ -690,15 +690,30 @@
       return Number(counts[u]) || 0;
     };
 
+    // 게시글에 귀속되는 attribution set — ALL_ROWS 의 postid / utm_term.
+    // 광고/타 캠페인 등 블로그 미매칭 트래픽은 KPI 총량에서 제외해야
+    // '조회 기간 내 블로그 조회수/인바운드' 가 된다.
+    const pidAttr = Object.create(null);
+    const utmAttr = Object.create(null);
+    for (let i = 0; i < ALL_ROWS.length; i++){
+      const pid = String(ALL_ROWS[i].postid || '');
+      const utm = String(ALL_ROWS[i].utm_term || '').trim();
+      if (pid) pidAttr[pid] = true;
+      if (utm) utmAttr[utm] = true;
+    }
     let totalVisit = 0, totalInbound = 0;
     if (idx && idx.hasStats){
-      // 기간 총량은 idx 전체 합 (rows 매칭 누락이 없도록)
-      totalVisit = idx.totalVisits;
+      // 기간 내 visByPid 중 블로그 게시글 매칭 pid 만 합산
+      const vp = idx.visByPid;
+      for (const k in vp) if (pidAttr[k]) totalVisit += vp[k];
     } else {
       for (let i = 0; i < rows.length; i++) totalVisit += +rows[i].totalVisit || 0;
     }
     if (idx && idx.hasIb){
-      totalInbound = idx.totalInbounds;
+      // 인바운드 = 기간 내 ibByUtm 중 블로그 utm_term 매칭 건만 합산
+      // (idx.totalInbounds 는 비블로그 트래픽까지 모두 포함하므로 300+로 부풀려짐)
+      const iu = idx.ibByUtm;
+      for (const u in iu) if (utmAttr[u]) totalInbound += iu[u];
     } else {
       for (let i = 0; i < rows.length; i++) totalInbound += actualInbound(rows[i]);
     }
