@@ -1314,6 +1314,30 @@
     if (idx.hasIb){
       const iu = idx.ibByUtm;
       for (const u in iu) if (utmAttr[u]) ib += iu[u];
+      // ── 진단 로그 ─ "인바운드가 너무 큼" 검증용. F12 → Console 에서 확인 가능.
+      //  matchedTop / unmatchedTop : 가장 빈도 높은 매칭/미매칭 utm_term 10개씩.
+      //  utm_term 이 정확히 (trim 후 대소문자 일치) 같은 값만 카운트됨을 보여준다.
+      try {
+        const matched = [], unmatched = [];
+        for (const u in iu){
+          (utmAttr[u] ? matched : unmatched).push([u, iu[u]]);
+        }
+        matched.sort((a,b)=>b[1]-a[1]);
+        unmatched.sort((a,b)=>b[1]-a[1]);
+        const sumMatched   = matched.reduce((s,e)=>s+e[1],0);
+        const sumUnmatched = unmatched.reduce((s,e)=>s+e[1],0);
+        console.groupCollapsed(
+          '[blog] 인바운드 KPI 진단 — ' +
+          '기간 인입 ' + (sumMatched+sumUnmatched) + '건 중 ' +
+          '블로그 매칭 ' + sumMatched + '건 (KPI 표시값), ' +
+          '미매칭 ' + sumUnmatched + '건'
+        );
+        console.log('블로그 게시글 utm_term 개수 :', Object.keys(utmAttr).length);
+        console.log('인바운드 utm_term 개수      :', matched.length + unmatched.length);
+        console.log('매칭 TOP 10  :', matched.slice(0,10));
+        console.log('미매칭 TOP 10:', unmatched.slice(0,10));
+        console.groupEnd();
+      } catch(_){}
     } else {
       for (let i = 0; i < rows.length; i++) ib += +rows[i].inbound || 0;
     }
