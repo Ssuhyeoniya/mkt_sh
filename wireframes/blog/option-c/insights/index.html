@@ -1581,15 +1581,10 @@
   let _applyInflight = false;
   function applyPeriodQuery(){
     if (_applyInflight) return;
-    const newStart = $('date-start').value || '';
-    const newEnd   = $('date-end').value   || '';
-    const sameDates = (newStart === APPLIED_DATE_START && newEnd === APPLIED_DATE_END);
-    const samePending = !PENDING_RANGE || PENDING_RANGE === ACTIVE_RANGE;
-    if (sameDates && samePending) return;
-
-    APPLIED_DATE_START = newStart;
-    APPLIED_DATE_END   = newEnd;
-    ACTIVE_RANGE = PENDING_RANGE;
+    // 조회 버튼 클릭 = 명시적 refresh 요청. 입력값이 적용값과 같아도 fresh fetch.
+    APPLIED_DATE_START = $('date-start').value || '';
+    APPLIED_DATE_END   = $('date-end').value   || '';
+    ACTIVE_RANGE = PENDING_RANGE || ACTIVE_RANGE;
     PENDING_RANGE = '';
     updatePendingState();
 
@@ -1598,8 +1593,6 @@
     const prevLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = '조회 중…';
-    // 조회 버튼은 명시적 사용자 요청 → 캐시 무효화 후 fresh fetch.
-    if (window.MktProxy && MktProxy.invalidateAll) MktProxy.invalidateAll();
     loadStatsAndInboundForCurrent()
       .then(refresh)
       .catch(function(err){ console.error('[insights] applyPeriodQuery:', err); })

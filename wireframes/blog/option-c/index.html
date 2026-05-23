@@ -887,15 +887,12 @@
   let _applyInflight = false;
   function applyPeriodQuery(){
     if (_applyInflight) return;
-    const newStart = $('date-start').value || '';
-    const newEnd   = $('date-end').value   || '';
-    const sameDates = (newStart === APPLIED_DATE_START && newEnd === APPLIED_DATE_END);
-    const samePending = !PENDING_RANGE || PENDING_RANGE === ACTIVE_RANGE;
-    if (sameDates && samePending) return;   // 변경 없음 → 스킵
-
-    APPLIED_DATE_START = newStart;
-    APPLIED_DATE_END   = newEnd;
-    ACTIVE_RANGE = PENDING_RANGE;
+    // 조회 버튼 클릭은 사용자의 명시적 refresh 요청 → 입력값이 적용값과 같아도
+    // 무조건 fresh fetch 수행 (이전 no-op 가드는 초기 default 와 같은 입력이면
+    // 클릭해도 아무것도 안 일어나는 버그를 만들었음).
+    APPLIED_DATE_START = $('date-start').value || '';
+    APPLIED_DATE_END   = $('date-end').value   || '';
+    ACTIVE_RANGE = PENDING_RANGE || ACTIVE_RANGE;
     PENDING_RANGE = '';
     updatePendingState();
 
@@ -904,10 +901,6 @@
     const prevLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = '조회 중…';
-    // 조회 버튼은 명시적 사용자 요청 → 캐시 무효화 후 fresh fetch.
-    //  (이전 버전 코드에서 잘못 캐싱된 sessionStorage 데이터가 남아있을 때
-    //   period 별로 일관되지 않은 카운트가 나오는 현상 방지)
-    if (window.MktProxy && MktProxy.invalidateAll) MktProxy.invalidateAll();
     loadStatsAndInboundForCurrent()
       .then(refreshAll)
       .catch(function(err){ console.error('[blog] applyPeriodQuery:', err); })
