@@ -803,8 +803,13 @@
   let PENDING_RANGE = '';       // 입력만 되고 아직 조회 안 한 빠른선택
   // STATS_DAILY 시트 데이터 (현재 적용된 기간) — 시간 추이 및 기간 필터의 기준
   let STATS_DAILY_ROWS = [];
+  // STATS_DAILY 가 성공적으로 로딩됐는지 — 빈 배열이어도 true (= '기간 내 0건' 도 정상).
+  // length > 0 으로만 판단하면 0건 정상응답이 '미로딩' 으로 잘못 분류되어 lifetime
+  // 폴백이 작동, KPI 가 누적값으로 부풀려지는 버그 발생.
+  let STATS_DAILY_LOADED = false;
   // 인바운드 일자별 raw (현재 적용된 기간) — 시간 추이 인바운드 라인 기준
   let INBOUND_BY_DATE_ROWS = [];
+  let INBOUND_BY_DATE_LOADED = false;
   // 현재 적용된 기간 (조회 시점 스냅샷) — 입력값과 분리
   let APPLIED_DATE_START = '';
   let APPLIED_DATE_END   = '';
@@ -1274,8 +1279,11 @@
       visByPid, visByDate, visByMonth,
       ibByUtm,  ibByDate,  ibByMonth,
       pidSet, maxDate,
-      hasStats: STATS_DAILY_ROWS.length > 0,
-      hasIb:    INBOUND_BY_DATE_ROWS.length > 0
+      // '로딩 성공' 플래그 사용. 빈 배열(0건)도 hasStats/hasIb = true 가 되어야
+      // KPI 가 기간 합 0 으로 정확히 표시됨. length > 0 으로 판정하면 0건일 때
+      // lifetime 폴백이 잘못 작동해 누적값이 표시되는 버그 발생.
+      hasStats: STATS_DAILY_LOADED,
+      hasIb:    INBOUND_BY_DATE_LOADED
     };
   }
   function rowVisits(r, idx){
@@ -1922,6 +1930,8 @@
       });
       STATS_DAILY_ROWS = sd;
       INBOUND_BY_DATE_ROWS = ib;
+      STATS_DAILY_LOADED = true;
+      INBOUND_BY_DATE_LOADED = true;
       // 데모에서는 INBOUND_COUNTS 도 자체 집계 (utm_term → count)
       INBOUND_COUNTS = {};
       ib.forEach(function(r){
@@ -1932,13 +1942,18 @@
       return;
     }
 
-    // 실서버 모드 — 세 엔드포인트 병렬 호출
+    // 실서버 모드 — 세 엔드포인트 병렬 호출.
+    // 성공 시 LOADED 플래그 true (빈 배열 응답이어도 '정상 0건' 으로 처리).
+    // 실패 시 LOADED false → buildPeriodIndex 의 hasStats/hasIb 가 false 가 되어
+    // lifetime 폴백 경로로 진입 (GAS 모듈 없음 등의 시나리오).
     const tasks = [
       MktProxy.blogStatsDaily(params).then(function(r){
         STATS_DAILY_ROWS = (r && r.rows) ? r.rows : [];
+        STATS_DAILY_LOADED = true;
       }).catch(function(err){
         console.error('[blog] statsDaily 호출 실패:', err && err.message || err);
         STATS_DAILY_ROWS = [];
+        STATS_DAILY_LOADED = false;
         const msg = String(err && err.message || err);
         if (msg.indexOf('unknown_action') >= 0){
           const statusEl = $('status');
@@ -1950,9 +1965,11 @@
       }),
       MktProxy.blogInboundByDate(params).then(function(r){
         INBOUND_BY_DATE_ROWS = (r && r.rows) ? r.rows : [];
+        INBOUND_BY_DATE_LOADED = true;
       }).catch(function(err){
         console.error('[blog] inboundByDate 호출 실패:', err && err.message || err);
         INBOUND_BY_DATE_ROWS = [];
+        INBOUND_BY_DATE_LOADED = false;
       }),
       loadInboundCountsForCurrentApplied()
     ];

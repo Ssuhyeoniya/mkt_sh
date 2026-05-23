@@ -545,7 +545,9 @@
   let APPLIED_DATE_END   = '';
   let INBOUND_COUNTS = {};         // utm_term → 인바운드 인입 건수 (제출일자 기간 필터 적용)
   let STATS_DAILY_ROWS = [];       // 일자별 visitors (조회 기간 한정)
+  let STATS_DAILY_LOADED = false;       // 빈 배열도 'loaded'=true → 0건 정상응답을 lifetime 폴백으로 잘못 치환하지 않도록
   let INBOUND_BY_DATE_ROWS = [];   // 인바운드 raw rows (인입 일자 + utm_term, 조회 기간 한정)
+  let INBOUND_BY_DATE_LOADED = false;
   let SCOPED_ROWS_GLOBAL = [];
   let COMPARE_MODE = 'mom';
 
@@ -600,8 +602,10 @@
       visByPid, visByDate, visByMonth,
       ibByUtm,  ibByDate,  ibByMonth,
       pidSet, totalVisits, totalInbounds,
-      hasStats: STATS_DAILY_ROWS.length > 0,
-      hasIb:    INBOUND_BY_DATE_ROWS.length > 0
+      // length 가 아니라 LOADED 플래그 사용 — 빈 배열(0건)도 hasStats/hasIb=true
+      // 가 되어 lifetime 폴백 없이 정확히 0이 표시됨.
+      hasStats: STATS_DAILY_LOADED,
+      hasIb:    INBOUND_BY_DATE_LOADED
     };
   }
 
@@ -1550,6 +1554,8 @@
       });
       STATS_DAILY_ROWS = sd;
       INBOUND_BY_DATE_ROWS = ib;
+      STATS_DAILY_LOADED = true;
+      INBOUND_BY_DATE_LOADED = true;
       INBOUND_COUNTS = {};
       ib.forEach(function(r){
         const u = String(r.utm_term||'').trim();
@@ -1561,10 +1567,12 @@
     const tasks = [
       MktProxy.blogStatsDaily(params).then(function(r){
         STATS_DAILY_ROWS = (r && r.rows) ? r.rows : [];
-      }).catch(function(err){ STATS_DAILY_ROWS = []; console.warn('[insights] statsDaily:', err); }),
+        STATS_DAILY_LOADED = true;
+      }).catch(function(err){ STATS_DAILY_ROWS = []; STATS_DAILY_LOADED = false; console.warn('[insights] statsDaily:', err); }),
       MktProxy.blogInboundByDate(params).then(function(r){
         INBOUND_BY_DATE_ROWS = (r && r.rows) ? r.rows : [];
-      }).catch(function(err){ INBOUND_BY_DATE_ROWS = []; console.warn('[insights] inboundByDate:', err); }),
+        INBOUND_BY_DATE_LOADED = true;
+      }).catch(function(err){ INBOUND_BY_DATE_ROWS = []; INBOUND_BY_DATE_LOADED = false; console.warn('[insights] inboundByDate:', err); }),
       MktProxy.blogInboundCounts(params).then(function(r){
         INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
       }).catch(function(err){ INBOUND_COUNTS = {}; console.warn('[insights] inboundCounts:', err); })
