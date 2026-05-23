@@ -904,6 +904,10 @@
     const prevLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = '조회 중…';
+    // 조회 버튼은 명시적 사용자 요청 → 캐시 무효화 후 fresh fetch.
+    //  (이전 버전 코드에서 잘못 캐싱된 sessionStorage 데이터가 남아있을 때
+    //   period 별로 일관되지 않은 카운트가 나오는 현상 방지)
+    if (window.MktProxy && MktProxy.invalidateAll) MktProxy.invalidateAll();
     loadStatsAndInboundForCurrent()
       .then(refreshAll)
       .catch(function(err){ console.error('[blog] applyPeriodQuery:', err); })

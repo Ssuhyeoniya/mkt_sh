@@ -1598,6 +1598,8 @@
     const prevLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = '조회 중…';
+    // 조회 버튼은 명시적 사용자 요청 → 캐시 무효화 후 fresh fetch.
+    if (window.MktProxy && MktProxy.invalidateAll) MktProxy.invalidateAll();
     loadStatsAndInboundForCurrent()
       .then(refresh)
       .catch(function(err){ console.error('[insights] applyPeriodQuery:', err); })
