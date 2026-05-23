@@ -414,14 +414,20 @@
    * 안의 콘텐츠는 세로 중앙 정렬. 기본 display:table-cell 이면 내용 크기로만
    * 잡혀 셀 선택 하이라이트가 텍스트에만 걸리는 문제를 해결한다. */
   .bopt-table th, .bopt-table td{
-    display:flex; align-items:center;
+    display:flex !important; align-items:center;
     min-width:0; padding:0; border:0;
     text-align:left; font-weight:inherit;
-    align-self:stretch;
+    align-self:stretch; justify-self:stretch;
+    width:100%; height:100%;
     overflow:hidden;
+    box-sizing:border-box;
   }
   /* num-cell 은 우측 정렬 */
   .bopt-table .num-cell{ justify-content:flex-end; }
+  /* 셀 선택 하이라이트가 셀 영역 전체를 덮도록 (outline 보다 background 가 보이게) */
+  .bopt-table td.gx-sel-cell, .bopt-table th.gx-sel-cell,
+  .bopt-table td.gx-sel-row,  .bopt-table td.gx-sel-col,
+  .bopt-table th.gx-sel-head{ width:100%; height:100%; }
 
   /* 행 높이 40px × 10행 = 400px = 한번에 보이는 영역 */
   .post-row{ height:40px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
