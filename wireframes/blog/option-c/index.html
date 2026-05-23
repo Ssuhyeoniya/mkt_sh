@@ -535,7 +535,7 @@
     <section class="kpi-grid">
       <div class="kpi"><div class="kpi-label">총 게시물</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat">카테고리 0개</div></div>
       <div class="kpi"><div class="kpi-label">조회수</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">기간 평균 <span id="kpi-avg">0</span>/글</div></div>
-      <div class="kpi"><div class="kpi-label">최근 7일 조회수</div><div class="kpi-value" id="kpi-weekly">0</div><div class="kpi-sub" id="kpi-weekly-sub">기간 마지막 7일 합계</div></div>
+      <div class="kpi"><div class="kpi-label">인바운드</div><div class="kpi-value" id="kpi-inbound">0</div><div class="kpi-sub">조회 기간 인입 합계</div></div>
       <div class="kpi"><div class="kpi-label">유입 전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">인바운드 / 조회수</div></div>
     </section>
 
@@ -1289,40 +1289,51 @@
 
     const rows = SCOPED_ROWS;
 
-    // 조회수/인바운드: 기간 합산 (idx 의 visByPid/ibByUtm 즉시 조회)
+    // 조회수: 기간 내 visByPid 의 모든 합 = 조회 기간 내 조회 수 총 합.
+    // 인바운드: 기간 내 INBOUND_BY_DATE 의 모든 row = 조회 기간 내 인입 합계.
+    // (rows 가 아니라 idx 자체에서 합산 → 정확한 '기간 총량' + 빠름.)
     let tot = 0, ib = 0;
-    for (let i = 0; i < rows.length; i++){
-      tot += rowVisits(rows[i], idx);
-      ib  += rowInbound(rows[i], idx);
-    }
-    // 최근 7일 조회수 = 적용 기간 마지막 7일의 visByDate 합 (이미 집계됨 → 7회 가산만).
-    // STATS_DAILY 없으면 누적 weeklyVisitor 합으로 fallback.
-    let wk = 0;
     if (idx.hasStats){
-      const de = APPLIED_DATE_END || idx.maxDate || ymd(yesterday());
-      const dEnd = new Date(de + 'T00:00:00');
-      for (let i = 0; i < 7; i++){
-        const d = new Date(dEnd);
-        d.setDate(d.getDate() - i);
-        wk += idx.visByDate[ymd(d)] || 0;
-      }
+      const vp = idx.visByPid;
+      for (const k in vp) tot += vp[k];
     } else {
-      for (let i = 0; i < rows.length; i++) wk += +rows[i].weeklyVisitor || 0;
+      for (let i = 0; i < rows.length; i++) tot += +rows[i].totalVisit || 0;
+    }
+    if (idx.hasIb){
+      ib = INBOUND_BY_DATE_ROWS.length;
+    } else {
+      for (let i = 0; i < rows.length; i++) ib += +rows[i].inbound || 0;
+    }
+    // 총 게시물: 조회 기간 내 1회 이상 조회된 게시글 수
+    //   = visByPid[pid] > 0 인 pid 중 CURRENT_ROWS 에 존재하는 것
+    //   STATS_DAILY 없으면 SCOPED_ROWS.length (발행일 기반 fallback).
+    let postCount = rows.length;
+    if (idx.hasStats){
+      const vp = idx.visByPid;
+      const curSet = Object.create(null);
+      for (let i = 0; i < CURRENT_ROWS.length; i++){
+        const pid = String(CURRENT_ROWS[i].postid || '');
+        if (pid) curSet[pid] = true;
+      }
+      postCount = 0;
+      for (const k in vp){
+        if (vp[k] > 0 && curSet[k]) postCount++;
+      }
     }
     const cats = Array.from(new Set(rows.map(r=>r.category||'미분류')));
-    const avg = rows.length ? Math.round(tot/rows.length) : 0;
+    const avg = postCount ? Math.round(tot/postCount) : 0;
     const cvr = tot > 0 ? (ib/tot*100).toFixed(2) + '%' : '0%';
-    $('kpi-count').textContent  = fmt(rows.length);
-    $('kpi-total').textContent  = fmt(tot);
-    $('kpi-avg').textContent    = fmt(avg);
-    $('kpi-weekly').textContent = fmt(wk);
-    $('kpi-cvr').textContent    = cvr;
-    $('kpi-cat').textContent    = '카테고리 ' + cats.length + '개';
+    $('kpi-count').textContent   = fmt(postCount);
+    $('kpi-total').textContent   = fmt(tot);
+    $('kpi-avg').textContent     = fmt(avg);
+    $('kpi-inbound').textContent = fmt(ib);
+    $('kpi-cvr').textContent     = cvr;
+    $('kpi-cat').textContent     = '카테고리 ' + cats.length + '개';
 
     // TOP 5 패널 상단 총량 (KPI 와 동일 값)
     $('top-total').textContent     = '총 ' + fmt(tot) + ' 회';
     $('inbound-total').textContent = '총 ' + fmt(ib)  + ' 건';
-    $('cat-total').textContent     = '총 ' + fmt(rows.length) + ' 건';
+    $('cat-total').textContent     = '총 ' + fmt(postCount) + ' 건';
 
     const sel = $('cat');
     const cur = sel.value;
