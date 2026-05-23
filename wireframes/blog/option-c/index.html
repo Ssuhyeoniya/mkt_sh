@@ -403,7 +403,7 @@
   .meta-item .k{ color:var(--muted); }
   .meta-item .v{ color:var(--text); font-family:'JetBrains Mono', monospace; }
   .table-head{
-    padding:10px 14px; background:var(--panel-2); color:var(--muted);
+    padding:0 14px; min-height:38px; background:var(--panel-2); color:var(--muted);
     font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
     border-bottom:1px solid var(--line);
     position:sticky; top:0; z-index:2;   /* 세로 스크롤 시 헤더 고정 */
@@ -623,9 +623,7 @@
 
     <!-- Compact post list -->
     <div class="panel" style="overflow:hidden">
-     <div class="toolbar" style="padding:10px 14px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--line);">
-       <span class="text-[11.5px] muted">셀 클릭 · Ctrl+C 복사 · Shift+Space 행 · Ctrl+Space 열 · 더블클릭 상세</span>
-       <span style="flex:1"></span>
+     <div class="toolbar" style="padding:10px 14px; display:flex; gap:8px; align-items:center; justify-content:flex-end; border-bottom:1px solid var(--line);">
        <button class="opt-btn" id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀</button>
      </div>
      <div class="table-scroll">
