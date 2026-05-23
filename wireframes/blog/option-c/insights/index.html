@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared.css?v=20260512-3">
+<link rel="stylesheet" href="../../shared.css?v=20260523-1">
 <style>
   /* 기간 조회 바 (blog/option-c 와 동일 UX — PENDING/조회 버튼 패턴) */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -516,8 +516,8 @@
   </div>
 </div>
 
-<script src="../../proxy-client.js?v=20260512-3"></script>
-<script src="../../_detail-drawer.js?v=20260512-3"></script>
+<script src="../../proxy-client.js?v=20260523-1"></script>
+<script src="../../_detail-drawer.js?v=20260523-1"></script>
 <script src="../../../table-grid.js"></script>
 <script>
   function $(id){ return document.getElementById(id); }
@@ -1580,8 +1580,12 @@
   // ──────────────────────────────────────────────────────────
   let _applyInflight = false;
   function applyPeriodQuery(){
-    if (_applyInflight) return;
-    // 조회 버튼 클릭 = 명시적 refresh 요청. 입력값이 적용값과 같아도 fresh fetch.
+    const _t0 = performance.now();
+    console.log('[insights] ▶ applyPeriodQuery 진입 — inputs:',
+                $('date-start').value, '~', $('date-end').value,
+                '· pending:', PENDING_RANGE,
+                '· inflight:', _applyInflight);
+    if (_applyInflight){ console.log('[insights] ⛔ inflight 가드로 스킵'); return; }
     APPLIED_DATE_START = $('date-start').value || '';
     APPLIED_DATE_END   = $('date-end').value   || '';
     ACTIVE_RANGE = PENDING_RANGE || ACTIVE_RANGE;
@@ -1594,7 +1598,15 @@
     btn.disabled = true;
     btn.textContent = '조회 중…';
     loadStatsAndInboundForCurrent()
-      .then(refresh)
+      .then(function(){
+        const tApi = (performance.now() - _t0).toFixed(0);
+        console.log('[insights] ✓ API 로드 완료 — ' + tApi + 'ms');
+        const _t1 = performance.now();
+        refresh();
+        const tRender = (performance.now() - _t1).toFixed(0);
+        console.log('[insights] ✓ 렌더 완료 — ' + tRender + 'ms (합계: ' +
+                    (performance.now() - _t0).toFixed(0) + 'ms)');
+      })
       .catch(function(err){ console.error('[insights] applyPeriodQuery:', err); })
       .then(function(){
         _applyInflight = false;
@@ -1663,17 +1675,8 @@
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
 
-    // 최초 진입: 기본 기간 = 최근 7일 (기간이 한 번도 적용된 적 없을 때만).
-    // 비어있는 기간으로 API 가 전체기간 데이터를 받아와 KPI 가 부풀려지는 것 방지.
-    if (!APPLIED_DATE_START && !APPLIED_DATE_END
-        && !$('date-start').value && !$('date-end').value){
-      setQuickRangeInput(7);
-      APPLIED_DATE_START = $('date-start').value;
-      APPLIED_DATE_END   = $('date-end').value;
-      ACTIVE_RANGE = '7';
-      PENDING_RANGE = '';
-      updatePendingState();
-    }
+    // 초기 진입(F5/첫 방문)은 '전체 조회' 상태 — 기간 필터 미적용.
+    updatePendingState();
 
     if (!url){
       setStatus('데모 데이터 분석 중', 'demo');
