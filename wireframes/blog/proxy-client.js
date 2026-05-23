@@ -14,10 +14,13 @@
   // 새로고침 버튼(MktProxy.invalidateAll) 으로만 명시 무효화.
   // TTL 은 안전망 차원에서 7일.
   const CACHE_TTL    = 7 * 24 * 60 * 60 * 1000;
+  // 캐시 버전 — 산식/필터 정의가 바뀌면 bump 해서 stale 엔트리 자동 무효화.
+  // v2: 인바운드 attribution 산식 변경 (utm_term 매칭 게시글에 한정) + 기간 필터 정정.
+  const CACHE_VERSION = 'v2';
 
   function _ssGet(key){
     try {
-      const raw = localStorage.getItem(CACHE_PREFIX + key);
+      const raw = localStorage.getItem(CACHE_PREFIX + CACHE_VERSION + ':' + key);
       if (!raw) return null;
       const obj = JSON.parse(raw);
       if (!obj || typeof obj.t !== 'number') return null;
@@ -26,7 +29,7 @@
     } catch (_) { return null; }
   }
   function _ssSet(key, data){
-    try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), d: data })); }
+    try { localStorage.setItem(CACHE_PREFIX + CACHE_VERSION + ':' + key, JSON.stringify({ t: Date.now(), d: data })); }
     catch (_) {}
   }
   function _ssClear(){
@@ -39,6 +42,20 @@
       keys.forEach(function(k){ localStorage.removeItem(k); });
     } catch (_) {}
   }
+  // 페이지 로드 시 1회: 이전 버전(v2 prefix 없는 키) stale 엔트리 자동 정리.
+  // 새 데이터는 v2 prefix 로 저장되므로 이전 버전 키는 영영 안 읽힘 → 영구 stale.
+  (function _purgeLegacy(){
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && k.indexOf(CACHE_PREFIX) === 0 && k.indexOf(CACHE_PREFIX + CACHE_VERSION + ':') !== 0){
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach(function(k){ localStorage.removeItem(k); });
+    } catch (_) {}
+  })();
 
   const Proxy = {
     STORAGE_KEY: STORAGE_KEY,
