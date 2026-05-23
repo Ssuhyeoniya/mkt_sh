@@ -231,6 +231,9 @@
   }
   .table-scroll::-webkit-scrollbar{ width:8px; height:8px; }
   .table-scroll::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
+  /* 실제 <table> 위에 grid 레이아웃을 얹기 위해 block 표시로 전환 */
+  .bopt-table{ display:block; width:100%; border-collapse:separate; border-spacing:0; }
+  .bopt-table thead, .bopt-table tbody{ display:block; }
   .table-head, .post-row{
     display:grid;
     grid-template-columns:
@@ -406,6 +409,8 @@
     position:sticky; top:0; z-index:2;   /* 세로 스크롤 시 헤더 고정 */
   }
   .table-head .num-cell{ text-align:right; }
+  /* <td>/<th> 기본 스타일 리셋 — div 와 동일하게 보이게 */
+  .bopt-table th, .bopt-table td{ padding:0; border:0; text-align:left; font-weight:inherit; vertical-align:middle; }
 
   /* 행 높이 40px × 10행 = 400px = 한번에 보이는 영역 */
   .post-row{ height:40px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
@@ -477,7 +482,6 @@
           <div class="page-eyebrow">SNS · 블로그</div>
           <h1>블로그 성과 분석</h1>
         </div>
-        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
         <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">⚙ 옵션</button>
       </div>
       <div class="conn">
@@ -594,7 +598,6 @@
         <option value="weekly_desc">주간 방문 많은 순</option>
         <option value="inbound_desc">유입 많은 순</option>
       </select>
-      <button id="btn-refresh">↻ 새로고침</button>
       <span style="flex:1"></span>
       <span class="chip" id="result-count">0건</span>
       <span class="pager-info" id="pager-info" style="font-size:11.5px;color:var(--muted);"></span>
@@ -603,22 +606,31 @@
 
     <!-- Compact post list -->
     <div class="panel" style="overflow:hidden">
+     <div class="toolbar" style="padding:10px 14px; display:flex; gap:8px; align-items:center; border-bottom:1px solid var(--line);">
+       <span class="text-[11.5px] muted">셀 클릭 · Ctrl+C 복사 · Shift+Space 행 · Ctrl+Space 열 · 더블클릭 상세</span>
+       <span style="flex:1"></span>
+       <button class="opt-btn" id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀</button>
+     </div>
      <div class="table-scroll">
-      <div class="table-head">
-        <div>NO</div>
-        <div>발행일</div>
-        <div>제목</div>
-        <div>썸네일</div>
-        <div>서비스</div>
-        <div>카테고리</div>
-        <div class="num-cell">총방문</div>
-        <div class="num-cell">주간</div>
-        <div class="num-cell">월간</div>
-        <div class="num-cell">유입</div>
-        <div></div>
-        <div>상세</div>
-      </div>
-      <div class="table-body" id="rows"></div>
+      <table class="bopt-table" id="tbl">
+        <thead>
+          <tr class="table-head">
+            <th>NO</th>
+            <th>발행일</th>
+            <th>제목</th>
+            <th>썸네일</th>
+            <th>서비스</th>
+            <th>카테고리</th>
+            <th class="num-cell">총방문</th>
+            <th class="num-cell">주간</th>
+            <th class="num-cell">월간</th>
+            <th class="num-cell">유입</th>
+            <th></th>
+            <th>상세</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
      </div>
     </div>
 
@@ -766,6 +778,7 @@
 </div>
 
 <script src="../proxy-client.js?v=20260512-3"></script>
+<script src="../../table-grid.js"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
@@ -1135,7 +1148,7 @@
 
     const list = $('rows');
     if (!pageRows.length){
-      list.innerHTML = '<div class="empty" style="margin:24px">조건에 맞는 글이 없습니다.</div>';
+      list.innerHTML = '<tr><td colspan="12"><div class="empty" style="margin:24px">조건에 맞는 글이 없습니다.</div></td></tr>';
     } else {
       list.innerHTML = pageRows.map(function(r,i){
         const idx = start + i + 1;
@@ -1143,22 +1156,22 @@
           ? `<img src="${escAttr(r.thumbnail)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentNode.innerHTML='&lt;span class=ph&gt;◇&lt;/span&gt;'"/>`
           : '<span class="ph">◇</span>';
         const link = r['링크'] ? `<a class="lk" href="${escAttr(r['링크'])}" target="_blank" rel="noopener noreferrer">↗</a>` : '<span class="lk" style="opacity:.3">-</span>';
-        return '<div class="post-row">'
-          + '<div class="no">'+idx+'</div>'
-          + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
-          + '<div class="title-wrap">'
+        return '<tr class="post-row" data-idx="'+(start+i)+'">'
+          + '<td class="no">'+idx+'</td>'
+          + '<td class="date-cell">'+fmtDate(r['날짜'])+'</td>'
+          + '<td class="title-wrap">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-          + '</div>'
-          + '<div><div class="thumb-cell">'+thumb+'</div></div>'
-          + '<div>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</div>'
-          + '<div>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</div>'
-          + '<div class="num-cell">'+fmt(r.totalVisit)+'</div>'
-          + '<div class="num-cell">'+fmt(r.weeklyVisitor)+'</div>'
-          + '<div class="num-cell">'+fmt(r.monthlyVisitor)+'</div>'
-          + (function(){ const ib = actualInbound(r); return '<div class="num-cell" style="color:'+(ib>=20?'var(--green)':'var(--text)')+'">'+fmt(ib)+'</div>'; })()
-          + '<div>'+link+'</div>'
-          + '<div><button class="btn-detail" data-postid="'+escAttr(r.postid||'')+'" data-idx="'+(start+i)+'">상세</button></div>'
-        + '</div>';
+          + '</td>'
+          + '<td><div class="thumb-cell">'+thumb+'</div></td>'
+          + '<td>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</td>'
+          + '<td>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</td>'
+          + '<td class="num-cell">'+fmt(r.totalVisit)+'</td>'
+          + '<td class="num-cell">'+fmt(r.weeklyVisitor)+'</td>'
+          + '<td class="num-cell">'+fmt(r.monthlyVisitor)+'</td>'
+          + (function(){ const ib = actualInbound(r); return '<td class="num-cell" style="color:'+(ib>=20?'var(--green)':'var(--text)')+'">'+fmt(ib)+'</td>'; })()
+          + '<td>'+link+'</td>'
+          + '<td><button class="btn-detail" data-postid="'+escAttr(r.postid||'')+'" data-idx="'+(start+i)+'">상세</button></td>'
+        + '</tr>';
       }).join('');
     }
     renderPager(filtered.length);
@@ -1242,15 +1255,14 @@
     MktProxy.invalidateAll();
     load();
   });
-  $('btn-refresh').addEventListener('click', function(){
-    MktProxy.invalidateAll();
-    setStatus('새로고침 중...');
-    load();
-  });
   $('btn-disconnect').addEventListener('click', function(){
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
-  $('btn-refresh').addEventListener('click', load);
+  $('btn-export-xls').addEventListener('click', function(){
+    const d = new Date();
+    const fname = 'blog_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.xls';
+    TableGrid.exportExcelFromTable(document.getElementById('tbl'), fname);
+  });
   $('q').addEventListener('input',     function(){ CURRENT_PAGE=1; renderTable(); });
   $('cat').addEventListener('change',  function(){ CURRENT_PAGE=1; renderTable(); });
   $('sort').addEventListener('change', function(){ CURRENT_PAGE=1; renderTable(); });
@@ -1527,10 +1539,11 @@
     $('detail-drawer').setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
-  // 이벤트 위임: 로우의 [상세] 버튼
+  // 이벤트 위임: 로우의 [상세] 버튼 (단일 클릭은 셀 선택용이므로 stopPropagation)
   $('rows').addEventListener('click', function(e){
     const btn = e.target.closest('.btn-detail');
     if (!btn) return;
+    e.stopPropagation();
     const postid = btn.dataset.postid;
     let row = null;
     if (postid) row = SCOPED_ROWS.find(r => String(r.postid||'') === postid);
@@ -1540,6 +1553,16 @@
       row = filtered[idx];
     }
     openDetail(row);
+  });
+  // 더블클릭 → 상세 (셀 선택과 양립)
+  $('rows').addEventListener('dblclick', function(e){
+    const tr = e.target.closest('tr.post-row');
+    if (!tr) return;
+    const idx = parseInt(tr.dataset.idx, 10);
+    if (isNaN(idx)) return;
+    const filtered = applyFilter(SCOPED_ROWS);
+    const row = filtered[idx];
+    if (row) openDetail(row);
   });
   $('detail-close').addEventListener('click', closeDetail);
   $('detail-overlay').addEventListener('click', closeDetail);
@@ -1879,7 +1902,10 @@
     if (e.key === 'Escape' && !$('top-modal').hidden) hideTopAll();
   });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', function(){
+    TableGrid.attach(document.getElementById('tbl'));
+    load();
+  });
 </script>
 </body>
 </html>

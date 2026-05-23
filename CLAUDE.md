@@ -94,5 +94,11 @@ tbody.querySelectorAll('tr').forEach(tr => {
 
 - `wireframes/salesmap/option-a/index.html` (리드 로우테이블 — 기준 구현)
 - `wireframes/salesmap/option-b/index.html`
-- `wireframes/blog/option-a/index.html`
+- `wireframes/blog/option-c/index.html`
 - `wireframes/ib-ob/option-c/index.html`
+
+### div 기반 행 그리드는 `<table>` 로 변환한다
+
+기존에 `display:grid` 로 만든 div 기반 행 그리드(예: `.table-head` + `.post-row`)는
+실제 `<table>` 로 바꾼다. 시각 그대로 두려면 `display:block` 으로 테이블 디폴트를 끈 뒤
+`<tr>` 에 `display:grid; grid-template-columns: …` 를 그대로 얹으면 된다 — `wireframes/blog/option-c/index.html` 참고.
