@@ -860,7 +860,7 @@
       return !!(pid && statsPidSet[pid]);
     });
   }
-  // 입력만 세팅 (조회 버튼 클릭 전까지 반영 안 함)
+  // 입력만 세팅 (수동 날짜 변경 등) — 빠른선택 버튼은 setQuickRangeApply 로 즉시 적용.
   function setQuickRangeInput(days){
     const end = yesterday();
     const start = new Date(end);
@@ -869,6 +869,12 @@
     $('date-end').value   = ymd(end);
     PENDING_RANGE = String(days);
     updatePendingState();
+  }
+  // 빠른선택 버튼 / 초기 디폴트 기간: 입력 세팅 후 즉시 조회까지 적용
+  // (사용자가 '7일' 누르고 '조회' 까지 또 눌러야 하는 혼란 제거)
+  function setQuickRangeApply(days){
+    setQuickRangeInput(days);
+    applyPeriodQuery();
   }
   function clearDateRange(){
     $('date-start').value = '';
@@ -1428,6 +1434,20 @@
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
 
+    // 최초 진입: 기본 기간 = 최근 7일 (기간이 한 번도 적용된 적 없을 때만).
+    //   - 이전엔 APPLIED 가 비어있어 API 가 전체기간(수년치) 데이터를 받아오고
+    //     매칭값이 부풀려진 것처럼 보였음 → 사용자 의도(기간 조회)와 일치하도록
+    //     의미있는 기본값 적용. 사용자가 다른 기간 선택하면 그 값으로 덮어쓰임.
+    if (!APPLIED_DATE_START && !APPLIED_DATE_END
+        && !$('date-start').value && !$('date-end').value){
+      setQuickRangeInput(7);
+      APPLIED_DATE_START = $('date-start').value;
+      APPLIED_DATE_END   = $('date-end').value;
+      ACTIVE_RANGE = '7';
+      PENDING_RANGE = '';
+      updatePendingState();
+    }
+
     if (!url){
       setStatus('데모 데이터 표시 중', 'demo');
       CURRENT_ROWS = SAMPLE_BLOG;
@@ -1490,10 +1510,10 @@
     });
   });
 
-  // 기간 조회: 빠른 선택 버튼 — 입력만 세팅, 실제 반영은 [조회] 버튼
+  // 기간 조회: 빠른 선택 버튼 → 입력 세팅 + 즉시 조회 (조회 버튼 추가 클릭 불필요)
   document.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      setQuickRangeInput(parseInt(btn.dataset.range, 10));
+      setQuickRangeApply(parseInt(btn.dataset.range, 10));
     });
   });
   // 데이트피커 직접 입력 — 값 변경 시 "대기 중" 상태로만 표시

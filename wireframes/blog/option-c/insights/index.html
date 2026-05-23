@@ -638,6 +638,11 @@
     PENDING_RANGE = String(days);
     updatePendingState();
   }
+  // 빠른선택 버튼 / 디폴트: 입력 세팅 후 즉시 조회 적용 (조회 버튼 추가 클릭 불필요)
+  function setQuickRangeApply(days){
+    setQuickRangeInput(days);
+    applyPeriodQuery();
+  }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
@@ -1667,6 +1672,18 @@
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
 
+    // 최초 진입: 기본 기간 = 최근 7일 (기간이 한 번도 적용된 적 없을 때만).
+    // 비어있는 기간으로 API 가 전체기간 데이터를 받아와 KPI 가 부풀려지는 것 방지.
+    if (!APPLIED_DATE_START && !APPLIED_DATE_END
+        && !$('date-start').value && !$('date-end').value){
+      setQuickRangeInput(7);
+      APPLIED_DATE_START = $('date-start').value;
+      APPLIED_DATE_END   = $('date-end').value;
+      ACTIVE_RANGE = '7';
+      PENDING_RANGE = '';
+      updatePendingState();
+    }
+
     if (!url){
       setStatus('데모 데이터 분석 중', 'demo');
       ALL_ROWS = SAMPLE_BLOG;
@@ -1721,10 +1738,10 @@
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
 
-  // 기간 조회: 빠른 선택 버튼 → 입력만 PENDING. 조회 버튼 클릭 시 반영
+  // 기간 조회: 빠른 선택 버튼 → 입력 세팅 + 즉시 조회 (조회 버튼 추가 클릭 불필요)
   document.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      setQuickRangeInput(parseInt(btn.dataset.range, 10));
+      setQuickRangeApply(parseInt(btn.dataset.range, 10));
     });
   });
   function onDateInputChange(){
