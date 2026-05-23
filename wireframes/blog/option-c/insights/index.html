@@ -711,18 +711,24 @@
     }
     if (idx && idx.hasIb){
       // 인바운드 = 기간 내 ibByUtm 중 블로그 utm_term 매칭 건만 합산
-      // (idx.totalInbounds 는 비블로그 트래픽까지 모두 포함하므로 300+로 부풀려짐)
       const iu = idx.ibByUtm;
       for (const u in iu) if (utmAttr[u]) totalInbound += iu[u];
-      // ── 진단 로그 ─ 매핑 정확성 검증 (F12 → Console).
-      //   method-1 (KPI 표시값): ibByUtm dict lookup 합산
-      //   method-2 (검증):       INBOUND_BY_DATE_ROWS 원본 순회로 직접 매칭 카운트
-      //   두 값이 같으면 매핑 정확. 다르면 빌드 버그.
+      // ── 진단 로그 ─ 매핑 정확성 + 날짜 범위 검증 (F12 → Console).
       try {
-        let v2 = 0;
+        let v2 = 0, outOfRange = 0;
+        let minD = '9999-99-99', maxD = '';
+        const ds = APPLIED_DATE_START || '';
+        const de = APPLIED_DATE_END   || '';
         for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
           const r = INBOUND_BY_DATE_ROWS[i];
-          if (!r || !r.utm_term) continue;
+          if (!r) continue;
+          const d = String(r.date || '').slice(0,10);
+          if (d){
+            if (d < minD) minD = d;
+            if (d > maxD) maxD = d;
+            if ((ds && d < ds) || (de && d > de)) outOfRange++;
+          }
+          if (!r.utm_term) continue;
           const u = String(r.utm_term).trim();
           if (u && utmAttr[u]) v2++;
         }
@@ -736,14 +742,20 @@
         const sumU = unmatched.reduce((s,e)=>s+e[1],0);
         console.groupCollapsed(
           '[insights] 인바운드 KPI 진단 — ' +
-          '기간 인입 총 ' + INBOUND_BY_DATE_ROWS.length + '건 · ' +
+          '조회 기간 [' + (ds||'∞') + ' ~ ' + (de||'∞') + '] · ' +
+          'API 반환 ' + INBOUND_BY_DATE_ROWS.length + '건 (' + minD + ' ~ ' + maxD + ') · ' +
           '블로그 매칭 ' + sumM + '건 (KPI) · 미매칭 ' + sumU + '건' +
-          (totalInbound === v2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치')
+          (totalInbound === v2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치') +
+          (outOfRange ? ' · ⚠ 기간 밖 ' + outOfRange + '건!' : '')
         );
-        console.log('method-1 (dict lookup) :', totalInbound);
-        console.log('method-2 (raw 순회)    :', v2, totalInbound === v2 ? '✓ 일치' : '⚠ 불일치');
-        console.log('블로그 게시글 utm_term 개수 :', Object.keys(utmAttr).length);
-        console.log('인바운드 utm_term 종류      :', matched.length + unmatched.length);
+        console.log('● 적용된 기간             :', ds || '(없음)', '~', de || '(없음)');
+        console.log('● API 반환 raw 이벤트 수  :', INBOUND_BY_DATE_ROWS.length);
+        console.log('● raw 날짜 최소~최대      :', minD, '~', maxD,
+                    outOfRange ? ('— ⚠ 기간 밖 ' + outOfRange + '건 (GAS 필터 무시?)') : '— ✓ 모두 기간 내');
+        console.log('● method-1 (dict 합산)    :', totalInbound);
+        console.log('● method-2 (raw 순회)     :', v2, totalInbound === v2 ? '✓ 일치' : '⚠ 불일치');
+        console.log('● 블로그 utm_term 개수    :', Object.keys(utmAttr).length);
+        console.log('● 인입 utm_term 종류      :', matched.length + unmatched.length);
         console.log('매칭 TOP 10  :', matched.slice(0,10));
         console.log('미매칭 TOP 10:', unmatched.slice(0,10));
         const perPost = [];

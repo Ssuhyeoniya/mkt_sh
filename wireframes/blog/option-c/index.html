@@ -1320,9 +1320,20 @@
       //   두 값이 같으면 매핑 정확. 다르면 버그.
       try {
         let ibV2 = 0;
+        let minD = '9999-99-99', maxD = '';
+        let outOfRange = 0;
+        const ds = APPLIED_DATE_START || '';
+        const de = APPLIED_DATE_END   || '';
         for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
           const r = INBOUND_BY_DATE_ROWS[i];
-          if (!r || !r.utm_term) continue;
+          if (!r) continue;
+          const d = String(r.date || '').slice(0,10);
+          if (d){
+            if (d < minD) minD = d;
+            if (d > maxD) maxD = d;
+            if ((ds && d < ds) || (de && d > de)) outOfRange++;
+          }
+          if (!r.utm_term) continue;
           const u = String(r.utm_term).trim();
           if (u && utmAttr[u]) ibV2++;
         }
@@ -1336,15 +1347,21 @@
         const sumUnmatched = unmatched.reduce((s,e)=>s+e[1],0);
         console.groupCollapsed(
           '[blog] 인바운드 KPI 진단 — ' +
-          '기간 인입 총 ' + INBOUND_BY_DATE_ROWS.length + '건 · ' +
+          '조회 기간 [' + (ds||'∞') + ' ~ ' + (de||'∞') + '] · ' +
+          'API 반환 ' + INBOUND_BY_DATE_ROWS.length + '건 (날짜 범위 ' + minD + ' ~ ' + maxD + ') · ' +
           '블로그 매칭 ' + sumMatched + '건 (KPI) · ' +
           '미매칭 ' + sumUnmatched + '건' +
-          (ib === ibV2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치')
+          (ib === ibV2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치') +
+          (outOfRange ? ' · ⚠ 기간 밖 ' + outOfRange + '건!' : '')
         );
-        console.log('method-1 (dict lookup) :', ib);
-        console.log('method-2 (raw 순회)    :', ibV2, ib === ibV2 ? '✓ 일치' : '⚠ 불일치');
-        console.log('블로그 게시글 utm_term 개수 :', Object.keys(utmAttr).length);
-        console.log('인바운드 utm_term 종류      :', matched.length + unmatched.length);
+        console.log('● 적용된 기간             :', ds || '(없음)', '~', de || '(없음)');
+        console.log('● API 반환 raw 이벤트 수  :', INBOUND_BY_DATE_ROWS.length);
+        console.log('● raw 날짜 최소~최대      :', minD, '~', maxD,
+                    outOfRange ? ('— ⚠ 기간 밖 ' + outOfRange + '건 (GAS 필터 무시?)') : '— ✓ 모두 기간 내');
+        console.log('● method-1 (dict 합산)    :', ib);
+        console.log('● method-2 (raw 순회)     :', ibV2, ib === ibV2 ? '✓ 일치' : '⚠ 불일치');
+        console.log('● 블로그 utm_term 개수    :', Object.keys(utmAttr).length);
+        console.log('● 인입 utm_term 종류      :', matched.length + unmatched.length);
         console.log('매칭 TOP 10  :', matched.slice(0,10));
         console.log('미매칭 TOP 10:', unmatched.slice(0,10));
         // 매칭된 블로그 게시글별 인바운드 (TOP 5 와 동일 산식)
