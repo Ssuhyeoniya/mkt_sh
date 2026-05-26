@@ -24,7 +24,7 @@
     return `<span class="tag-mini tag-none">${esc(s)}</span>`;
   }
 
-  const W_KEY = 'ibob_col_widths_v1';
+  const W_KEY = 'ibob_col_widths_v2';
   function loadWidths(){ try { return JSON.parse(localStorage.getItem(W_KEY)||'{}'); } catch(_){ return {}; } }
   function saveWidths(){
     const obj = {};

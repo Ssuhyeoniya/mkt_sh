@@ -176,7 +176,7 @@
       </div>
       <div class="cell">
         <div class="title">서비스별 인입 건수 · 비중</div>
-        <div class="sub">서비스 인입 구분 기준</div>
+        <div class="sub">서비스명 기준</div>
         <div class="flex items-center gap-4 mt-3 flex-wrap" id="donut-service"></div>
       </div>
       <div class="cell">
@@ -191,7 +191,7 @@
       </div>
     </section>
 
-    <!-- Filter — 서비스 / UTM / 검색 + 조회 -->
+    <!-- Filter — 서비스(서비스명) / 인지채널 / 검색 + 조회 -->
     <div class="filter-block">
       <div class="row">
         <span class="ms-tag">서비스</span>
@@ -204,13 +204,13 @@
         </div>
       </div>
       <div class="row">
-        <span class="ms-tag utm">UTM</span>
-        <div class="ms-dropdown" id="ms-utm">
+        <span class="ms-tag utm">인지채널</span>
+        <div class="ms-dropdown" id="ms-aware">
           <button class="ms-trigger" type="button">
-            <span class="ms-text">UTM 전체</span>
+            <span class="ms-text">인지채널 전체</span>
             <span class="ms-caret">▾</span>
           </button>
-          <div class="ms-panel" id="ms-utm-panel"></div>
+          <div class="ms-panel" id="ms-aware-panel"></div>
         </div>
       </div>
       <div class="row">
@@ -274,10 +274,10 @@
   const PAGE_SIZE = 10;
   let PAGE = 1;
   // PENDING: 입력 중인 필터값 (조회 버튼 누르기 전)
-  let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'' };
+  let PENDING = { services:[], aware:[], searchField:'고객사명', searchQuery:'' };
   // STATE: 실제 적용 중인 필터값 + 즉시 반영되는 기간/단위/비교
   let STATE = {
-    services:[], utm:[], searchField:'고객사명', searchQuery:'',
+    services:[], aware:[], searchField:'고객사명', searchQuery:'',
     dateStart:'', dateEnd:'', activeRange:'',
     unit:'week', cmp:''   // cmp: '' | 'mom' | 'yoy'
   };
@@ -321,21 +321,16 @@
     $('range-info').textContent = (!STATE.dateStart && !STATE.dateEnd) ? '전체 기간' : `${STATE.dateStart||'...'} ~ ${STATE.dateEnd||'...'}`;
   }
 
-  /* ── 필터 (서비스 + UTM + 필드검색 + 기간) ── */
-  function parseUtmSource(s){
-    if (!s) return '';
-    const m = String(s).match(/utm_source=([^&\s]+)/i);
-    return m ? decodeURIComponent(m[1]) : '';
-  }
+  /* ── 필터 (서비스명 + 인지채널 + 필드검색 + 기간) ── */
   function applyAll(rows){
     let out = rows.slice();
     if (STATE.services.length){
       const set = new Set(STATE.services);
-      out = out.filter(r => set.has(String(r['서비스 인입 구분']||'')));
+      out = out.filter(r => set.has(String(r['서비스명']||'')));
     }
-    if (STATE.utm.length){
-      const set = new Set(STATE.utm);
-      out = out.filter(r => set.has(parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'));
+    if (STATE.aware.length){
+      const set = new Set(STATE.aware);
+      out = out.filter(r => set.has(String(r['인지채널']||'') || '(없음)'));
     }
     if (STATE.searchQuery){
       const q = STATE.searchQuery.toLowerCase();
@@ -509,7 +504,7 @@
     renderFunnel(filtered);
     renderBarChart(filtered);
     renderDonut('donut-aware',   filtered, '인지채널');
-    renderDonut('donut-service', filtered, '서비스 인입 구분');
+    renderDonut('donut-service', filtered, '서비스명');
     renderRank('rank-region',    filtered, '시도', 5);
     renderRank('rank-firm',      filtered, '기업구분', 5);
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -558,16 +553,16 @@
     });
   }
   function fillFilterPanels(rows){
-    const svcs = Array.from(new Set(rows.map(r => String(r['서비스 인입 구분']||'')).filter(Boolean))).sort();
-    const utms = Array.from(new Set(rows.map(r => parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'))).sort();
-    buildMSPanel('ms-svc-panel', '서비스 전체', svcs);
-    buildMSPanel('ms-utm-panel', 'UTM 전체',     utms);
+    const svcs = Array.from(new Set(rows.map(r => String(r['서비스명']||'')).filter(Boolean))).sort();
+    const awares = Array.from(new Set(rows.map(r => String(r['인지채널']||'') || '(없음)'))).sort();
+    buildMSPanel('ms-svc-panel',   '서비스 전체',  svcs);
+    buildMSPanel('ms-aware-panel', '인지채널 전체', awares);
   }
 
   IBOB.buildHeader();
   TableGrid.attach(document.getElementById('tbl'));  // 셀 클릭/Ctrl+C·V/Ctrl·Shift+Space (세일즈맵과 동일)
-  bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', 'services');
-  bindMS('ms-utm', 'ms-utm-panel', 'UTM 전체',     'utm');
+  bindMS('ms-svc',   'ms-svc-panel',   '서비스 전체',   'services');
+  bindMS('ms-aware', 'ms-aware-panel', '인지채널 전체', 'aware');
   document.addEventListener('click', () => {
     document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
   });
@@ -638,7 +633,7 @@
 
   function applySearch(){
     STATE.services    = PENDING.services.slice();
-    STATE.utm         = PENDING.utm.slice();
+    STATE.aware       = PENDING.aware.slice();
     STATE.searchField = PENDING.searchField;
     STATE.searchQuery = PENDING.searchQuery;
     PAGE = 1; rerender();

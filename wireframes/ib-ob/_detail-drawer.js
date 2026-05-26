@@ -123,7 +123,8 @@
 
     <div class="ibdrw-section">
       <div class="section-h">유입 트래킹</div>
-      <div class="ibdrw-row"><span class="k">서비스 인입</span><span class="v" id="ibdrw-svc-row">-</span></div>
+      <div class="ibdrw-row"><span class="k">서비스명</span><span class="v" id="ibdrw-svcname-row">-</span></div>
+      <div class="ibdrw-row"><span class="k">유입구분</span><span class="v" id="ibdrw-svc-row">-</span></div>
       <div class="ibdrw-row"><span class="k">상세 경로</span><span class="v" id="ibdrw-path">-</span></div>
       <div class="ibdrw-row"><span class="k">UTM</span><span class="v mono" id="ibdrw-utm">-</span></div>
     </div>
@@ -206,7 +207,7 @@
     showTag('ibdrw-firm',   row['기업구분'] || null, '');
     showTag('ibdrw-grade',  row['고객사 분류'] ? '등급 ' + row['고객사 분류'] : null, '');
     showTag('ibdrw-listed', row['상장 여부'] || null, '');
-    showTag('ibdrw-svc',    row['서비스 인입 구분'] || null, 't-svc');
+    showTag('ibdrw-svc',    row['서비스명'] || null, 't-svc');
 
     setText('ibdrw-emp', fmt(row['임직원 수']) + (row['임직원 수'] ? ' 명' : ''));
     setText('ibdrw-ibdate',   fmtDate(row['IB 인입 일자']));
@@ -221,7 +222,8 @@
     setText('ibdrw-aware',    row['인지채널']);
     setText('ibdrw-keyword',  row['검색 키워드']);
     setText('ibdrw-interview',row['인터뷰 기반']);
-    setText('ibdrw-svc-row',  row['서비스 인입 구분']);
+    setText('ibdrw-svcname-row', row['서비스명']);
+    setText('ibdrw-svc-row',  row['유입구분']);
     setText('ibdrw-path',     row['상세 경로']);
     setText('ibdrw-utm',      row['트래킹 경로(UTM)']);
     setText('ibdrw-week2',    row['주차']);
