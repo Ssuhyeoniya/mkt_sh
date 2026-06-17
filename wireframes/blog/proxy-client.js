@@ -14,10 +14,13 @@
   // 새로고침 버튼(MktProxy.invalidateAll) 으로만 명시 무효화.
   // TTL 은 안전망 차원에서 7일.
   const CACHE_TTL    = 7 * 24 * 60 * 60 * 1000;
+  // 캐시 버전 — 산식/필터 정의가 바뀌면 bump 해서 stale 엔트리 자동 무효화.
+  // v2: 인바운드 attribution 산식 변경 (utm_term 매칭 게시글에 한정) + 기간 필터 정정.
+  const CACHE_VERSION = 'v2';
 
   function _ssGet(key){
     try {
-      const raw = localStorage.getItem(CACHE_PREFIX + key);
+      const raw = localStorage.getItem(CACHE_PREFIX + CACHE_VERSION + ':' + key);
       if (!raw) return null;
       const obj = JSON.parse(raw);
       if (!obj || typeof obj.t !== 'number') return null;
@@ -26,7 +29,7 @@
     } catch (_) { return null; }
   }
   function _ssSet(key, data){
-    try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ t: Date.now(), d: data })); }
+    try { localStorage.setItem(CACHE_PREFIX + CACHE_VERSION + ':' + key, JSON.stringify({ t: Date.now(), d: data })); }
     catch (_) {}
   }
   function _ssClear(){
@@ -39,6 +42,20 @@
       keys.forEach(function(k){ localStorage.removeItem(k); });
     } catch (_) {}
   }
+  // 페이지 로드 시 1회: 이전 버전(v2 prefix 없는 키) stale 엔트리 자동 정리.
+  // 새 데이터는 v2 prefix 로 저장되므로 이전 버전 키는 영영 안 읽힘 → 영구 stale.
+  (function _purgeLegacy(){
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && k.indexOf(CACHE_PREFIX) === 0 && k.indexOf(CACHE_PREFIX + CACHE_VERSION + ':') !== 0){
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach(function(k){ localStorage.removeItem(k); });
+    } catch (_) {}
+  })();
 
   const Proxy = {
     STORAGE_KEY: STORAGE_KEY,
@@ -169,12 +186,64 @@
       _ssSet('inbound_counts:' + key, r.data);
       return r.data;
     },
+    _statsDailyCacheMap: null,
+    blogStatsDailyCached: function (params) {
+      params = params || {};
+      const key = (params.from || '') + '|' + (params.to || '') + '|' + (params.postid || '');
+      if (!this._statsDailyCacheMap) this._statsDailyCacheMap = new Map();
+      const mem = this._statsDailyCacheMap.get(key);
+      if (mem && (Date.now() - mem.t) < this._inboundCacheTtl) return mem.d;
+      const disk = _ssGet('stats_daily:' + key);
+      if (disk) {
+        this._statsDailyCacheMap.set(key, { d: disk, t: Date.now() });
+        return disk;
+      }
+      return null;
+    },
+    blogStatsDaily: async function (params) {
+      params = params || {};
+      const cached = this.blogStatsDailyCached(params);
+      if (cached) return cached;
+      const key = (params.from || '') + '|' + (params.to || '') + '|' + (params.postid || '');
+      const r = await this.call('blog.statsDaily', params);
+      if (!this._statsDailyCacheMap) this._statsDailyCacheMap = new Map();
+      this._statsDailyCacheMap.set(key, { d: r.data, t: Date.now() });
+      _ssSet('stats_daily:' + key, r.data);
+      return r.data;
+    },
+    _inboundByDateCacheMap: null,
+    blogInboundByDateCached: function (params) {
+      params = params || {};
+      const key = (params.from || '') + '|' + (params.to || '');
+      if (!this._inboundByDateCacheMap) this._inboundByDateCacheMap = new Map();
+      const mem = this._inboundByDateCacheMap.get(key);
+      if (mem && (Date.now() - mem.t) < this._inboundCacheTtl) return mem.d;
+      const disk = _ssGet('inbound_by_date:' + key);
+      if (disk) {
+        this._inboundByDateCacheMap.set(key, { d: disk, t: Date.now() });
+        return disk;
+      }
+      return null;
+    },
+    blogInboundByDate: async function (params) {
+      params = params || {};
+      const cached = this.blogInboundByDateCached(params);
+      if (cached) return cached;
+      const key = (params.from || '') + '|' + (params.to || '');
+      const r = await this.call('blog.inboundByDate', params);
+      if (!this._inboundByDateCacheMap) this._inboundByDateCacheMap = new Map();
+      this._inboundByDateCacheMap.set(key, { d: r.data, t: Date.now() });
+      _ssSet('inbound_by_date:' + key, r.data);
+      return r.data;
+    },
     /**
      * 모든 캐시(메모리 + localStorage) 무효화 — 새로고침 버튼 핸들러에서 호출
      */
     invalidateAll: function () {
       if (this._inboundCache && this._inboundCache.clear) this._inboundCache.clear();
       if (this._countsCacheMap && this._countsCacheMap.clear) this._countsCacheMap.clear();
+      if (this._statsDailyCacheMap && this._statsDailyCacheMap.clear) this._statsDailyCacheMap.clear();
+      if (this._inboundByDateCacheMap && this._inboundByDateCacheMap.clear) this._inboundByDateCacheMap.clear();
       _ssClear();
     },
     health: async function () {
@@ -251,7 +320,50 @@ window.SAMPLE_BLOG = (function(){
       weeklyVisitor: wk,
       monthlyVisitor: mo,
       inbound: ib,
-      postid: 'p' + String(i+1).padStart(3,'0')
+      postid: 'p' + String(i+1).padStart(3,'0'),
+      utm_term: 'p' + String(i+1).padStart(3,'0')
     };
   });
+})();
+
+/**
+ * 데모용 STATS_DAILY — 프록시 미연결 시 시간 추이 차트가 동작하도록
+ * 각 포스트별로 최근 90일 일자별 방문수를 생성
+ */
+window.SAMPLE_STATS_DAILY = (function(){
+  const out = [];
+  const today = new Date(2026, 4, 9); // 데모 기준일
+  (window.SAMPLE_BLOG || []).forEach(function(p){
+    const pub = new Date(p['날짜']);
+    const daily = Math.max(2, Math.floor(p.totalVisit / 120));
+    for (let d = 0; d < 90; d++){
+      const date = new Date(today);
+      date.setDate(date.getDate() - d);
+      if (date < pub) continue;
+      const ymd = date.toISOString().slice(0,10);
+      out.push({
+        date: ymd,
+        postid: p.postid,
+        visitors: Math.max(0, Math.floor(daily * (0.4 + Math.random()*1.2))),
+        impressions: Math.floor(daily * (2 + Math.random()*3)),
+        search_in: Math.floor(daily * (0.3 + Math.random()*0.4)),
+        etc: 0
+      });
+    }
+  });
+  return out;
+})();
+
+window.SAMPLE_INBOUND_BY_DATE = (function(){
+  const out = [];
+  const today = new Date(2026, 4, 9);
+  (window.SAMPLE_BLOG || []).forEach(function(p){
+    const ib = Number(p.inbound) || 0;
+    for (let i = 0; i < ib; i++){
+      const date = new Date(today);
+      date.setDate(date.getDate() - Math.floor(Math.random()*60));
+      out.push({ date: date.toISOString().slice(0,10), utm_term: p.utm_term || p.postid });
+    }
+  });
+  return out;
 })();

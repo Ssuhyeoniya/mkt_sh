@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../shared.css?v=20260512-3">
+<link rel="stylesheet" href="../shared.css?v=20260523-1">
 <style>
   /* ── 기간 조회 바 ───────────────────────────────── */
   .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
@@ -27,6 +27,16 @@
   }
   .date-filter .qbtn:hover{ border-color:var(--accent-2); color:var(--accent); }
   .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-filter .qbtn.pending{ border-style:dashed; border-color:var(--accent-2); color:var(--accent); }
+  .date-filter .apply{
+    background:var(--accent); border:1px solid var(--accent); border-radius:8px;
+    padding:6px 14px; color:#fff; font-size:12.5px; font-weight:600; cursor:pointer;
+    margin-left:4px;
+  }
+  .date-filter .apply:hover{ background:#6a4ce6; border-color:#6a4ce6; }
+  .date-filter .apply:disabled{ opacity:.55; cursor:default; }
+  .date-filter .apply.pending{ box-shadow:0 0 0 2px rgba(124,92,255,.25); }
+  .date-filter input[type="date"].pending{ border-color:var(--accent); }
   .date-filter .clear{
     background:transparent; border:1px solid var(--line); border-radius:8px;
     padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
@@ -221,6 +231,9 @@
   }
   .table-scroll::-webkit-scrollbar{ width:8px; height:8px; }
   .table-scroll::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
+  /* 실제 <table> 위에 grid 레이아웃을 얹기 위해 block 표시로 전환 */
+  .bopt-table{ display:block; width:100%; border-collapse:separate; border-spacing:0; }
+  .bopt-table thead, .bopt-table tbody{ display:block; }
   .table-head, .post-row{
     display:grid;
     grid-template-columns:
@@ -390,12 +403,31 @@
   .meta-item .k{ color:var(--muted); }
   .meta-item .v{ color:var(--text); font-family:'JetBrains Mono', monospace; }
   .table-head{
-    padding:10px 14px; background:var(--panel-2); color:var(--muted);
+    padding:0 14px; min-height:38px; background:var(--panel-2); color:var(--muted);
     font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
     border-bottom:1px solid var(--line);
     position:sticky; top:0; z-index:2;   /* 세로 스크롤 시 헤더 고정 */
   }
   .table-head .num-cell{ text-align:right; }
+  /* <td>/<th> 기본 스타일 리셋 — div 와 동일하게 보이게.
+   * display:flex 로 그리드 아이템을 셀 영역에 꽉 채우고(align-self:stretch),
+   * 안의 콘텐츠는 세로 중앙 정렬. 기본 display:table-cell 이면 내용 크기로만
+   * 잡혀 셀 선택 하이라이트가 텍스트에만 걸리는 문제를 해결한다. */
+  .bopt-table th, .bopt-table td{
+    display:flex !important; align-items:center;
+    min-width:0; padding:0; border:0;
+    text-align:left; font-weight:inherit;
+    align-self:stretch; justify-self:stretch;
+    width:100%; height:100%;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+  /* num-cell 은 우측 정렬 */
+  .bopt-table .num-cell{ justify-content:flex-end; }
+  /* 셀 선택 하이라이트가 셀 영역 전체를 덮도록 (outline 보다 background 가 보이게) */
+  .bopt-table td.gx-sel-cell, .bopt-table th.gx-sel-cell,
+  .bopt-table td.gx-sel-row,  .bopt-table td.gx-sel-col,
+  .bopt-table th.gx-sel-head{ width:100%; height:100%; }
 
   /* 행 높이 40px × 10행 = 400px = 한번에 보이는 영역 */
   .post-row{ height:40px; padding:0 14px; border-bottom:1px solid var(--line); font-size:12.5px; }
@@ -467,7 +499,6 @@
           <div class="page-eyebrow">SNS · 블로그</div>
           <h1>블로그 성과 분석</h1>
         </div>
-        <button class="opt-btn" id="btn-refresh" title="데이터 새로고침 (캐시 무효화 후 GAS 재요청)">↻ 새로고침</button>
         <button class="opt-btn" id="btn-options" title="서비스/카테고리 드롭다운 옵션 설정">⚙ 옵션</button>
       </div>
       <div class="conn">
@@ -495,6 +526,7 @@
       <button class="qbtn" data-range="30">30일</button>
       <button class="qbtn" data-range="90">90일</button>
       <button class="qbtn" data-range="365">1년</button>
+      <button class="apply" id="btn-apply-date">조회</button>
       <button class="clear" id="btn-clear-date">초기화</button>
       <span class="range-info" id="range-info"></span>
     </div>
@@ -502,9 +534,9 @@
     <!-- KPI -->
     <section class="kpi-grid">
       <div class="kpi"><div class="kpi-label">총 게시물</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat">카테고리 0개</div></div>
-      <div class="kpi"><div class="kpi-label">누적 방문</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">평균 <span id="kpi-avg">0</span>/글</div></div>
-      <div class="kpi"><div class="kpi-label">주간 방문</div><div class="kpi-value" id="kpi-weekly">0</div><div class="kpi-sub">최근 7일 합계</div></div>
-      <div class="kpi"><div class="kpi-label">유입 전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">유입 / 누적 방문</div></div>
+      <div class="kpi"><div class="kpi-label">조회수</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">기간 평균 <span id="kpi-avg">0</span>/글</div></div>
+      <div class="kpi"><div class="kpi-label">인바운드</div><div class="kpi-value" id="kpi-inbound">0</div><div class="kpi-sub">조회 기간 인입 합계</div></div>
+      <div class="kpi"><div class="kpi-label">유입 전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">인바운드 / 조회수</div></div>
     </section>
 
     <!-- Analytics row: TOP 10 + 카테고리 + 추이 (3개 패널 동일 높이) -->
@@ -512,8 +544,8 @@
       <div class="a-panel">
         <div class="ph">
           <div class="ph-text">
-            <div class="eyebrow">상위 5개</div>
-            <h2>발행글 TOP 5 (누적 방문)</h2>
+            <div class="eyebrow" id="top-total">총 0 회</div>
+            <h2>조회수 TOP 5</h2>
           </div>
           <button class="more-btn" data-more="visit">더보기 →</button>
         </div>
@@ -524,7 +556,7 @@
       <div class="a-panel">
         <div class="ph">
           <div class="ph-text">
-            <div class="eyebrow">상위 5개</div>
+            <div class="eyebrow" id="inbound-total">총 0 건</div>
             <h2>인바운드 TOP 5</h2>
           </div>
           <button class="more-btn" data-more="inbound">더보기 →</button>
@@ -536,8 +568,8 @@
       <div class="a-panel">
         <div class="ph">
           <div class="ph-text">
-            <div class="eyebrow">카테고리별</div>
-            <h2>발행 분포</h2>
+            <div class="eyebrow" id="cat-total">총 0 건</div>
+            <h2>카테고리별 발행 분포</h2>
           </div>
         </div>
         <div class="pb">
@@ -583,7 +615,6 @@
         <option value="weekly_desc">주간 방문 많은 순</option>
         <option value="inbound_desc">유입 많은 순</option>
       </select>
-      <button id="btn-refresh">↻ 새로고침</button>
       <span style="flex:1"></span>
       <span class="chip" id="result-count">0건</span>
       <span class="pager-info" id="pager-info" style="font-size:11.5px;color:var(--muted);"></span>
@@ -592,22 +623,29 @@
 
     <!-- Compact post list -->
     <div class="panel" style="overflow:hidden">
+     <div class="toolbar" style="padding:10px 14px; display:flex; gap:8px; align-items:center; justify-content:flex-end; border-bottom:1px solid var(--line);">
+       <button class="opt-btn" id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀</button>
+     </div>
      <div class="table-scroll">
-      <div class="table-head">
-        <div>NO</div>
-        <div>발행일</div>
-        <div>제목</div>
-        <div>썸네일</div>
-        <div>서비스</div>
-        <div>카테고리</div>
-        <div class="num-cell">총방문</div>
-        <div class="num-cell">주간</div>
-        <div class="num-cell">월간</div>
-        <div class="num-cell">유입</div>
-        <div></div>
-        <div>상세</div>
-      </div>
-      <div class="table-body" id="rows"></div>
+      <table class="bopt-table" id="tbl">
+        <thead>
+          <tr class="table-head">
+            <th>NO</th>
+            <th>발행일</th>
+            <th>제목</th>
+            <th>썸네일</th>
+            <th>서비스</th>
+            <th>카테고리</th>
+            <th class="num-cell">총방문</th>
+            <th class="num-cell">주간</th>
+            <th class="num-cell">월간</th>
+            <th class="num-cell">유입</th>
+            <th></th>
+            <th>상세</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
      </div>
     </div>
 
@@ -754,13 +792,27 @@
   </div>
 </div>
 
-<script src="../proxy-client.js?v=20260512-3"></script>
+<script src="../proxy-client.js?v=20260523-1"></script>
+<script src="../../table-grid.js"></script>
 <script>
   const PAGE_SIZE = 30;
   let CURRENT_ROWS = [];   // 전체
   let SCOPED_ROWS = [];    // 기간 필터 적용 후
   let CURRENT_PAGE = 1;
-  let ACTIVE_RANGE = '';   // '7' | '30' | '90' | '365' | ''(상세)
+  let ACTIVE_RANGE = '';        // 적용된 빠른선택 ('7'|'30'|'90'|'365'|'')
+  let PENDING_RANGE = '';       // 입력만 되고 아직 조회 안 한 빠른선택
+  // STATS_DAILY 시트 데이터 (현재 적용된 기간) — 시간 추이 및 기간 필터의 기준
+  let STATS_DAILY_ROWS = [];
+  // STATS_DAILY 가 성공적으로 로딩됐는지 — 빈 배열이어도 true (= '기간 내 0건' 도 정상).
+  // length > 0 으로만 판단하면 0건 정상응답이 '미로딩' 으로 잘못 분류되어 lifetime
+  // 폴백이 작동, KPI 가 누적값으로 부풀려지는 버그 발생.
+  let STATS_DAILY_LOADED = false;
+  // 인바운드 일자별 raw (현재 적용된 기간) — 시간 추이 인바운드 라인 기준
+  let INBOUND_BY_DATE_ROWS = [];
+  let INBOUND_BY_DATE_LOADED = false;
+  // 현재 적용된 기간 (조회 시점 스냅샷) — 입력값과 분리
+  let APPLIED_DATE_START = '';
+  let APPLIED_DATE_END   = '';
 
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : (n||'-'); }
   function fmtDate(d){ if (!d) return '-'; return String(d).slice(0,10); }
@@ -787,50 +839,117 @@
     d.setHours(0,0,0,0);
     return d;
   }
-  function applyDateFilter(rows){
-    const ds = $('date-start').value;
-    const de = $('date-end').value;
+  // 기간 필터: STATS_DAILY 시트의 일자별 방문 기록을 기준으로
+  // 선택 기간에 방문 데이터가 있는 postid 만 통과.
+  // statsPidSet 을 외부에서 받으면 STATS_DAILY 재순회를 생략한다 (refreshAll 에서 ctx 공유).
+  function applyDateFilter(rows, statsPidSet){
+    const ds = APPLIED_DATE_START;
+    const de = APPLIED_DATE_END;
     if (!ds && !de) return rows.slice();
+    if (!STATS_DAILY_ROWS.length){
+      return rows.filter(function(r){
+        const d = String(r['날짜']||'').slice(0,10);
+        return d && (!ds || d >= ds) && (!de || d <= de);
+      });
+    }
+    if (!statsPidSet){
+      statsPidSet = Object.create(null);
+      for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+        const r = STATS_DAILY_ROWS[i];
+        if (!r || !r.postid) continue;
+        statsPidSet[String(r.postid)] = true;
+      }
+    }
     return rows.filter(function(r){
-      // ① 발행일 기준 매칭
-      const d = String(r['날짜']||'').slice(0,10);
-      const publishedInPeriod = d && (!ds || d >= ds) && (!de || d <= de);
-      if (publishedInPeriod) return true;
-      // ② 인바운드 인입일자 기준 매칭 — INBOUND_COUNTS 가 서버에서 from/to 필터된 결과이므로
-      //    utm_term 이 INBOUND_COUNTS 에 있고 카운트가 0보다 크면 해당 기간에 인입된 글
-      const u = String(r.utm_term || '').trim();
-      if (u && Object.prototype.hasOwnProperty.call(INBOUND_COUNTS, u) && (Number(INBOUND_COUNTS[u]) || 0) > 0) return true;
-      return false;
+      const pid = String(r.postid || '').trim();
+      return !!(pid && statsPidSet[pid]);
     });
   }
-  function setQuickRange(days){
+  // 입력만 세팅 (조회 버튼 클릭 전까지 반영 안 함).
+  // 빠른선택 버튼/수동 입력 모두 PENDING 상태로만 표시되고, 실제 적용은 조회 버튼이 한다.
+  function setQuickRangeInput(days){
     const end = yesterday();
     const start = new Date(end);
     start.setDate(start.getDate() - (days - 1));
     $('date-start').value = ymd(start);
     $('date-end').value   = ymd(end);
-    ACTIVE_RANGE = String(days);
-    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
-    refreshAll();
-    loadInboundCountsForCurrent().then(refreshAll);
+    PENDING_RANGE = String(days);
+    updatePendingState();
   }
   function clearDateRange(){
     $('date-start').value = '';
     $('date-end').value = '';
     ACTIVE_RANGE = '';
-    if (loadInboundCountsForCurrent_sync()){ refreshAll(); return; }
-    refreshAll();
-    loadInboundCountsForCurrent().then(refreshAll);
+    PENDING_RANGE = '';
+    APPLIED_DATE_START = '';
+    APPLIED_DATE_END   = '';
+    updatePendingState();
+    loadStatsAndInboundForCurrent().then(refreshAll);
+  }
+  // 조회 버튼 클릭 시 호출 — 입력값을 실제 적용 상태로 반영하고 데이터 재조회.
+  // 입력값이 적용값과 동일하면 no-op (중복 API/렌더 방지). 비동기 로드 중에는
+  // 버튼을 disabled + '조회 중…' 라벨로 잠가 중복 클릭을 막는다.
+  let _applyInflight = false;
+  function applyPeriodQuery(){
+    const _t0 = performance.now();
+    console.log('[blog] ▶ applyPeriodQuery 진입 — inputs:',
+                $('date-start').value, '~', $('date-end').value,
+                '· pending:', PENDING_RANGE,
+                '· inflight:', _applyInflight);
+    if (_applyInflight){ console.log('[blog] ⛔ inflight 가드로 스킵'); return; }
+    // 조회 버튼 클릭은 사용자의 명시적 refresh 요청 → 무조건 fresh fetch.
+    APPLIED_DATE_START = $('date-start').value || '';
+    APPLIED_DATE_END   = $('date-end').value   || '';
+    ACTIVE_RANGE = PENDING_RANGE || ACTIVE_RANGE;
+    PENDING_RANGE = '';
+    updatePendingState();
+
+    _applyInflight = true;
+    const btn = $('btn-apply-date');
+    const prevLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '조회 중…';
+    loadStatsAndInboundForCurrent()
+      .then(function(){
+        const tApi = (performance.now() - _t0).toFixed(0);
+        console.log('[blog] ✓ API 로드 완료 — ' + tApi + 'ms');
+        const _t1 = performance.now();
+        refreshAll();
+        const tRender = (performance.now() - _t1).toFixed(0);
+        console.log('[blog] ✓ 렌더 완료 — ' + tRender + 'ms (합계: ' +
+                    (performance.now() - _t0).toFixed(0) + 'ms)');
+      })
+      .catch(function(err){ console.error('[blog] applyPeriodQuery:', err); })
+      .then(function(){
+        _applyInflight = false;
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      });
+  }
+  // 입력값이 적용값과 다르면 "대기 중" 표시
+  function isDirty(){
+    return ($('date-start').value || '') !== APPLIED_DATE_START
+        || ($('date-end').value   || '') !== APPLIED_DATE_END;
+  }
+  function updatePendingState(){
+    const dirty = isDirty();
+    $('date-start').classList.toggle('pending', dirty);
+    $('date-end').classList.toggle('pending', dirty);
+    $('btn-apply-date').classList.toggle('pending', dirty);
+    document.querySelectorAll('.qbtn').forEach(function(b){
+      const isActive  = !dirty && b.dataset.range === ACTIVE_RANGE && !!ACTIVE_RANGE;
+      const isPending = dirty && b.dataset.range === PENDING_RANGE && !!PENDING_RANGE;
+      b.classList.toggle('active', isActive);
+      b.classList.toggle('pending', isPending);
+    });
   }
   function updateRangeInfo(){
-    const ds = $('date-start').value;
-    const de = $('date-end').value;
-    document.querySelectorAll('.qbtn').forEach(function(b){
-      b.classList.toggle('active', b.dataset.range === ACTIVE_RANGE);
-    });
+    const ds = APPLIED_DATE_START;
+    const de = APPLIED_DATE_END;
     const info = $('range-info');
     if (!ds && !de) info.textContent = '전체 기간';
     else info.textContent = `${ds || '...'} ~ ${de || '...'}`;
+    updatePendingState();
   }
 
   function applyFilter(rows){
@@ -873,25 +992,35 @@
       + '</div>';
     }).join('');
   }
-  function renderTop(rows){        renderTopList(rows, 'totalVisit',  $('top-list')); }
-  function renderInboundTop(rows){ renderTopList(rows, actualInbound, $('inbound-list')); }
+  // 조회수 TOP 5 — STATS_DAILY (조회 기간 내 visitors) 를 postid 별 합산 (idx 재사용).
+  function renderTop(rows, idx){
+    idx = idx || buildPeriodIndex();
+    renderTopList(rows, function(r){ return rowVisits(r, idx); }, $('top-list'));
+  }
+  // 인바운드 TOP 5 — INBOUND_BY_DATE (인입 일자 + utm_term) 의 utm_term 별 카운트 (idx 재사용).
+  function renderInboundTop(rows, idx){
+    idx = idx || buildPeriodIndex();
+    renderTopList(rows, function(r){ return rowInbound(r, idx); }, $('inbound-list'));
+  }
 
-  function renderCatBars(rows){
+  // 카테고리별 발행 분포 — 게시물 수 + 기간 조회수 합계 (idx 재사용).
+  function renderCatBars(rows, idx){
+    idx = idx || buildPeriodIndex();
     const map = {};
-    rows.forEach(function(r){
-      const c = r.category||'미분류';
-      if (!map[c]) map[c] = { count:0, totalVisit:0 };
+    for (let i = 0; i < rows.length; i++){
+      const r = rows[i];
+      const c = r.category || '미분류';
+      if (!map[c]) map[c] = { count:0, visits:0 };
       map[c].count++;
-      map[c].totalVisit += Number(r.totalVisit||0);
-    });
-    // 최대 5개까지만 표시 (건수 많은 순)
+      map[c].visits += rowVisits(r, idx);
+    }
     const arr = Object.entries(map).sort((a,b)=>b[1].count-a[1].count).slice(0, 5);
     const max = Math.max.apply(null, arr.map(([,v])=>v.count).concat([1]));
     if (!arr.length){ $('cat-bars').innerHTML = '<div class="empty" style="margin:auto">데이터 없음</div>'; return; }
     $('cat-bars').innerHTML = arr.map(function(e){
       const pct = (e[1].count/max*100).toFixed(0);
       return '<div class="cat-bar">'
-        + '<div class="label"><span class="name">'+escHtml(e[0])+'</span><span class="v">'+e[1].count+'건 · '+fmt(e[1].totalVisit)+' 방문</span></div>'
+        + '<div class="label"><span class="name">'+escHtml(e[0])+'</span><span class="v">'+e[1].count+'건 · '+fmt(e[1].visits)+' 조회</span></div>'
         + '<div class="track"><div class="fill" style="width:'+pct+'%"></div></div>'
       + '</div>';
     }).join('');
@@ -905,18 +1034,19 @@
     return String(Math.round(n));
   }
 
-  function renderTrend(rows){
-    // 일/월별 집계 — 합산: 총방문(totalVisit), 인바운드(inbound)
-    const map = {};
-    const sliceLen = (TREND_MODE === 'monthly') ? 7 : 10;
-    rows.forEach(function(r){
-      const k = String(r['날짜']||'').slice(0, sliceLen);
-      if (!k) return;
-      if (!map[k]) map[k] = { totalVisit:0, inbound:0 };
-      map[k].totalVisit += Number(r.totalVisit||0);
-      map[k].inbound    += actualInbound(r);
-    });
-    const keys   = Object.keys(map).sort();
+  function renderTrend(rows, idx){
+    // 일별/월별 키별 합산 — STATS_DAILY/INBOUND_BY_DATE 는 이미 idx 에서 일자별 합산 완료.
+    // 여기서는 visByDate/ibByDate (또는 visByMonth/ibByMonth) 키만 머지하면 된다.
+    // SCOPED_ROWS 가 STATS_DAILY 의 pidSet 과 동일하므로 visiblePid 필터는 사실상 no-op → 생략.
+    idx = idx || buildPeriodIndex();
+    const isMonthly = (TREND_MODE === 'monthly');
+    const vSrc = isMonthly ? idx.visByMonth : idx.visByDate;
+    const iSrc = isMonthly ? idx.ibByMonth  : idx.ibByDate;
+    const map = Object.create(null);
+    let k;
+    for (k in vSrc){ if (!map[k]) map[k] = { totalVisit:0, inbound:0 }; map[k].totalVisit = vSrc[k]; }
+    for (k in iSrc){ if (!map[k]) map[k] = { totalVisit:0, inbound:0 }; map[k].inbound    = iSrc[k]; }
+    const keys = Object.keys(map).sort();
     const svg    = $('trend');
     const tip    = $('trend-tooltip');
     if (!keys.length){ svg.innerHTML = ''; tip.style.display='none'; return; }
@@ -976,29 +1106,27 @@
 
     svg.innerHTML = html;
 
-    // 호버 이벤트 바인딩
-    svg.querySelectorAll('.hover-grp').forEach(function(g){
-      const i = parseInt(g.dataset.i, 10);
-      g.addEventListener('mouseenter', function(){
-        g.querySelectorAll('.hd, .hv').forEach(function(el){ el.setAttribute('opacity','1'); });
+    // 호버 이벤트 — 위임으로 1쌍의 리스너만 등록 (이전: 세그먼트마다 2개씩 등록).
+    // renderTrend 마다 _trendBound 가 false 면 1회만 바인딩. 데이터는 클로저 대신
+    // 마지막으로 렌더된 상태를 _trendState 에 저장해 호버 시 즉시 조회.
+    renderTrend._trendState = { keys, visits, inbounds, x, yV, yI, W, H, mode: TREND_MODE };
+    if (!renderTrend._hoverBound){
+      svg.addEventListener('mouseover', function(e){
+        const g = e.target.closest('.hover-grp'); if (!g) return;
+        const st = renderTrend._trendState; if (!st) return;
+        const i = +g.dataset.i;
+        const nodes = g.querySelectorAll('.hd, .hv');
+        for (let n = 0; n < nodes.length; n++) nodes[n].setAttribute('opacity','1');
         const rect = svg.getBoundingClientRect();
-        const ratioX = rect.width / W;
-        const ratioY = rect.height / H;
-        // position:fixed 기준 viewport 좌표
-        const xPx = rect.left + x(i) * ratioX;
-        // 데이터 포인트(visits)의 Y 위치 + 12px 아래
-        const yPx = rect.top  + yV(visits[i]) * ratioY + 12;
-        tip.style.left = xPx + 'px';
-        tip.style.top  = yPx + 'px';
+        const ratioX = rect.width / st.W, ratioY = rect.height / st.H;
+        tip.style.left = (rect.left + st.x(i) * ratioX) + 'px';
+        tip.style.top  = (rect.top  + st.yV(st.visits[i]) * ratioY + 12) + 'px';
         tip.style.display = 'block';
-
-        // 날짜 라벨 — 일별이면 요일 함께, 월별이면 'YYYY년 M월'
         const dowKR = ['일','월','화','수','목','금','토'];
-        const rawKey = String(keys[i] == null ? '' : keys[i]);
-        let dateLabel = rawKey || '날짜 없음';
-        let dateExtra = '';
+        const rawKey = String(st.keys[i] == null ? '' : st.keys[i]);
+        let dateLabel = rawKey || '날짜 없음', dateExtra = '';
         if (rawKey){
-          if (TREND_MODE === 'monthly'){
+          if (st.mode === 'monthly'){
             const m = rawKey.split('-');
             if (m.length >= 2) dateLabel = m[0] + '년 ' + parseInt(m[1],10) + '월';
           } else {
@@ -1006,17 +1134,21 @@
             if (!isNaN(d)) dateExtra = '<span class="dow">('+ dowKR[d.getDay()] +')</span>';
           }
         }
-
         tip.innerHTML =
           '<div class="tt-date"><span>'+dateLabel+'</span> '+dateExtra+'</div>'
-          + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(visits[i])+'</span></div>'
-          + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(inbounds[i])+'</span></div>';
+          + '<div class="tt-row"><span class="dot" style="background:#7c5cff"></span><span class="lbl">총방문</span><span class="num">'+fmt(st.visits[i])+'</span></div>'
+          + '<div class="tt-row"><span class="dot" style="background:#3ddc97"></span><span class="lbl">인바운드</span><span class="num">'+fmt(st.inbounds[i])+'</span></div>';
       });
-      g.addEventListener('mouseleave', function(){
-        g.querySelectorAll('.hd, .hv').forEach(function(el){ el.setAttribute('opacity','0'); });
+      svg.addEventListener('mouseout', function(e){
+        const g = e.target.closest('.hover-grp'); if (!g) return;
+        // 같은 hover-grp 내부 이동은 무시 (relatedTarget 이 같은 그룹이면 스킵)
+        if (e.relatedTarget && g.contains(e.relatedTarget)) return;
+        const nodes = g.querySelectorAll('.hd, .hv');
+        for (let n = 0; n < nodes.length; n++) nodes[n].setAttribute('opacity','0');
         tip.style.display = 'none';
       });
-    });
+      renderTrend._hoverBound = true;
+    }
     // 스크롤 시 fixed 툴팁이 차트와 따로 노는 현상 방지
     if (!renderTrend._scrollBound) {
       window.addEventListener('scroll', function(){ tip.style.display = 'none'; }, { passive:true });
@@ -1066,7 +1198,7 @@
 
     const list = $('rows');
     if (!pageRows.length){
-      list.innerHTML = '<div class="empty" style="margin:24px">조건에 맞는 글이 없습니다.</div>';
+      list.innerHTML = '<tr><td colspan="12"><div class="empty" style="margin:24px">조건에 맞는 글이 없습니다.</div></td></tr>';
     } else {
       list.innerHTML = pageRows.map(function(r,i){
         const idx = start + i + 1;
@@ -1074,56 +1206,236 @@
           ? `<img src="${escAttr(r.thumbnail)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentNode.innerHTML='&lt;span class=ph&gt;◇&lt;/span&gt;'"/>`
           : '<span class="ph">◇</span>';
         const link = r['링크'] ? `<a class="lk" href="${escAttr(r['링크'])}" target="_blank" rel="noopener noreferrer">↗</a>` : '<span class="lk" style="opacity:.3">-</span>';
-        return '<div class="post-row">'
-          + '<div class="no">'+idx+'</div>'
-          + '<div class="date-cell">'+fmtDate(r['날짜'])+'</div>'
-          + '<div class="title-wrap">'
+        return '<tr class="post-row" data-idx="'+(start+i)+'">'
+          + '<td class="no">'+idx+'</td>'
+          + '<td class="date-cell">'+fmtDate(r['날짜'])+'</td>'
+          + '<td class="title-wrap">'
             + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escHtml(r['제목']||'-')+'</div>'
-          + '</div>'
-          + '<div><div class="thumb-cell">'+thumb+'</div></div>'
-          + '<div>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</div>'
-          + '<div>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</div>'
-          + '<div class="num-cell">'+fmt(r.totalVisit)+'</div>'
-          + '<div class="num-cell">'+fmt(r.weeklyVisitor)+'</div>'
-          + '<div class="num-cell">'+fmt(r.monthlyVisitor)+'</div>'
-          + (function(){ const ib = actualInbound(r); return '<div class="num-cell" style="color:'+(ib>=20?'var(--green)':'var(--text)')+'">'+fmt(ib)+'</div>'; })()
-          + '<div>'+link+'</div>'
-          + '<div><button class="btn-detail" data-postid="'+escAttr(r.postid||'')+'" data-idx="'+(start+i)+'">상세</button></div>'
-        + '</div>';
+          + '</td>'
+          + '<td><div class="thumb-cell">'+thumb+'</div></td>'
+          + '<td>'+(r.service?'<span class="svc-tag">'+escHtml(r.service)+'</span>':'-')+'</td>'
+          + '<td>'+(r.category?'<span class="cat-tag">'+escHtml(r.category)+'</span>':'-')+'</td>'
+          + '<td class="num-cell">'+fmt(r.totalVisit)+'</td>'
+          + '<td class="num-cell">'+fmt(r.weeklyVisitor)+'</td>'
+          + '<td class="num-cell">'+fmt(r.monthlyVisitor)+'</td>'
+          + (function(){ const ib = actualInbound(r); return '<td class="num-cell" style="color:'+(ib>=20?'var(--green)':'var(--text)')+'">'+fmt(ib)+'</td>'; })()
+          + '<td>'+link+'</td>'
+          + '<td><button class="btn-detail" data-postid="'+escAttr(r.postid||'')+'" data-idx="'+(start+i)+'">상세</button></td>'
+        + '</tr>';
       }).join('');
     }
     renderPager(filtered.length);
   }
 
   // 기간 필터를 새로 적용한 뒤 KPI/위젯/표 모두 재렌더
+  // 기간 합산 컨텍스트 — STATS_DAILY / INBOUND_BY_DATE 를 단 1회씩만 순회해
+  // 모든 위젯(TOP5/카테고리/KPI/주간/추이/필터)이 공유하는 인덱스를 만든다.
+  // 이전 구조에서는 함수마다 같은 데이터를 forEach 로 다시 순회해 5만~40만 행 환경에서
+  // 조회 버튼 클릭 시 수백 ms~수 초가 추가로 소요됐다.
+  function buildPeriodIndex(){
+    const visByPid    = Object.create(null);
+    const visByDate   = Object.create(null);
+    const visByMonth  = Object.create(null);
+    const ibByUtm     = Object.create(null);
+    const ibByDate    = Object.create(null);
+    const ibByMonth   = Object.create(null);
+    const pidSet      = Object.create(null);
+    let   maxDate     = '';
+
+    for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+      const s = STATS_DAILY_ROWS[i];
+      if (!s) continue;
+      const pid = s.postid ? String(s.postid) : '';
+      const d   = s.date ? String(s.date) : '';
+      const v   = +s.visitors || 0;
+      if (pid){
+        pidSet[pid] = true;
+        visByPid[pid] = (visByPid[pid] || 0) + v;
+      }
+      if (d){
+        const dd = d.length > 10 ? d.slice(0,10) : d;
+        if (dd > maxDate) maxDate = dd;
+        visByDate[dd] = (visByDate[dd] || 0) + v;
+        const m = dd.slice(0,7);
+        visByMonth[m] = (visByMonth[m] || 0) + v;
+      }
+    }
+    for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+      const b = INBOUND_BY_DATE_ROWS[i];
+      if (!b) continue;
+      const u = b.utm_term ? String(b.utm_term).trim() : '';
+      const d = b.date ? String(b.date) : '';
+      if (u){
+        ibByUtm[u] = (ibByUtm[u] || 0) + 1;
+      }
+      if (d){
+        const dd = d.length > 10 ? d.slice(0,10) : d;
+        ibByDate[dd] = (ibByDate[dd] || 0) + 1;
+        const m = dd.slice(0,7);
+        ibByMonth[m] = (ibByMonth[m] || 0) + 1;
+      }
+    }
+    return {
+      visByPid, visByDate, visByMonth,
+      ibByUtm,  ibByDate,  ibByMonth,
+      pidSet, maxDate,
+      // '로딩 성공' 플래그 사용. 빈 배열(0건)도 hasStats/hasIb = true 가 되어야
+      // KPI 가 기간 합 0 으로 정확히 표시됨. length > 0 으로 판정하면 0건일 때
+      // lifetime 폴백이 잘못 작동해 누적값이 표시되는 버그 발생.
+      hasStats: STATS_DAILY_LOADED,
+      hasIb:    INBOUND_BY_DATE_LOADED
+    };
+  }
+  function rowVisits(r, idx){
+    const pid = String(r && r.postid || '');
+    if (idx.hasStats) return pid && idx.visByPid[pid] || 0;
+    return Number(r && r.totalVisit) || 0;
+  }
+  function rowInbound(r, idx){
+    const u = String(r && r.utm_term || '').trim();
+    if (idx.hasIb) return u && idx.ibByUtm[u] || 0;
+    return Number(r && r.inbound) || 0;
+  }
+
   function refreshAll(){
     CURRENT_PAGE = 1;
-    SCOPED_ROWS = applyDateFilter(CURRENT_ROWS);
+    // ctx 를 먼저 만들고 그 안의 pidSet 을 재사용해 STATS_DAILY 재순회를 피한다
+    const idx = buildPeriodIndex();
+    SCOPED_ROWS = applyDateFilter(CURRENT_ROWS, idx.pidSet);
     updateRangeInfo();
 
     const rows = SCOPED_ROWS;
-    const tot = rows.reduce((s,r)=>s+Number(r.totalVisit||0),0);
-    const wk  = rows.reduce((s,r)=>s+Number(r.weeklyVisitor||0),0);
-    const ib  = rows.reduce((s,r)=>s+actualInbound(r),0);
+
+    // 게시글에 귀속되는 attribution set — CURRENT_ROWS 의 postid / utm_term.
+    // 블로그와 무관한 트래픽(예: 광고/타 캠페인의 utm_term, 삭제된 게시글의 stats)
+    // 은 KPI 총량에서 제외해야 '기간 내 블로그 조회수/인바운드' 가 된다.
+    const pidAttr = Object.create(null);
+    const utmAttr = Object.create(null);
+    for (let i = 0; i < CURRENT_ROWS.length; i++){
+      const pid = String(CURRENT_ROWS[i].postid || '');
+      const utm = String(CURRENT_ROWS[i].utm_term || '').trim();
+      if (pid) pidAttr[pid] = true;
+      if (utm) utmAttr[utm] = true;
+    }
+    // 조회수: 기간 내 visByPid 중 블로그 게시글에 매칭되는 pid 만 합산
+    // 인바운드: 기간 내 ibByUtm 중 블로그 게시글에 매칭되는 utm_term 만 합산
+    //   (INBOUND_BY_DATE_ROWS.length 를 그대로 쓰면 블로그 미매칭 트래픽까지
+    //    포함되어 305건처럼 부풀려진 값이 나옴)
+    let tot = 0, ib = 0;
+    if (idx.hasStats){
+      const vp = idx.visByPid;
+      for (const k in vp) if (pidAttr[k]) tot += vp[k];
+    } else {
+      for (let i = 0; i < rows.length; i++) tot += +rows[i].totalVisit || 0;
+    }
+    if (idx.hasIb){
+      const iu = idx.ibByUtm;
+      for (const u in iu) if (utmAttr[u]) ib += iu[u];
+      // ── 진단 로그 ─ "인바운드가 너무 큼" 검증용. F12 → Console 에서 확인 가능.
+      //   • method-1 (KPI 표시값) : ibByUtm dict lookup 합산
+      //   • method-2 (검증)        : INBOUND_BY_DATE_ROWS 원본을 직접 순회하며 utmAttr 매칭
+      //   두 값이 같으면 매핑 정확. 다르면 버그.
+      try {
+        let ibV2 = 0;
+        let minD = '9999-99-99', maxD = '';
+        let outOfRange = 0;
+        const ds = APPLIED_DATE_START || '';
+        const de = APPLIED_DATE_END   || '';
+        for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+          const r = INBOUND_BY_DATE_ROWS[i];
+          if (!r) continue;
+          const d = String(r.date || '').slice(0,10);
+          if (d){
+            if (d < minD) minD = d;
+            if (d > maxD) maxD = d;
+            if ((ds && d < ds) || (de && d > de)) outOfRange++;
+          }
+          if (!r.utm_term) continue;
+          const u = String(r.utm_term).trim();
+          if (u && utmAttr[u]) ibV2++;
+        }
+        const matched = [], unmatched = [];
+        for (const u in iu){
+          (utmAttr[u] ? matched : unmatched).push([u, iu[u]]);
+        }
+        matched.sort((a,b)=>b[1]-a[1]);
+        unmatched.sort((a,b)=>b[1]-a[1]);
+        const sumMatched   = matched.reduce((s,e)=>s+e[1],0);
+        const sumUnmatched = unmatched.reduce((s,e)=>s+e[1],0);
+        console.groupCollapsed(
+          '[blog] 인바운드 KPI 진단 — ' +
+          '조회 기간 [' + (ds||'∞') + ' ~ ' + (de||'∞') + '] · ' +
+          'API 반환 ' + INBOUND_BY_DATE_ROWS.length + '건 (날짜 범위 ' + minD + ' ~ ' + maxD + ') · ' +
+          '블로그 매칭 ' + sumMatched + '건 (KPI) · ' +
+          '미매칭 ' + sumUnmatched + '건' +
+          (ib === ibV2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치') +
+          (outOfRange ? ' · ⚠ 기간 밖 ' + outOfRange + '건!' : '')
+        );
+        console.log('● 적용된 기간             :', ds || '(없음)', '~', de || '(없음)');
+        console.log('● API 반환 raw 이벤트 수  :', INBOUND_BY_DATE_ROWS.length);
+        console.log('● raw 날짜 최소~최대      :', minD, '~', maxD,
+                    outOfRange ? ('— ⚠ 기간 밖 ' + outOfRange + '건 (GAS 필터 무시?)') : '— ✓ 모두 기간 내');
+        console.log('● method-1 (dict 합산)    :', ib);
+        console.log('● method-2 (raw 순회)     :', ibV2, ib === ibV2 ? '✓ 일치' : '⚠ 불일치');
+        console.log('● 블로그 utm_term 개수    :', Object.keys(utmAttr).length);
+        console.log('● 인입 utm_term 종류      :', matched.length + unmatched.length);
+        console.log('매칭 TOP 10  :', matched.slice(0,10));
+        console.log('미매칭 TOP 10:', unmatched.slice(0,10));
+        // 매칭된 블로그 게시글별 인바운드 (TOP 5 와 동일 산식)
+        const perPost = [];
+        for (let i = 0; i < CURRENT_ROWS.length; i++){
+          const r = CURRENT_ROWS[i];
+          const u = String(r.utm_term || '').trim();
+          const c = u ? (iu[u] || 0) : 0;
+          if (c > 0) perPost.push([r['제목'] || u, u, c]);
+        }
+        perPost.sort((a,b)=>b[2]-a[2]);
+        console.log('게시글별 인바운드 (count > 0, 합:' + perPost.reduce((s,e)=>s+e[2],0) + '):', perPost);
+        console.groupEnd();
+      } catch(_){}
+    } else {
+      for (let i = 0; i < rows.length; i++) ib += +rows[i].inbound || 0;
+    }
+    // 총 게시물: 조회 기간 내 1회 이상 조회된 게시글 수
+    //   = visByPid[pid] > 0 인 pid 중 CURRENT_ROWS 에 존재하는 것
+    //   STATS_DAILY 없으면 SCOPED_ROWS.length (발행일 기반 fallback).
+    let postCount = rows.length;
+    if (idx.hasStats){
+      const vp = idx.visByPid;
+      const curSet = Object.create(null);
+      for (let i = 0; i < CURRENT_ROWS.length; i++){
+        const pid = String(CURRENT_ROWS[i].postid || '');
+        if (pid) curSet[pid] = true;
+      }
+      postCount = 0;
+      for (const k in vp){
+        if (vp[k] > 0 && curSet[k]) postCount++;
+      }
+    }
     const cats = Array.from(new Set(rows.map(r=>r.category||'미분류')));
-    const avg = rows.length ? Math.round(tot/rows.length) : 0;
+    const avg = postCount ? Math.round(tot/postCount) : 0;
     const cvr = tot > 0 ? (ib/tot*100).toFixed(2) + '%' : '0%';
-    $('kpi-count').textContent  = fmt(rows.length);
-    $('kpi-total').textContent  = fmt(tot);
-    $('kpi-avg').textContent    = fmt(avg);
-    $('kpi-weekly').textContent = fmt(wk);
-    $('kpi-cvr').textContent    = cvr;
-    $('kpi-cat').textContent    = '카테고리 ' + cats.length + '개';
+    $('kpi-count').textContent   = fmt(postCount);
+    $('kpi-total').textContent   = fmt(tot);
+    $('kpi-avg').textContent     = fmt(avg);
+    $('kpi-inbound').textContent = fmt(ib);
+    $('kpi-cvr').textContent     = cvr;
+    $('kpi-cat').textContent     = '카테고리 ' + cats.length + '개';
+
+    // TOP 5 패널 상단 총량 (KPI 와 동일 값)
+    $('top-total').textContent     = '총 ' + fmt(tot) + ' 회';
+    $('inbound-total').textContent = '총 ' + fmt(ib)  + ' 건';
+    $('cat-total').textContent     = '총 ' + fmt(postCount) + ' 건';
 
     const sel = $('cat');
     const cur = sel.value;
     sel.innerHTML = '<option value="">전체 카테고리</option>' + cats.map(c=>'<option value="'+escAttr(c)+'">'+escHtml(c)+'</option>').join('');
     sel.value = cur;
 
-    renderTop(rows);
-    renderInboundTop(rows);
-    renderCatBars(rows);
-    renderTrend(rows);
+    renderTop(rows, idx);
+    renderInboundTop(rows, idx);
+    renderCatBars(rows, idx);
+    renderTrend(rows, idx);
     renderTable();
   }
   function render(rows){ CURRENT_ROWS = rows; refreshAll(); }
@@ -1133,9 +1445,15 @@
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
 
+    // 초기 진입(F5/첫 방문)은 '전체 조회' 상태 — 기간 필터 미적용.
+    // 사용자가 기간 선택 후 조회 버튼 클릭 시에만 필터가 들어간다.
+    updatePendingState();
+
     if (!url){
       setStatus('데모 데이터 표시 중', 'demo');
-      render(SAMPLE_BLOG);
+      CURRENT_ROWS = SAMPLE_BLOG;
+      await loadStatsAndInboundForCurrent();
+      refreshAll();
       openDetailFromUrl();
       return;
     }
@@ -1143,9 +1461,9 @@
       setStatus('연결 중...');
       const data = await MktProxy.blogList();
       CURRENT_ROWS = data.rows || [];
-      await loadInboundCountsForCurrent();
+      await loadStatsAndInboundForCurrent();
       refreshAll();
-      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종', 'ok');
+      setStatus('● 연결됨 · ' + (data.total || 0) + '건 · 인바운드 매핑 ' + Object.keys(INBOUND_COUNTS).length + '종 · STATS_DAILY ' + STATS_DAILY_ROWS.length + '행', 'ok');
       openDetailFromUrl();
     }catch(err){
       // 진단: 프록시 자체가 살아있는지 health로 확인
@@ -1158,7 +1476,9 @@
       }
       setStatus('연결 실패: ' + err.message + hint, 'err');
       console.error('[MktProxy] blog.list 실패:', err);
-      render(SAMPLE_BLOG);
+      CURRENT_ROWS = SAMPLE_BLOG;
+      await loadStatsAndInboundForCurrent();
+      refreshAll();
     }
   }
 
@@ -1169,15 +1489,14 @@
     MktProxy.invalidateAll();
     load();
   });
-  $('btn-refresh').addEventListener('click', function(){
-    MktProxy.invalidateAll();
-    setStatus('새로고침 중...');
-    load();
-  });
   $('btn-disconnect').addEventListener('click', function(){
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
-  $('btn-refresh').addEventListener('click', load);
+  $('btn-export-xls').addEventListener('click', function(){
+    const d = new Date();
+    const fname = 'blog_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.xls';
+    TableGrid.exportExcelFromTable(document.getElementById('tbl'), fname);
+  });
   $('q').addEventListener('input',     function(){ CURRENT_PAGE=1; renderTable(); });
   $('cat').addEventListener('change',  function(){ CURRENT_PAGE=1; renderTable(); });
   $('sort').addEventListener('change', function(){ CURRENT_PAGE=1; renderTable(); });
@@ -1192,31 +1511,24 @@
     });
   });
 
-  // 기간 조회: 빠른 선택 버튼
+  // 기간 조회: 빠른 선택 버튼 — 입력만 세팅, 실제 반영은 [조회] 버튼
   document.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      setQuickRange(parseInt(btn.dataset.range, 10));
+      setQuickRangeInput(parseInt(btn.dataset.range, 10));
     });
   });
-  // 기간 조회: 사용자 직접 선택
-  // 날짜 변경 시: 캐시 히트면 단일 동기 렌더, 미스면 낙관 렌더 후 fetch → 재렌더.
-  // 또한 picker change 가 빠르게 연속 발생할 때를 위해 80ms 디바운스 적용.
-  let _dateChangeTimer = null;
-  function onDateChange(){
-    if (_dateChangeTimer) clearTimeout(_dateChangeTimer);
-    _dateChangeTimer = setTimeout(applyDateChange, 80);
-  }
-  function applyDateChange(){
-    ACTIVE_RANGE = '';
-    if (loadInboundCountsForCurrent_sync()){
-      refreshAll();          // 캐시 히트 → 단일 렌더로 종료
-      return;
-    }
-    refreshAll();             // 미스: 낙관 렌더
-    loadInboundCountsForCurrent().then(refreshAll);
-  }
-  $('date-start').addEventListener('change', onDateChange);
-  $('date-end').addEventListener('change',   onDateChange);
+  // 데이트피커 직접 입력 — 값 변경 시 "대기 중" 상태로만 표시
+  function onDateInputChange(){ updatePendingState(); }
+  $('date-start').addEventListener('change', onDateInputChange);
+  $('date-end').addEventListener('change',   onDateInputChange);
+  $('date-start').addEventListener('input',  onDateInputChange);
+  $('date-end').addEventListener('input',    onDateInputChange);
+  // 조회 버튼: 입력값을 실제 적용 → 데이터 재조회 → 화면 갱신
+  $('btn-apply-date').addEventListener('click', applyPeriodQuery);
+  // Enter 키로도 조회
+  ['date-start','date-end'].forEach(function(id){
+    $(id).addEventListener('keydown', function(e){ if (e.key === 'Enter') applyPeriodQuery(); });
+  });
   $('btn-clear-date').addEventListener('click', clearDateRange);
 
   // URL ?postid=XXX 로 진입 시 해당 글의 상세 드로어를 자동 오픈
@@ -1461,10 +1773,11 @@
     $('detail-drawer').setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
   }
-  // 이벤트 위임: 로우의 [상세] 버튼
+  // 이벤트 위임: 로우의 [상세] 버튼 (단일 클릭은 셀 선택용이므로 stopPropagation)
   $('rows').addEventListener('click', function(e){
     const btn = e.target.closest('.btn-detail');
     if (!btn) return;
+    e.stopPropagation();
     const postid = btn.dataset.postid;
     let row = null;
     if (postid) row = SCOPED_ROWS.find(r => String(r.postid||'') === postid);
@@ -1474,6 +1787,16 @@
       row = filtered[idx];
     }
     openDetail(row);
+  });
+  // 더블클릭 → 상세 (셀 선택과 양립)
+  $('rows').addEventListener('dblclick', function(e){
+    const tr = e.target.closest('tr.post-row');
+    if (!tr) return;
+    const idx = parseInt(tr.dataset.idx, 10);
+    if (isNaN(idx)) return;
+    const filtered = applyFilter(SCOPED_ROWS);
+    const row = filtered[idx];
+    if (row) openDetail(row);
   });
   $('detail-close').addEventListener('click', closeDetail);
   $('detail-overlay').addEventListener('click', closeDetail);
@@ -1581,6 +1904,88 @@
           }
         }
       }
+      INBOUND_COUNTS = {};
+    }
+  }
+
+  // STATS_DAILY + INBOUND_BY_DATE 동시 로드 — 조회 버튼 / 초기 로드 / 초기화 시 호출
+  async function loadStatsAndInboundForCurrent(){
+    const ds = APPLIED_DATE_START;
+    const de = APPLIED_DATE_END;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+
+    // 데모 모드 (프록시 미연결): SAMPLE_STATS_DAILY / SAMPLE_INBOUND_BY_DATE 클라이언트 필터
+    if (!MktProxy.getUrl()){
+      const sd = (window.SAMPLE_STATS_DAILY || []).filter(function(r){
+        if (ds && r.date < ds) return false;
+        if (de && r.date > de) return false;
+        return true;
+      });
+      const ib = (window.SAMPLE_INBOUND_BY_DATE || []).filter(function(r){
+        if (ds && r.date < ds) return false;
+        if (de && r.date > de) return false;
+        return true;
+      });
+      STATS_DAILY_ROWS = sd;
+      INBOUND_BY_DATE_ROWS = ib;
+      STATS_DAILY_LOADED = true;
+      INBOUND_BY_DATE_LOADED = true;
+      // 데모에서는 INBOUND_COUNTS 도 자체 집계 (utm_term → count)
+      INBOUND_COUNTS = {};
+      ib.forEach(function(r){
+        const u = String(r.utm_term||'').trim();
+        if (!u) return;
+        INBOUND_COUNTS[u] = (INBOUND_COUNTS[u] || 0) + 1;
+      });
+      return;
+    }
+
+    // 실서버 모드 — 세 엔드포인트 병렬 호출.
+    // 성공 시 LOADED 플래그 true (빈 배열 응답이어도 '정상 0건' 으로 처리).
+    // 실패 시 LOADED false → buildPeriodIndex 의 hasStats/hasIb 가 false 가 되어
+    // lifetime 폴백 경로로 진입 (GAS 모듈 없음 등의 시나리오).
+    const tasks = [
+      MktProxy.blogStatsDaily(params).then(function(r){
+        STATS_DAILY_ROWS = (r && r.rows) ? r.rows : [];
+        STATS_DAILY_LOADED = true;
+      }).catch(function(err){
+        console.error('[blog] statsDaily 호출 실패:', err && err.message || err);
+        STATS_DAILY_ROWS = [];
+        STATS_DAILY_LOADED = false;
+        const msg = String(err && err.message || err);
+        if (msg.indexOf('unknown_action') >= 0){
+          const statusEl = $('status');
+          if (statusEl && statusEl.textContent.indexOf('blog.statsDaily 없음') < 0){
+            statusEl.textContent = statusEl.textContent + ' · ⚠ blog.statsDaily 없음 → GAS 재배포 필요';
+            statusEl.className = 'status err';
+          }
+        }
+      }),
+      MktProxy.blogInboundByDate(params).then(function(r){
+        INBOUND_BY_DATE_ROWS = (r && r.rows) ? r.rows : [];
+        INBOUND_BY_DATE_LOADED = true;
+      }).catch(function(err){
+        console.error('[blog] inboundByDate 호출 실패:', err && err.message || err);
+        INBOUND_BY_DATE_ROWS = [];
+        INBOUND_BY_DATE_LOADED = false;
+      }),
+      loadInboundCountsForCurrentApplied()
+    ];
+    await Promise.all(tasks);
+  }
+  // 적용된 기간(APPLIED_*) 기준으로 inboundCounts 로드 — 기존 함수가 picker 값을 직접 읽어
+  // 시그니처를 유지하기 어려워 별도 래퍼로 우회
+  async function loadInboundCountsForCurrentApplied(){
+    if (!MktProxy.getUrl()){ INBOUND_COUNTS = {}; return; }
+    const params = {};
+    if (APPLIED_DATE_START) params.from = APPLIED_DATE_START;
+    if (APPLIED_DATE_END)   params.to   = APPLIED_DATE_END;
+    try {
+      const r = await MktProxy.blogInboundCounts(params);
+      INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
+    } catch (err) {
       INBOUND_COUNTS = {};
     }
   }
@@ -1694,17 +2099,45 @@
   $('btn-edit-cancel').addEventListener('click', exitEditMode);
   $('btn-edit-save').addEventListener('click', saveEdit);
 
-  // ── 더보기 모달: 전체 발행글 랭킹 (방문 / 인바운드) ──
+  // ── 더보기 모달: 전체 발행글 랭킹 (조회수 / 인바운드) — TOP5 와 동일 산식 ──
   function showTopAll(mode){
     const isInbound = mode === 'inbound';
-    const key = isInbound ? 'inbound' : 'totalVisit';
-    const sorted = SCOPED_ROWS.slice().sort(function(a,b){
-      return Number(b[key]||0) - Number(a[key]||0);
-    });
+    // postid → 기간 합산 조회수
+    const sumByPid = {};
+    if (!isInbound && STATS_DAILY_ROWS.length){
+      for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+        const s = STATS_DAILY_ROWS[i];
+        const pid = String(s && s.postid || '');
+        if (!pid) continue;
+        sumByPid[pid] = (sumByPid[pid] || 0) + (Number(s.visitors) || 0);
+      }
+    }
+    // utm_term → 기간 인바운드 카운트
+    const cntByUtm = {};
+    if (isInbound && INBOUND_BY_DATE_ROWS.length){
+      for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+        const b = INBOUND_BY_DATE_ROWS[i];
+        const u = String(b && b.utm_term || '').trim();
+        if (!u) continue;
+        cntByUtm[u] = (cntByUtm[u] || 0) + 1;
+      }
+    }
+    function getVal(r){
+      if (isInbound){
+        const u = String(r && r.utm_term || '').trim();
+        if (u && cntByUtm[u]) return cntByUtm[u];
+        return INBOUND_BY_DATE_ROWS.length ? 0 : (Number(r && r.inbound) || 0);
+      }
+      const pid = String(r && r.postid || '');
+      if (pid && sumByPid[pid]) return sumByPid[pid];
+      return STATS_DAILY_ROWS.length ? 0 : (Number(r && r.totalVisit) || 0);
+    }
+    const sorted = SCOPED_ROWS.slice().sort(function(a,b){ return getVal(b) - getVal(a); });
+
     document.querySelector('#top-modal .eyebrow').textContent =
-      isInbound ? '전체 발행글 인바운드 랭킹' : '전체 발행글 랭킹';
+      isInbound ? '전체 발행글 인바운드 랭킹' : '전체 발행글 조회수 랭킹';
     document.querySelector('#top-modal h3').textContent =
-      isInbound ? '인바운드 많은 순' : '방문 많은 순';
+      isInbound ? '인바운드 많은 순' : '조회수 많은 순';
 
     const body = $('top-modal-body');
     if (!sorted.length){
@@ -1721,7 +2154,7 @@
               + (r['날짜'] ? '<span>·</span><span>'+fmtDate(r['날짜'])+'</span>' : '')
             + '</div>'
           + '</div>'
-          + '<div class="v">'+fmt(r[key])+'</div>'
+          + '<div class="v">'+fmt(getVal(r))+'</div>'
         + '</div>';
       }).join('');
     }
@@ -1740,7 +2173,10 @@
     if (e.key === 'Escape' && !$('top-modal').hidden) hideTopAll();
   });
 
-  window.addEventListener('DOMContentLoaded', load);
+  window.addEventListener('DOMContentLoaded', function(){
+    TableGrid.attach(document.getElementById('tbl'));
+    load();
+  });
 </script>
 </body>
 </html>
