@@ -131,13 +131,16 @@ window.Analysis = (function () {
     arr.sort((a, b) => b.total - a.total);
     return limit ? arr.slice(0, limit) : arr;
   }
-  /* 시계열: unit = month|week|year */
+  /* 시계열: unit = day|week|month|year */
   function series(rows, unit) {
-    const key = d => unit === 'year' ? d.slice(0, 4) : (unit === 'week' ? null : d.slice(0, 7));
     const m = {};
     rows.forEach(r => {
       const d = String(r['IB 인입 일자'] || '').slice(0, 10); if (!d) return;
-      const k = unit === 'week' ? String(r['주차'] || '').replace(/^\d{4}-/, '') : key(d);
+      let k;
+      if (unit === 'week') k = String(r['주차'] || '').replace(/^\d{4}-/, '');
+      else if (unit === 'year') k = d.slice(0, 4);
+      else if (unit === 'day') k = d.slice(5, 10); // MM-DD
+      else k = d.slice(0, 7);                       // month (기본)
       if (!m[k]) m[k] = { key: k, ib: 0, ob: 0, conv: 0, total: 0 };
       m[k].total++;
       if (isOB(r)) m[k].ob++; else m[k].ib++;
