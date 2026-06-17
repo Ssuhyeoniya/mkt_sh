@@ -100,18 +100,22 @@ window.Analysis = (function () {
   let DEMO = null;
   function demo() { if (!DEMO) DEMO = gen(220); return DEMO; }
 
-  /* ── 집계 헬퍼 ── */
-  const isConv = r => r['성약'] === 'Y' || r['성약'] === '성약';
+  /* ── 집계 헬퍼 ──
+   * 시트 셀의 앞뒤 공백 때문에 비교가 빗나가지 않도록 항상 trim() 후 비교한다.
+   * CH 가 'OB' 가 아닌 모든 행(빈 CH 포함)은 IB 로 본다(인바운드 기본).
+   */
+  const _t = v => String(v == null ? '' : v).trim();
+  const isOB = r => _t(r['CH']).toUpperCase() === 'OB';
+  const isConv = r => { const s = _t(r['성약']); return s === 'Y' || s === '성약'; };
   function kpi(rows) {
     const total = rows.length;
-    const ib = rows.filter(r => String(r['CH']).toUpperCase() === 'IB').length;
-    const ob = rows.filter(r => String(r['CH']).toUpperCase() === 'OB').length;
+    const ob = rows.filter(isOB).length;
     const conv = rows.filter(isConv).length;
-    const mid = rows.filter(r => r['성약'] === '협의중').length;
-    const drop = rows.filter(r => r['성약'] === '드롭' || r['성약'] === '무응답').length;
-    const meet = rows.filter(r => r['최초 협의 일자']).length;
-    const sign = rows.filter(r => r['계약서 날인 일자']).length;
-    return { total, ib, ob, conv, mid, drop, meet, sign, rate: total ? Math.round(conv * 100 / total) : 0 };
+    const mid = rows.filter(r => _t(r['성약']) === '협의중').length;
+    const drop = rows.filter(r => { const s = _t(r['성약']); return s === '드롭' || s === '무응답'; }).length;
+    const meet = rows.filter(r => _t(r['최초 협의 일자'])).length;
+    const sign = rows.filter(r => _t(r['계약서 날인 일자'])).length;
+    return { total, ib: total - ob, ob, conv, mid, drop, meet, sign, rate: total ? Math.round(conv * 100 / total) : 0 };
   }
   /* 차원별: [{name,total,ib,ob,conv,rate}] (인입 많은 순) */
   function byDim(rows, key, limit) {
@@ -120,7 +124,7 @@ window.Analysis = (function () {
       const k = String(r[key] || '기타').trim() || '기타';
       if (!m[k]) m[k] = { name: k, total: 0, ib: 0, ob: 0, conv: 0 };
       m[k].total++;
-      if (String(r['CH']).toUpperCase() === 'OB') m[k].ob++; else m[k].ib++;
+      if (isOB(r)) m[k].ob++; else m[k].ib++;
       if (isConv(r)) m[k].conv++;
     });
     let arr = Object.values(m).map(d => Object.assign(d, { rate: d.total ? Math.round(d.conv * 100 / d.total) : 0 }));
@@ -136,7 +140,7 @@ window.Analysis = (function () {
       const k = unit === 'week' ? String(r['주차'] || '').replace(/^\d{4}-/, '') : key(d);
       if (!m[k]) m[k] = { key: k, ib: 0, ob: 0, conv: 0, total: 0 };
       m[k].total++;
-      if (String(r['CH']).toUpperCase() === 'OB') m[k].ob++; else m[k].ib++;
+      if (isOB(r)) m[k].ob++; else m[k].ib++;
       if (isConv(r)) m[k].conv++;
     });
     return Object.values(m).sort((a, b) => a.key < b.key ? -1 : 1)

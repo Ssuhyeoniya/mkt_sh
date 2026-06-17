@@ -123,13 +123,14 @@
   function applyFilter(rows, q, status, ch){
     const ql = (q || '').toLowerCase();
     return rows.filter(r => {
+      const st = String(r['성약'] == null ? '' : r['성약']).trim();
       if (status && status !== 'all'){
-        if (status === 'y'   && !(r['성약'] === 'Y' || r['성약'] === '성약')) return false;
-        if (status === 'mid' && r['성약'] !== '협의중') return false;
-        if (status === 'drop'&& r['성약'] !== '드롭') return false;
+        if (status === 'y'   && !(st === 'Y' || st === '성약')) return false;
+        if (status === 'mid' && st !== '협의중') return false;
+        if (status === 'drop'&& st !== '드롭') return false;
       }
       if (ch && ch !== 'all'){
-        if (String(r['CH']||'').toUpperCase() !== ch.toUpperCase()) return false;
+        if (String(r['CH']||'').trim().toUpperCase() !== ch.toUpperCase()) return false;
       }
       if (ql){
         const blob = (r['고객사명']+' '+r['주소']+' '+r['검색 키워드']+' '+r['트래킹 경로(UTM)']+' '+r['시도']+' '+r['지역구']).toLowerCase();
@@ -139,15 +140,24 @@
     });
   }
 
-  /* ─ KPI 계산 ─ */
+  /* ─ KPI 계산 ─
+   * 시트 셀 값에 흔히 섞이는 앞뒤 공백 때문에 'IB ' !== 'IB' 로 0 으로 집계되던
+   * 문제를 막기 위해 비교 전에 trim() 한다. CH 가 'OB' 가 아닌 모든 행(빈 CH 포함)은
+   * IB 로 카운트 — 막대 차트(aggregateBy)와 동일한 규칙으로 KPI/차트 수치를 일치시킨다.
+   */
   function computeKPI(rows){
+    const norm = v => String(v == null ? '' : v).trim();
     const total = rows.length;
-    const ib    = rows.filter(r => String(r['CH']||'').toUpperCase() === 'IB').length;
-    const ob    = rows.filter(r => String(r['CH']||'').toUpperCase() === 'OB').length;
-    const conv  = rows.filter(r => r['성약'] === 'Y' || r['성약'] === '성약').length;
-    const mid   = rows.filter(r => r['성약'] === '협의중').length;
-    const drop  = rows.filter(r => r['성약'] === '드롭' || r['성약'] === '무응답').length;
-    const rate  = total ? Math.round(conv * 100 / total) : 0;
+    let ob = 0, conv = 0, mid = 0, drop = 0;
+    rows.forEach(r => {
+      if (norm(r['CH']).toUpperCase() === 'OB') ob++;
+      const s = norm(r['성약']);
+      if (s === 'Y' || s === '성약') conv++;
+      else if (s === '협의중') mid++;
+      else if (s === '드롭' || s === '무응답') drop++;
+    });
+    const ib = total - ob;
+    const rate = total ? Math.round(conv * 100 / total) : 0;
     return { total, ib, ob, conv, mid, drop, rate };
   }
 

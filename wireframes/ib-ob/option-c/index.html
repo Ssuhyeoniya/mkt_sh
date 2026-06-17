@@ -368,10 +368,11 @@
 
   /* ── 전환 퍼널 ── */
   function renderFunnel(rows){
-    const ibIn = rows.filter(r => r['IB 인입 일자']).length;
-    const meet = rows.filter(r => r['최초 협의 일자']).length;
-    const sign = rows.filter(r => r['계약서 날인 일자']).length;
-    const conv = rows.filter(r => r['성약'] === 'Y' || r['성약'] === '성약').length;
+    const has = v => String(v == null ? '' : v).trim() !== '';
+    const ibIn = rows.filter(r => has(r['IB 인입 일자'])).length;
+    const meet = rows.filter(r => has(r['최초 협의 일자'])).length;
+    const sign = rows.filter(r => has(r['계약서 날인 일자'])).length;
+    const conv = rows.filter(r => { const s = String(r['성약'] == null ? '' : r['성약']).trim(); return s === 'Y' || s === '성약'; }).length;
     const base = ibIn || 1;
     const stages = [
       { lbl:'IB 인입',   val:ibIn, rate:100, color:'#2563eb' },
@@ -591,6 +592,12 @@
       setStatus(force ? '새로고침 중…' : '불러오는 중…');
       const data = await MktProxy.ibobListCached(force);
       ROWS = (data && data.rows) || [];
+      // 진단: 실데이터의 CH/성약 실제 값 분포를 1회 출력 (F12 콘솔) — 마커가 예상과 다르면 여기로 확인
+      try {
+        const distinct = (k) => { const m = {}; ROWS.forEach(r => { const v = String(r[k] == null ? '' : r[k]); m[v] = (m[v] || 0) + 1; }); return m; };
+        console.info('[ib-ob] CH 값 분포:', distinct('CH'));
+        console.info('[ib-ob] 성약 값 분포:', distinct('성약'));
+      } catch (_) {}
       const tag = data && data._fromCache ? ' · 캐시됨' : '';
       setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
       fillFilterPanels(ROWS);
