@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IB / OB 분석 · 와이어프레임 3안</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{ font-family:'Pretendard', sans-serif; background:#f6f7f9; color:#111; }
+  .card{ background:#fff; border:1px solid #e6e8ec; border-radius:16px; overflow:hidden; transition:all .2s; }
+  .card:hover{ box-shadow:0 12px 40px rgba(0,0,0,.08); transform:translateY(-2px); }
+  .frame{ aspect-ratio:16/11; width:100%; background:#fafafa; border-bottom:1px solid #e6e8ec; overflow:hidden; }
+  .frame iframe{ border:0; transform:scale(.4); transform-origin:top left; width:250%; height:250%; pointer-events:none; }
+  .tag{ font-size:11px; padding:2px 8px; border-radius:999px; background:#eef1f6; color:#374151; display:inline-block; }
+  .btn{ font-size:13px; padding:8px 14px; border-radius:8px; border:1px solid #e6e8ec; background:#fff; }
+  .btn-primary{ background:#6d4eff; color:#fff; border-color:#6d4eff; }
+</style>
+</head>
+<body>
+<div class="max-w-[1320px] mx-auto px-8 py-10">
+  <div class="mb-8">
+    <div class="text-[12.5px] text-gray-500">Marketing CRM · 인바운드 · IB / OB 분석</div>
+    <h1 class="text-[28px] font-semibold tracking-tight mt-1">IB / OB 분석 · 와이어프레임 3안</h1>
+    <p class="text-[13.5px] text-gray-600 mt-2 leading-relaxed">
+      <b>IB/OB 종합</b>에 적재된 로우테이블(고객사 인바운드 리스트)을 분석 대상으로,
+      업로드해 주신 「IB 인입 분석 노트」의 구성을 기반으로 네비 카테고리(종합 · 차원별 분석 · 채널/유입 · 심층 · 탐색)를 형성했습니다.<br/>
+      카테고리 12종 = 개요 · 서비스 · 시계열 · 요일 · 지역 · 기업규모 · 인지채널 · 유입/경로 · 검색키워드 · 성약심층 · 교차히트맵 · 데이터탐색.
+      아래 3가지 시안 중 하나를 선택해 주세요. (전역 필터: 서비스 · 인지채널 · 기간 · 성약)
+    </p>
+  </div>
+
+  <div class="grid grid-cols-3 gap-5">
+    <div class="card">
+      <div class="frame"><iframe src="./option-a/index.html" loading="lazy"></iframe></div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="tag">시안 A</span><span class="tag" style="background:#efe8ff;color:#5a3eb8">Workbench</span></div>
+        <div class="text-[16px] font-semibold">좌측 카테고리 레일 · 섹션 전환</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">분석 노트와 가장 가까운 구조. 좌측 그룹 네비에서 카테고리를 고르면 우측에 해당 분석만 집중 표시. 정보 밀도가 높고 깊게 파기 좋음.</p>
+        <div class="mt-4 flex gap-2"><a href="./option-a/index.html" class="btn">전체보기</a><a href="./option-a/index.html" target="_blank" class="btn btn-primary">미리보기 ↗</a></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="frame"><iframe src="./option-b/index.html" loading="lazy"></iframe></div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="tag">시안 B</span><span class="tag" style="background:#eaf1ff;color:#1f4ea3">BI Report</span></div>
+        <div class="text-[16px] font-semibold">상단 카테고리 탭 · 상시 KPI</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">상단 탭으로 카테고리 그룹 전환 + KPI 스트립 상시 노출. 그룹 내 섹션을 스크롤로 한 번에. 정통 BI 콘솔 느낌.</p>
+        <div class="mt-4 flex gap-2"><a href="./option-b/index.html" class="btn">전체보기</a><a href="./option-b/index.html" target="_blank" class="btn btn-primary">미리보기 ↗</a></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="frame"><iframe src="./option-c/index.html" loading="lazy"></iframe></div>
+      <div class="p-5">
+        <div class="flex items-center gap-2 mb-2"><span class="tag">시안 C</span><span class="tag" style="background:#FFE9C7;color:#5a3a13">Bento</span></div>
+        <div class="text-[16px] font-semibold">원페이지 벤토 · 칩 점프 내비</div>
+        <p class="text-[12.5px] text-gray-600 mt-2 leading-relaxed">히어로 KPI 벤토 + 모든 카테고리를 한 페이지에 스크롤. 상단 칩으로 점프 + 현재 위치 하이라이트. 발표·리포트용으로 인상적.</p>
+        <div class="mt-4 flex gap-2"><a href="./option-c/index.html" class="btn">전체보기</a><a href="./option-c/index.html" target="_blank" class="btn btn-primary">미리보기 ↗</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-10 p-5 bg-white border border-[#e6e8ec] rounded-xl">
+    <div class="text-[14px] font-semibold mb-2">참고</div>
+    <ul class="text-[13px] text-gray-700 list-disc pl-5 space-y-1">
+      <li>3안 모두 동일한 분석 로직·차트(Chart.js)·데이터를 공유합니다 — 차이는 <b>네비게이션/레이아웃</b>뿐입니다.</li>
+      <li>미연결 시 데모 220건으로 표시되며, 우측 상단에 GAS 프록시 URL을 연결하면 실데이터(고객사 인바운드 리스트)로 분석합니다.</li>
+      <li>선택해 주시면 해당 시안으로 확정하고 세부(차트 추가/필터 다중선택/내보내기 등)를 다듬겠습니다.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
