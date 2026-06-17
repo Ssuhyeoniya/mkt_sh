@@ -1,0 +1,23 @@
+# GitHub Pages 콘텐츠 비활성화용 설정
+#
+# 이 저장소의 실제 서비스는 Vercel(비밀번호 보호)에서만 제공합니다.
+# GitHub Pages 가 켜져 있더라도 아래 exclude 로 모든 콘텐츠를 빌드에서 제외하여
+# 공개 페이지에는 아무것도 노출되지 않도록 합니다.
+#
+# ⚠️ 완전한 비활성화는 GitHub 저장소 Settings → Pages → Source 를 "None" 으로
+#    바꾸는 것입니다. (이 파일은 보조 안전장치)
+#
+# Vercel 은 vercel.json 의 "framework": null 설정으로 Jekyll 빌드를 하지 않으므로
+# 이 파일의 영향을 받지 않습니다.
+
+exclude:
+  - "wireframes"
+  - "gas"
+  - "index.html"
+  - "README.md"
+  - "CLAUDE.md"
+  - "vercel.json"
+  - "middleware.js"
+  - "robots.txt"
+  - "DEPLOY.md"
+  - "_config.yml"
