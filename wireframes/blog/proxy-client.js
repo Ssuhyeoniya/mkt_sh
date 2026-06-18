@@ -9,6 +9,8 @@
  */
 (function () {
   const STORAGE_KEY = 'mkt_gas_url';
+  // 기본 GAS 프록시 URL — 미연결 시 자동으로 실DB 로드 (저장된 값이 우선)
+  const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzV2tdT9vljznHNoDkQLexUE8DdsPhP6t-YGOsJttMWu9GntygBQDUF4sqI78TtDrIWbQ/exec';
   const CACHE_PREFIX = 'mkt_cache_';
   // 캐시는 localStorage 에 저장 → 탭/브라우저 종료 후에도 유지.
   // 새로고침 버튼(MktProxy.invalidateAll) 으로만 명시 무효화.
@@ -60,8 +62,9 @@
   const Proxy = {
     STORAGE_KEY: STORAGE_KEY,
 
+    DEFAULT_URL: DEFAULT_GAS_URL,
     getUrl: function () {
-      try { return localStorage.getItem(STORAGE_KEY) || ''; } catch (_) { return ''; }
+      try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_GAS_URL; } catch (_) { return DEFAULT_GAS_URL; }
     },
     setUrl: function (url) {
       try {

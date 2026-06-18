@@ -17,6 +17,8 @@
   .seg button.active{ background:var(--hover-bg); color:var(--text); }
   .table-wrap{ overflow:auto; max-height:60vh; }
   .col-color-strip{ width:6px; align-self:stretch; border-radius:3px; }
+  .row-action{ font-size:11.5px; padding:3px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text-2); cursor:pointer; line-height:1.5; white-space:nowrap; }
+  .row-action:hover{ background:var(--accent); border-color:var(--accent); color:#fff; }
 </style>
 </head>
 <body>
@@ -195,13 +197,11 @@
   const COLS = [
     { key:'_no',             label:'NO',           w: 56,  align:'right' },
     { key:'submittedAt',     label:'제출 날짜',    w:148 },
+    { key:'inflowForm',      label:'유입폼',       w:130,  render: v => v ? `<span class="tag-mini tag-ch">${esc(v)}</span>` : '-' },
     { key:'service',         label:'서비스',       w:120,  render: v => v ? `<span class="tag-mini tag-svc">${esc(v)}</span>` : '-' },
     { key:'company',         label:'기업명',       w:170,  bold:true },
-    { key:'employeeCount',   label:'임직원 수',    w:110 },
+    { key:'employeeCount',   label:'임직원 수',    w:100,  align:'right', mono:true },
     { key:'address',         label:'기업 주소',    w:240 },
-    { key:'manager',         label:'담당자',       w: 96 },
-    { key:'phone',           label:'전화번호',     w:140,  mono:true },
-    { key:'email',           label:'이메일',       w:200,  mono:true },
     { key:'channel',         label:'유입경로',     w:120,  render: v => v ? `<span class="tag-mini tag-ch">${esc(v)}</span>` : '-' },
     { key:'privacyAgreed',   label:'개인정보 동의', w: 96, render: v => ynTag(v) },
     { key:'marketingAgreed', label:'마케팅 동의',   w: 96, render: v => ynTag(v) },
@@ -209,7 +209,8 @@
     { key:'utm_medium',      label:'utm_medium',   w:120,  mono:true },
     { key:'utm_campaign',    label:'utm_campaign', w:160,  mono:true },
     { key:'utm_content',     label:'utm_content',  w:140,  mono:true },
-    { key:'utm_term',        label:'utm_term',     w:140,  mono:true }
+    { key:'utm_term',        label:'utm_term',     w:140,  mono:true },
+    { key:'_action',         label:'상세보기',     w: 90,  align:'center', render: (_,r,i) => `<button class="row-action" data-i="${i}" title="상세보기">상세보기</button>` }
   ];
   const COL_HUES = ['#6d4eff','#16a34a','#2563eb','#d97706','#db2777','#dc2626','#8a72ff','#22c55e','#3b82f6','#f59e0b','#94a3b8'];
   const W_KEY = 'smap_col_widths_v1';
@@ -532,6 +533,10 @@
     tbody.querySelectorAll('tr').forEach(tr => {
       tr.addEventListener('dblclick', () => openDrawer(rows[Number(tr.dataset.i)]));
     });
+    // [상세보기] 버튼 → 전체 DB 모달 (싱글클릭)
+    tbody.querySelectorAll('.row-action').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); openDrawer(rows[Number(b.dataset.i)]); });
+    });
   }
 
   // ── drawer ────────────────────────────────────────────
@@ -539,7 +544,7 @@
     if (!r) return;
     $('drawer-title').textContent = r.company || '(이름 없음)';
     const fields = [
-      ['제출 날짜', r.submittedAt],['관심 서비스', r.service],['기업명', r.company],
+      ['제출 날짜', r.submittedAt],['유입 폼', r.inflowForm],['관심 서비스', r.service],['기업명', r.company],
       ['임직원 수', r.employeeCount],['기업 주소', r.address],['담당자', r.manager],
       ['전화번호', r.phone],['이메일', r.email],['유입경로', r.channel],
       ['문의내용', r.message],['개인정보 동의', ynLabel(r.privacyAgreed) || r.privacyAgreed],['마케팅 동의', ynLabel(r.marketingAgreed) || r.marketingAgreed],

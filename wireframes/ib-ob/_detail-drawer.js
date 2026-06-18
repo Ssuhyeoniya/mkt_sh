@@ -7,7 +7,7 @@
  */
 (function () {
   let _initialized = false;
-  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1VSAqt5lRKMJfmKEW8jDEtmGKTAwjGpBaQdoNcNUfA4U/edit#gid=1004311736';
+  const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1evHT_QWJ7tHuCykdW4Hh1bIN7CQpw-G2bdUFtL4yP40/edit';
 
   function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '-'; }
   function fmtDate(s){
@@ -80,7 +80,7 @@
 <div class="ibdrw-overlay" id="ibdrw-overlay"></div>
 <aside class="ibdrw" id="ibdrw" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="ibdrw-title">
   <div class="ibdrw-head">
-    <div class="eyebrow">고객사 상세 · TOTAL 시트</div>
+    <div class="eyebrow">고객사 상세 · 인바운드 통합 v2</div>
     <button class="ibdrw-close" id="ibdrw-close" aria-label="닫기">✕</button>
   </div>
   <div class="ibdrw-body">
@@ -129,6 +129,22 @@
     </div>
 
     <div class="ibdrw-section">
+      <div class="section-h">문의내용 · 세일즈맵</div>
+      <div class="body" id="ibdrw-message">-</div>
+    </div>
+
+    <div class="ibdrw-section">
+      <div class="section-h">사업자 정보</div>
+      <div class="ibdrw-row"><span class="k">업종</span><span class="v" id="ibdrw-industry">-</span></div>
+      <div class="ibdrw-row"><span class="k">업태</span><span class="v" id="ibdrw-bizcond">-</span></div>
+      <div class="ibdrw-row"><span class="k">기업규모</span><span class="v" id="ibdrw-scale">-</span></div>
+      <div class="ibdrw-row"><span class="k">법인구분</span><span class="v" id="ibdrw-corptype">-</span></div>
+      <div class="ibdrw-row"><span class="k">사업자등록번호</span><span class="v mono" id="ibdrw-bizno">-</span></div>
+      <div class="ibdrw-row"><span class="k">법인등록번호</span><span class="v mono" id="ibdrw-corpno">-</span></div>
+      <div class="ibdrw-row"><span class="k">등록일자</span><span class="v mono" id="ibdrw-regdate">-</span></div>
+    </div>
+
+    <div class="ibdrw-section">
       <div class="section-h">기간</div>
       <div class="ibdrw-row"><span class="k">주차</span><span class="v mono" id="ibdrw-week2">-</span></div>
       <div class="ibdrw-row"><span class="k">시작일</span><span class="v mono" id="ibdrw-startdt">-</span></div>
@@ -136,12 +152,12 @@
     </div>
 
     <div class="ibdrw-meta">
-      <div class="section-h">메타데이터 · 24개 필드 원본</div>
+      <div class="section-h">원본 필드 전체</div>
       <div id="ibdrw-meta-list"></div>
     </div>
   </div>
   <div class="ibdrw-foot">
-    <a class="btn-secondary" id="ibdrw-sheet-link" target="_blank" rel="noopener noreferrer">TOTAL 시트 열기 ↗</a>
+    <a class="btn-secondary" id="ibdrw-sheet-link" target="_blank" rel="noopener noreferrer">시트 열기 ↗</a>
     <button class="btn-primary" id="ibdrw-close-btn">닫기</button>
   </div>
 </aside>
@@ -199,8 +215,9 @@
     const region = [row['시도'], row['지역구'], row['동리']].filter(Boolean).join(' · ');
     setText('ibdrw-region', region || '-');
 
-    const ch = String(row['CH']||'').toUpperCase();
-    showTag('ibdrw-ch', ch || null, ch === 'IB' ? 't-ib' : ch === 'OB' ? 't-ob' : '');
+    const chRaw = row['CH'];
+    const isConv = chRaw === true || chRaw === 1 || /^(y|yes|true|성약|o|1)$/i.test(String(chRaw == null ? '' : chRaw).trim());
+    showTag('ibdrw-ch', '성약 ' + (isConv ? 'Y' : 'N'), isConv ? 't-y' : '');
     const st = statusInfo(row['성약']);
     showTag('ibdrw-status', st.label || null, st.cls);
     showTag('ibdrw-firm',   row['기업구분'] || null, '');
@@ -224,6 +241,14 @@
     setText('ibdrw-svc-row',  row['서비스 인입 구분']);
     setText('ibdrw-path',     row['상세 경로']);
     setText('ibdrw-utm',      row['트래킹 경로(UTM)']);
+    setText('ibdrw-message',  row['문의내용']);
+    setText('ibdrw-industry', row['업종']);
+    setText('ibdrw-bizcond',  row['업태']);
+    setText('ibdrw-scale',    row['기업규모']);
+    setText('ibdrw-corptype', row['법인구분']);
+    setText('ibdrw-bizno',    row['사업자등록번호']);
+    setText('ibdrw-corpno',   row['법인등록번호']);
+    setText('ibdrw-regdate',  fmtDate(row['등록일자']));
     setText('ibdrw-week2',    row['주차']);
     setText('ibdrw-startdt',  fmtDate(row['시작일']));
     setText('ibdrw-enddt',    fmtDate(row['종료일']));

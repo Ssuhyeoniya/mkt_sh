@@ -5,11 +5,14 @@
  */
 (function () {
   const STORAGE_KEY = 'mkt_gas_url';
+  // 기본 GAS 프록시 URL — 미연결 시 자동으로 실DB 로드 (저장된 값이 우선)
+  const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzV2tdT9vljznHNoDkQLexUE8DdsPhP6t-YGOsJttMWu9GntygBQDUF4sqI78TtDrIWbQ/exec';
 
   if (!window.MktProxy) {
     window.MktProxy = {
       STORAGE_KEY: STORAGE_KEY,
-      getUrl: function () { try { return localStorage.getItem(STORAGE_KEY) || ''; } catch (_) { return ''; } },
+      DEFAULT_URL: DEFAULT_GAS_URL,
+      getUrl: function () { try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_GAS_URL; } catch (_) { return DEFAULT_GAS_URL; } },
       setUrl: function (url) {
         try { if (url) localStorage.setItem(STORAGE_KEY, url); else localStorage.removeItem(STORAGE_KEY); } catch (_) {}
       },
@@ -100,6 +103,7 @@
  * 세일즈맵 데모 데이터 — 프록시 미연결 시 표시 (50건)
  */
 window.SAMPLE_SALESMAP = (function () {
+  const forms    = ['홈페이지 문의', '데모 신청', '자료 다운로드', '가격 문의', '뉴스레터 구독', '이벤트 참가'];
   const services = ['CRM', '세일즈맵', '광고대행', '제휴마케팅', '챗봇', '뉴스레터', '랜딩페이지'];
   const channels = ['검색광고', '자연 검색', '블로그', '인스타그램', '링크드인', '지인 추천', '제휴점', '온라인 세미나'];
   const sources  = ['google', 'naver', 'instagram', 'linkedin', 'kakao', 'direct'];
@@ -134,6 +138,7 @@ window.SAMPLE_SALESMAP = (function () {
     out.push({
       _no: i+1,
       submittedAt: dateStr,
+      inflowForm: pick(forms, i*25),
       service: pick(services, i*2),
       company: company,
       employeeCount: pick(employees, i*4),
