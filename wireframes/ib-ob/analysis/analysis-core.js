@@ -68,8 +68,8 @@ window.Analysis = (function () {
       const sido = pick(rng, SIDO);
       const gu = pick(rng, (GU[sido] || ['-']));
       const firm = pick(rng, FIRM);
-      let ch = (svc === '세일즈 아웃리치') ? (rng() < .8 ? 'OB' : 'IB') : (rng() < .12 ? 'OB' : 'IB');
-      let utmsrc = ch === 'OB' ? 'ob_call' : pick(rng, UTMSRC);
+      const isOb = (svc === '세일즈 아웃리치') ? (rng() < .8) : (rng() < .12);
+      let utmsrc = isOb ? 'ob_call' : pick(rng, UTMSRC);
       const emp = [10, 30, 60, 120, 250, 480, 900][Math.floor(rng() * 7)] + Math.floor(rng() * 40);
       // 성약 확률
       const p = Math.min(.85, (awareConv[aw] || .25) * (svcConv[svc] || 1));
@@ -80,16 +80,16 @@ window.Analysis = (function () {
       else if (r < p + .22) { conv = '협의중'; meet = ymd(meetDate); }
       else if (r < p + .38) { conv = '드롭'; if (rng() < .6) meet = ymd(meetDate); }
       const kw = aw === '검색' ? pick(rng, KW) : (aw === '블로그' && rng() < .4 ? pick(rng, KW) : '');
-      const utm = utmsrc ? `utm_source=${utmsrc}&utm_medium=${ch === 'OB' ? 'outbound' : (rng() < .5 ? 'cpc' : 'organic')}` + (kw ? `&utm_term=${encodeURIComponent(kw)}` : '') : '';
+      const utm = utmsrc ? `utm_source=${utmsrc}&utm_medium=${isOb ? 'outbound' : (rng() < .5 ? 'cpc' : 'organic')}` + (kw ? `&utm_term=${encodeURIComponent(kw)}` : '') : '';
       rows.push({
         '주차': weekLabel(in_), '시작일': '', '종료일': '',
         'IB 인입 일자': ymd(in_), '최초 협의 일자': meet, '계약서 날인 일자': sign,
         '성약': conv, '영업대장': '담당' + (1 + Math.floor(rng() * 6)),
         '고객사 분류': pick(rng, ['A', 'B', 'C']),
         '고객사명': pick(rng, NAMES) + pick(rng, SUFFIX),
-        '주소': sido + ' ' + gu, 'CH': ch, '시도': sido, '지역구': gu, '동리': '-',
+        '주소': sido + ' ' + gu, 'CH': conv === 'Y', '시도': sido, '지역구': gu, '동리': '-',
         '임직원 수': emp, '기업구분': firm, '상장 여부': pick(rng, LISTED),
-        '서비스 인입 구분': svc, '트래킹 경로(UTM)': utm,
+        '서비스 인입 구분': isOb ? '아웃바운드' : svc, '트래킹 경로(UTM)': utm,
         '상세 경로': aw === '검색' ? '/landing' : (aw === '블로그' ? '/blog' : (aw === 'SNS' ? '/sns' : '직접')),
         '인터뷰 기반': '', '인지채널': aw, '검색 키워드': kw
       });
@@ -101,12 +101,13 @@ window.Analysis = (function () {
   function demo() { if (!DEMO) DEMO = gen(220); return DEMO; }
 
   /* ── 집계 헬퍼 ──
-   * 시트 셀의 앞뒤 공백 때문에 비교가 빗나가지 않도록 항상 trim() 후 비교한다.
-   * CH 가 'OB' 가 아닌 모든 행(빈 CH 포함)은 IB 로 본다(인바운드 기본).
+   * IB/OB: 유입구분(서비스 인입 구분)에 '아웃바운드' 포함 → OB, 그 외 IB.
+   * 성약: K열 '성약'. (CH 는 성약 여부 보조용)
    */
   const _t = v => String(v == null ? '' : v).trim();
-  const isOB = r => _t(r['CH']).toUpperCase() === 'OB';
-  const isConv = r => { const s = _t(r['성약']); return s === 'Y' || s === '성약'; };
+  // 아웃바운드 = 유입구분(서비스 인입 구분)에 '아웃바운드' 포함 시 OB, 그 외 IB
+  const isOB = r => String(r['서비스 인입 구분'] != null ? r['서비스 인입 구분'] : (r['유입구분'] || '')).indexOf('아웃바운드') >= 0;
+  const isConv = r => { const s = _t(r['성약']); return s === 'Y' || s === '성약' || s === 'TRUE' || s === 'true' || s === 'O'; };
   function kpi(rows) {
     const total = rows.length;
     const ob = rows.filter(isOB).length;
