@@ -72,6 +72,7 @@
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
         <input id="gas-url" type="text" placeholder="GAS 프록시 URL 붙여넣기 → [연결]" spellcheck="false"/>
+        <a class="btn-disconnect" id="gas-open" target="_blank" rel="noopener noreferrer" style="text-decoration:none" title="GAS 엔드포인트 열기">GAS ↗</a>
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
       </div>
@@ -343,9 +344,28 @@
   rerender();
 
   /* ── GAS 연결 / 로드 ── */
+  // 세일즈맵 문의내용 매핑 (고객사명 + IB 인입 일자 = 기업명 + 제출 날짜)
+  async function fillInquiries(){
+    try {
+      const sm = await MktProxy.call('salesmap.list', {});
+      const rows = (sm && sm.data && sm.data.rows) || [];
+      const map = {};
+      rows.forEach(r => {
+        const k = String(r.company || '').trim() + '|' + String(r.submittedAt || '').slice(0,10);
+        if (r.message) map[k] = r.message;
+      });
+      ROWS.forEach(r => {
+        if (r['문의내용']) return;
+        const k = String(r['고객사명'] || '').trim() + '|' + String(r['IB 인입 일자'] || '').slice(0,10);
+        if (map[k]) r['문의내용'] = map[k];
+      });
+    } catch (_) { /* 세일즈맵 미연결/실패 시 무시 */ }
+  }
+
   async function load(force){
     const url = (window.MktProxy && MktProxy.getUrl()) || '';
     $('gas-url').value = url;
+    if ($('gas-open')) { $('gas-open').href = url || '#'; $('gas-open').style.display = url ? '' : 'none'; }
     $('btn-disconnect').style.display = url ? '' : 'none';
     if (!url){
       if (window.MktProxy) MktProxy.ibobClearCache();
@@ -365,6 +385,7 @@
       const tag = data && data._fromCache ? ' · 캐시됨' : '';
       setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
       fillFilterPanels(ROWS); PAGE = 1; rerender();
+      await fillInquiries(); rerender();
     } catch (err) {
       setStatus('연결 실패: ' + err.message + ' (데모로 대체)', 'err');
       ROWS = window.SAMPLE_IBOB.slice(); fillFilterPanels(ROWS); PAGE = 1; rerender();

@@ -5,11 +5,14 @@
  */
 (function () {
   const STORAGE_KEY = 'mkt_gas_url';
+  // 기본 GAS 프록시 URL — 미연결 시 자동으로 실DB 로드 (저장된 값이 우선)
+  const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbzV2tdT9vljznHNoDkQLexUE8DdsPhP6t-YGOsJttMWu9GntygBQDUF4sqI78TtDrIWbQ/exec';
 
   if (!window.MktProxy) {
     window.MktProxy = {
       STORAGE_KEY: STORAGE_KEY,
-      getUrl: function () { try { return localStorage.getItem(STORAGE_KEY) || ''; } catch (_) { return ''; } },
+      DEFAULT_URL: DEFAULT_GAS_URL,
+      getUrl: function () { try { return localStorage.getItem(STORAGE_KEY) || DEFAULT_GAS_URL; } catch (_) { return DEFAULT_GAS_URL; } },
       setUrl: function (url) {
         try { if (url) localStorage.setItem(STORAGE_KEY, url); else localStorage.removeItem(STORAGE_KEY); } catch (_) {}
       },

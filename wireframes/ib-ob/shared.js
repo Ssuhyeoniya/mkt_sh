@@ -16,6 +16,11 @@
     if (!s) return '<span class="muted">-</span>';
     return `<span class="tag-mini tag-ch">${esc(s)}</span>`;
   }
+  /* CH(성약 여부) → Y/N. TRUE/true/Y/성약/O/1 → Y, 그 외 → N */
+  function ynTag(v){
+    const truthy = v === true || v === 1 || /^(y|yes|true|성약|o|1)$/i.test(String(v == null ? '' : v).trim());
+    return truthy ? `<span class="tag-mini tag-y">Y</span>` : `<span class="tag-mini tag-none">N</span>`;
+  }
   function chTag(v){
     const s = String(v||'').trim().toUpperCase();
     if (s === 'IB') return `<span class="tag-mini tag-ib">IB</span>`;
@@ -90,6 +95,7 @@
         let html;
         if (c.render === 'status') html = statusTag(r[c.key]);
         else if (c.render === 'channel') html = channelTag(r[c.key]);
+        else if (c.render === 'yn') html = ynTag(r[c.key]);
         else if (c.render === 'detail') html = `<button class="detail-btn" data-i="${i}">상세보기</button>`;
         else {
           let v = r[c.key];
@@ -328,7 +334,7 @@
   }
 
   window.IBOB = {
-    esc, fmt, statusTag, channelTag, chTag,
+    esc, fmt, statusTag, channelTag, chTag, ynTag,
     buildHeader, renderTable, resetWidths,
     openModal, closeModal,
     applyFilter, computeKPI, distribute,

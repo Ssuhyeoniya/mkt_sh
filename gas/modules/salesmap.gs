@@ -1,15 +1,15 @@
 /**
  * SALESMAP 모듈 (세일즈맵 / 인바운드 리드 로우데이터)
  *
- * 시트 구조 (Data_Result_Final):
- *   제출 날짜, 관심 서비스, 기업명, 기업주소, 담당자명, 휴대전화번호,
+ * 시트 구조 (Data_Result_Final · v2):
+ *   제출 날짜, 유입 폼, 관심 서비스, 기업명, 기업주소, 담당자명, 휴대전화번호,
  *   회사 이메일, 임직원수, 유입경로, 문의내용,
  *   개인정보 수집 동의, 마케팅 수신 동의,
  *   utm_source, utm_medium, utm_campaign, utm_content, utm_term, WebFormID
  *
  * 프론트 표시 컬럼 (요구사항):
- *   no, 제출 날짜, 서비스, 기업명, 임직원 수, 기업 주소, 담당자,
- *   전화번호, 이메일, 유입경로, 개인정보 수집 동의, 마케팅 수신 동의,
+ *   no, 제출 날짜, 유입 폼, 서비스, 기업명, 임직원 수, 기업 주소, 유입경로,
+ *   개인정보 수집 동의, 마케팅 수신 동의,
  *   utm_source, utm_medium, utm_campaign, utm_content, utm_term
  */
 
@@ -20,6 +20,7 @@ const SALESMAP_TZ         = 'Asia/Seoul';
 // 시트 컬럼 → 프론트 키 매핑
 const SALESMAP_FIELD_MAP = {
   '제출 날짜':           'submittedAt',
+  '유입 폼':             'inflowForm',
   '관심 서비스':         'service',
   '기업명':              'company',
   '기업주소':            'address',
