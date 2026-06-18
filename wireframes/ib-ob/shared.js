@@ -136,7 +136,8 @@
         if (status === 'drop'&& st !== '드롭') return false;
       }
       if (ch && ch !== 'all'){
-        if (String(r['CH']||'').trim().toUpperCase() !== ch.toUpperCase()) return false;
+        const cur = isOutbound(r) ? 'OB' : 'IB';
+        if (cur !== ch.toUpperCase()) return false;
       }
       if (ql){
         const blob = (r['고객사명']+' '+r['주소']+' '+r['검색 키워드']+' '+r['트래킹 경로(UTM)']+' '+r['시도']+' '+r['지역구']).toLowerCase();
@@ -146,19 +147,24 @@
     });
   }
 
-  /* ─ KPI 계산 ─
-   * 시트 셀 값에 흔히 섞이는 앞뒤 공백 때문에 'IB ' !== 'IB' 로 0 으로 집계되던
-   * 문제를 막기 위해 비교 전에 trim() 한다. CH 가 'OB' 가 아닌 모든 행(빈 CH 포함)은
-   * IB 로 카운트 — 막대 차트(aggregateBy)와 동일한 규칙으로 KPI/차트 수치를 일치시킨다.
+  /* ─ IB/OB 판정 ─
+   * 아웃바운드 = 유입구분(W열, 프론트 키 '서비스 인입 구분')에 '아웃바운드' 포함 시 OB,
+   * 그 외 전부 IB. (CH 는 성약 여부 용도라 IB/OB 와 무관)
    */
+  function isOutbound(r){
+    const v = r['서비스 인입 구분'] != null ? r['서비스 인입 구분'] : (r['유입구분'] || '');
+    return String(v).indexOf('아웃바운드') >= 0;
+  }
+
+  /* ─ KPI 계산 ─ 셀 공백 대비 trim 비교. 성약 유무는 K열 '성약' 기준. */
   function computeKPI(rows){
     const norm = v => String(v == null ? '' : v).trim();
     const total = rows.length;
     let ob = 0, conv = 0, mid = 0, drop = 0;
     rows.forEach(r => {
-      if (norm(r['CH']).toUpperCase() === 'OB') ob++;
+      if (isOutbound(r)) ob++;
       const s = norm(r['성약']);
-      if (s === 'Y' || s === '성약') conv++;
+      if (s === 'Y' || s === '성약' || s === 'TRUE' || s === 'true' || s === 'O') conv++;
       else if (s === '협의중') mid++;
       else if (s === '드롭' || s === '무응답') drop++;
     });

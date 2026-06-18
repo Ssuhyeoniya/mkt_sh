@@ -215,8 +215,8 @@
     const region = [row['시도'], row['지역구'], row['동리']].filter(Boolean).join(' · ');
     setText('ibdrw-region', region || '-');
 
-    const chRaw = row['CH'];
-    const isConv = chRaw === true || chRaw === 1 || /^(y|yes|true|성약|o|1)$/i.test(String(chRaw == null ? '' : chRaw).trim());
+    const convRaw = row['성약'];
+    const isConv = convRaw === true || convRaw === 1 || /^(y|yes|true|성약|o|1)$/i.test(String(convRaw == null ? '' : convRaw).trim());
     showTag('ibdrw-ch', '성약 ' + (isConv ? 'Y' : 'N'), isConv ? 't-y' : '');
     const st = statusInfo(row['성약']);
     showTag('ibdrw-status', st.label || null, st.cls);
