@@ -31,8 +31,8 @@ window.IBOB_ROW_COLS = [
   { key:'동리',             label:'동리',       w: 90 },
   { key:'임직원 수',        label:'임직원',      w: 84, align:'right', mono:true },
   { key:'업종',             label:'업종',       w:120 },
-  { key:'기업규모',         label:'규모',       w: 90 },
-  { key:'상장 여부',        label:'상장',       w: 80 },
+  { key:'기업구분',         label:'규모',       w: 90, fallback:'기업규모' },
+  { key:'상장 여부',        label:'상장',       w: 80, fallback:'법인구분' },
   { key:'검색 키워드',      label:'검색 키워드',  w:160, mono:true },
   { key:'_detail',          label:'상세',       w: 84, render:'detail', align:'center' }
 ];
