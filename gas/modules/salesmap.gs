@@ -1,7 +1,7 @@
 /**
  * SALESMAP 모듈 (세일즈맵 / 인바운드 리드 로우데이터)
  *
- * 시트 구조 (Data_Result_Final · v2):
+ * 시트 구조 (SALESMAP_IB · v2):
  *   제출 날짜, 유입 폼, 관심 서비스, 기업명, 기업주소, 담당자명, 휴대전화번호,
  *   회사 이메일, 임직원수, 유입경로, 문의내용,
  *   개인정보 수집 동의, 마케팅 수신 동의,
@@ -14,7 +14,7 @@
  */
 
 const SALESMAP_SHEET_ID   = '13LWJmvtSJRy6G43Lo_jar9hqZquCY4vB4bP4kAQVQLQ';
-const SALESMAP_SHEET_NAME = 'Data_Result_Final';
+const SALESMAP_SHEET_NAME = 'SALESMAP_IB';
 const SALESMAP_TZ         = 'Asia/Seoul';
 
 // 시트 컬럼 → 프론트 키 매핑
