@@ -26,6 +26,8 @@
 
   .table-panel{ min-width:0; overflow:hidden; }
   .table-panel .table-wrap{ overflow:auto; max-height:60vh; }
+  #th-row th{ cursor:pointer; }
+  .sort-arrow{ color:var(--accent); font-size:10px; }
 
   @media (max-width:720px){
     .funnel{ grid-template-columns:1fr !important; }
@@ -207,7 +209,33 @@
   const PAGE_SIZE = 10;
   let PAGE = 1;
   let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'' };
-  let STATE = { services:[], utm:[], searchField:'고객사명', searchQuery:'', dateStart:'', dateEnd:'', activeRange:'', unit:'week' };
+  let STATE = { services:[], utm:[], searchField:'고객사명', searchQuery:'', dateStart:'', dateEnd:'', activeRange:'', unit:'week', sortKey:'IB 인입 일자', sortDir:'desc' };
+
+  /* 정렬 — 기본 IB 인입 일자 내림차순(최신 상단), 헤더 클릭 시 토글 */
+  function sortRows(rows){
+    const key = STATE.sortKey; if (!key) return rows;
+    const dir = STATE.sortDir === 'asc' ? 1 : -1;
+    const col = (window.IBOB_ROW_COLS || []).find(c => c.key === key) || {};
+    return rows.slice().sort((a, b) => {
+      let av = a[key], bv = b[key];
+      if ((av == null || av === '') && col.fallback) av = a[col.fallback];
+      if ((bv == null || bv === '') && col.fallback) bv = b[col.fallback];
+      const an = Number(av), bn = Number(bv);
+      if (col.mono && isFinite(an) && isFinite(bn)) return (an - bn) * dir;
+      av = String(av == null ? '' : av); bv = String(bv == null ? '' : bv);
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+  }
+  function updateSortIndicator(){
+    document.querySelectorAll('#th-row th').forEach(th => {
+      const col = (window.IBOB_ROW_COLS || [])[Number(th.dataset.i)];
+      let arrow = th.querySelector('.sort-arrow');
+      if (col && col.key === STATE.sortKey){
+        if (!arrow){ arrow = document.createElement('span'); arrow.className = 'sort-arrow'; th.insertBefore(arrow, th.querySelector('.resizer')); }
+        arrow.textContent = STATE.sortDir === 'asc' ? ' ▲' : ' ▼';
+      } else if (arrow){ arrow.remove(); }
+    });
+  }
   let ROWS = window.SAMPLE_IBOB.slice();
 
   function setStatus(t, k){ const el = $('status'); if (!el) return; el.className = 'status ' + (k || ''); el.textContent = t; }
@@ -291,12 +319,14 @@
     Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스 인입 구분'), { legend:'right' });
     renderRank('rank-region', Analysis.byDim(filtered, '시도'));
     renderRank('rank-firm',   Analysis.byDim(filtered, '기업구분'));
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const tableRows = sortRows(filtered);
+    const totalPages = Math.max(1, Math.ceil(tableRows.length / PAGE_SIZE));
     if (PAGE > totalPages) PAGE = totalPages;
     $('pg-info').textContent = PAGE + ' / ' + totalPages;
     $('pg-prev').disabled = PAGE <= 1; $('pg-next').disabled = PAGE >= totalPages;
-    const pageRows = filtered.slice((PAGE-1)*PAGE_SIZE, PAGE*PAGE_SIZE);
+    const pageRows = tableRows.slice((PAGE-1)*PAGE_SIZE, PAGE*PAGE_SIZE);
     IBOB.renderTable(pageRows);
+    updateSortIndicator();
     const tbody = $('rows');
     tbody.querySelectorAll('tr').forEach((tr, i) => tr.addEventListener('dblclick', () => IBOB.openModal(pageRows[i])));
   }
@@ -337,6 +367,16 @@
 
   IBOB.buildHeader();
   TableGrid.attach(document.getElementById('tbl'));
+  // 헤더 클릭 정렬 (리사이저 클릭은 제외)
+  $('th-row').addEventListener('click', e => {
+    if (e.target.closest('.resizer')) return;
+    const th = e.target.closest('th'); if (!th) return;
+    const col = (window.IBOB_ROW_COLS || [])[Number(th.dataset.i)];
+    if (!col || col.key === '_detail') return;
+    if (STATE.sortKey === col.key) STATE.sortDir = STATE.sortDir === 'asc' ? 'desc' : 'asc';
+    else { STATE.sortKey = col.key; STATE.sortDir = 'asc'; }
+    PAGE = 1; rerender();
+  });
   bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', 'services');
   bindMS('ms-utm', 'ms-utm-panel', 'UTM 전체', 'utm');
   document.addEventListener('click', () => document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open')));

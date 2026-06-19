@@ -99,6 +99,7 @@
         else if (c.render === 'detail') html = `<button class="detail-btn" data-i="${i}">상세보기</button>`;
         else {
           let v = r[c.key];
+          if ((v == null || v === '') && c.fallback) v = r[c.fallback];  // 값 없으면 대체 컬럼
           if (v == null || v === '') html = '<span class="muted">-</span>';
           else if (c.bold) html = `<span style="font-weight:600">${esc(v)}</span>`;
           else if (typeof v === 'number') html = fmt(v);
