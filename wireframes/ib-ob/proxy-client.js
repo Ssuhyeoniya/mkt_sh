@@ -54,12 +54,14 @@
     return r.data;
   };
 
-  // ── 세션 캐시 ────────────────────────────
+  // ── 캐시 (localStorage · 영구) ──────────────
+  // F5/페이지 이동 시 항상 캐시 사용(DB 미조회). 최신 DB 재조회는 [새로고침] 버튼
+  // (ibobClearCache → load(force)) 에서만 수행한다.
   const IBOB_CACHE_KEY = 'ibob_cache_v1';
   window.MktProxy.ibobListCached = async function (force) {
     if (!force) {
       try {
-        const cached = sessionStorage.getItem(IBOB_CACHE_KEY);
+        const cached = localStorage.getItem(IBOB_CACHE_KEY);
         if (cached) {
           const obj = JSON.parse(cached);
           obj._fromCache = true;
@@ -68,10 +70,11 @@
       } catch (_) {}
     }
     const data = await this.ibobList({});
-    try { sessionStorage.setItem(IBOB_CACHE_KEY, JSON.stringify(data)); } catch (_) {}
+    try { localStorage.setItem(IBOB_CACHE_KEY, JSON.stringify(data)); } catch (_) {}
     return data;
   };
   window.MktProxy.ibobClearCache = function () {
+    try { localStorage.removeItem(IBOB_CACHE_KEY); } catch (_) {}
     try { sessionStorage.removeItem(IBOB_CACHE_KEY); } catch (_) {}
   };
 })();

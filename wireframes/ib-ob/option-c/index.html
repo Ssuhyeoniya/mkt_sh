@@ -389,10 +389,17 @@
 
   /* ── GAS 연결 / 로드 ── */
   // 세일즈맵 문의내용 매핑 (고객사명 + IB 인입 일자 = 기업명 + 제출 날짜)
-  async function fillInquiries(){
+  // F5 시 재요청 없이 캐시 사용, [새로고침] 버튼(force)일 때만 재조회
+  const INQ_CACHE_KEY = 'ibob_inq_smap_v1';
+  async function fillInquiries(force){
     try {
-      const sm = await MktProxy.call('salesmap.list', {});
-      const rows = (sm && sm.data && sm.data.rows) || [];
+      let rows = null;
+      if (!force){ try { const c = localStorage.getItem(INQ_CACHE_KEY); if (c) rows = JSON.parse(c); } catch(_){} }
+      if (!rows){
+        const sm = await MktProxy.call('salesmap.list', {});
+        rows = (sm && sm.data && sm.data.rows) || [];
+        try { localStorage.setItem(INQ_CACHE_KEY, JSON.stringify(rows)); } catch(_){}
+      }
       const map = {};
       rows.forEach(r => {
         const k = String(r.company || '').trim() + '|' + String(r.submittedAt || '').slice(0,10);
@@ -429,7 +436,7 @@
       const tag = data && data._fromCache ? ' · 캐시됨' : '';
       setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
       fillFilterPanels(ROWS); PAGE = 1; rerender();
-      await fillInquiries(); rerender();
+      await fillInquiries(force); rerender();
     } catch (err) {
       setStatus('연결 실패: ' + err.message + ' (데모로 대체)', 'err');
       ROWS = window.SAMPLE_IBOB.slice(); fillFilterPanels(ROWS); PAGE = 1; rerender();
