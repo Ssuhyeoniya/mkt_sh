@@ -297,7 +297,10 @@
 
     const tbody = $('rows');
     if (!slice.length){
-      tbody.innerHTML = `<tr><td colspan="${COLS.length}"><div class="empty">조건에 맞는 리드가 없습니다.</div></td></tr>`;
+      const msg = (rows && rows.length)
+        ? '조건에 맞는 리드가 없습니다.'
+        : '표시할 데이터가 없습니다. GAS 연결 및 데이터를 확인해 주세요.';
+      tbody.innerHTML = `<tr><td colspan="${COLS.length}"><div class="empty">${msg}</div></td></tr>`;
       return;
     }
     tbody.innerHTML = slice.map((r, idx) => {
@@ -371,8 +374,8 @@
     $('btn-disconnect').style.display = url ? '' : 'none';
     if (!url){
       MktProxy.salesmapClearCache && MktProxy.salesmapClearCache();
-      setStatus('데모 데이터 표시 중', 'demo');
-      render(SAMPLE_SALESMAP);
+      setStatus('GAS 연결이 필요합니다', 'amber');
+      render([]);
       return;
     }
     try{
@@ -383,7 +386,7 @@
       setStatus('● 연결됨 · ' + (data.total || (data.rows||[]).length) + '건' + tag, 'ok');
     }catch(err){
       setStatus('연결 실패: '+err.message, 'err');
-      render(SAMPLE_SALESMAP);
+      render([]);
     }
   }
 
