@@ -38,8 +38,10 @@ window.AnalysisSections = (function () {
     `<div class="an-card"><h3>${esc(title)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h3>${hint ? `<div class="hint">${hint}</div>` : ''}${inner}</div>`;
   const box = (id, cls) => `<div class="chartbox ${cls || ''}"><canvas id="${id}"></canvas></div>`;
 
-  // ── 기간 비교(전월/전년 동월) 유틸 ──
-  let CMP_MODE = '';   // '' | 'mom' | 'yoy' — 개요 렌더 간 유지되는 비교 모드
+  // ── 기간 비교(전월/전년 동월) 유틸 — 전역 모드는 AnalysisApp.state.cmpMode ──
+  function cmpMode() { return (window.AnalysisApp && AnalysisApp.state && AnalysisApp.state.cmpMode) || ''; }
+  function getCmp() { return (window.AnalysisApp && AnalysisApp.compare) ? AnalysisApp.compare() : { has: false }; }
+  const cmpModeLabel = m => m === 'yoy' ? '전년 동월 대비' : (m === 'mom' ? '전월 대비' : '');
   function _delta(cur, prev, isPct) {
     const d = cur - prev;
     const cls = d > 0 ? 'up' : (d < 0 ? 'down' : 'flat');
@@ -65,7 +67,7 @@ window.AnalysisSections = (function () {
   const B = {
     overview(sid, rows, host) {
       const k = A.kpi(rows);
-      const cmp = (CMP_MODE && window.AnalysisApp && AnalysisApp.compare) ? AnalysisApp.compare(CMP_MODE) : { has: false };
+      const cmp = getCmp();
       // 각 KPI: [라벨, 현재값, 서브, 비교기간값, 단위(%여부)]
       const facts = [
         ['전체 인입', k.total, `IB ${k.ib} · OB ${k.ob}`, cmp.has ? cmp.prev.total : null, false],
@@ -73,25 +75,15 @@ window.AnalysisSections = (function () {
         ['계약 날인', k.sign, `진행 ${k.mid}건`, cmp.has ? cmp.prev.sign : null, false],
         ['성약', k.conv, `성약률 ${k.rate}%`, cmp.has ? cmp.prev.conv : null, false]
       ];
-      const cmpLabel = m => m === 'yoy' ? '전년 동월 대비' : '전월 대비';
-      const cmpBar =
-        `<div class="cmp-bar" id="${cid(sid, 'cmpbar')}">
-          <span class="cmp-lbl">기간 비교</span>
-          <button data-cmp="" class="${!CMP_MODE ? 'on' : ''}">끄기</button>
-          <button data-cmp="mom" class="${CMP_MODE === 'mom' ? 'on' : ''}">전월 대비</button>
-          <button data-cmp="yoy" class="${CMP_MODE === 'yoy' ? 'on' : ''}">전년 동월 대비</button>
-          ${CMP_MODE
-            ? (cmp.has
-                ? `<span class="cmp-hint">${esc(cmp.curLabel)} <b>vs</b> ${esc(cmp.prevLabel)} · 값 클릭 시 상세 비교</span>`
-                : `<span class="cmp-hint">상단에서 기간(시작~종료)을 선택하면 비교됩니다</span>`)
-            : `<span class="cmp-hint">전월 · 전년 동월과 비교하려면 선택하세요</span>`}
-        </div>`;
+      // 라벨 우측에 증감 배지 — 항상 같은 자리(흔들림 방지)
       const factGrid = `<div class="fact-grid">${facts.map(f =>
-        `<div class="fact${cmp.has ? ' cmp-fact' : ''}"><div class="ttl">${f[0]}</div><div class="big">${fmt(f[1])}</div><div class="sub">${f[2]}</div>${(cmp.has && f[3] != null) ? deltaBadge(f[1], f[3], f[4]) : ''}</div>`
+        `<div class="fact${cmp.has ? ' cmp-fact' : ''}">`
+        + `<div class="ttl-row"><span class="ttl">${f[0]}</span>${(cmp.has && f[3] != null) ? deltaBadge(f[1], f[3], f[4]) : ''}</div>`
+        + `<div class="big">${fmt(f[1])}</div><div class="sub">${f[2]}</div></div>`
       ).join('')}</div>`;
       const cmpDetail = cmp.has
         ? `<div class="an-card cmp-detail" id="${cid(sid, 'cmpDetail')}">
-             <h3>기간 비교 상세 <span class="tag">${cmpLabel(CMP_MODE)}</span></h3>
+             <h3>기간 비교 상세 <span class="tag">${cmpModeLabel(cmpMode())}</span></h3>
              <table class="an-table cmp-table"><thead><tr>
                <th>지표</th><th>현 기간<div class="cmp-sub">${esc(cmp.curLabel)}</div></th>
                <th>비교 기간<div class="cmp-sub">${esc(cmp.prevLabel)}</div></th><th>증감</th></tr></thead>
@@ -107,20 +99,13 @@ window.AnalysisSections = (function () {
            </div>`
         : '';
       host.innerHTML = head('Overview', '개요 대시보드', '전체 인바운드 인입을 한눈에. 상단 필터가 모든 카테고리에 적용됩니다.') +
-        cmpBar + factGrid + cmpDetail +
+        factGrid + cmpDetail +
         `<div class="an-grid an-g23">${card('월별 인입 & 성약률', 'time series', box(cid(sid, 'trend'), 'lg'))}${card('인지채널 믹스', 'P·O·E', box(cid(sid, 'aware'), 'lg'))}</div>` +
         `<div class="an-grid an-g2">${card('서비스별 인입 TOP', 'rank', box(cid(sid, 'svc')))}${card('유입경로(UTM) 분포', 'inflow', box(cid(sid, 'utm')))}</div>`;
       A.lineSeries(cid(sid, 'trend'), A.series(rows, 'month'));
       A.doughnut(cid(sid, 'aware'), A.byDim(rows, '인지채널'));
       A.barIBOB(cid(sid, 'svc'), A.byDim(rows, '서비스 인입 구분'));
       A.doughnut(cid(sid, 'utm'), A.utmSource(rows));
-      // 비교 모드 토글
-      const bar = host.querySelector('#' + cid(sid, 'cmpbar'));
-      if (bar) bar.addEventListener('click', e => {
-        const b = e.target.closest('button[data-cmp]'); if (!b) return;
-        CMP_MODE = b.dataset.cmp;
-        B.overview(sid, rows, host);   // 같은 데이터로 개요만 재구성
-      });
       // KPI 값 클릭 → 상세 비교표 펼치기/접기
       const detail = host.querySelector('#' + cid(sid, 'cmpDetail'));
       if (detail) host.querySelectorAll('.cmp-fact').forEach(el =>
@@ -182,23 +167,40 @@ window.AnalysisSections = (function () {
     },
     industry(sid, rows, host) {
       const grp = A.byDim(rows, '업종 그룹');
-      const ind = A.byDim(rows, '업종', 12);
-      const biz = A.byDim(rows, '업태');
-      host.innerHTML = head('Industry', '업종 · 업태 분석', '업종 그룹 · 업종 · 업태별 인입과 성약, 가능한 교차 조합 전체.') +
-        `<div class="an-grid an-g2">${card('업종 그룹별 인입', 'IB/OB', box(cid(sid, 'grpBar')))}${card('업종 그룹별 성약률', 'rate', box(cid(sid, 'grpRate')))}</div>` +
-        `<div class="an-grid an-g2">${card('업종별 인입', 'bar', box(cid(sid, 'indBar'), 'lg'))}${card('업태별 인입', 'bar', box(cid(sid, 'bizBar'), 'lg'))}</div>` +
+      const normGrp = r => (String(r['업종 그룹'] || '기타').trim() || '기타');
+      host.innerHTML = head('Industry', '업종 · 업태 분석', '업종 그룹 · 업종 · 업태별 인입과 성약. 업종 그룹 막대를 클릭하면 해당 그룹의 업종/업태만 보여줍니다.') +
+        `<div class="an-grid an-g2">${card('업종 그룹별 인입', 'IB/OB · 클릭 시 필터', box(cid(sid, 'grpBar')))}${card('업종 그룹별 성약률', 'rate', box(cid(sid, 'grpRate')))}</div>` +
+        `<div class="an-grid an-g2">${card('업종별 인입', 'bar', box(cid(sid, 'indBar'), 'lg'), `<span id="${cid(sid, 'indSel')}"></span>`)}${card('업태별 인입', 'bar', box(cid(sid, 'bizBar'), 'lg'), `<span id="${cid(sid, 'bizSel')}"></span>`)}</div>` +
         card('업종 그룹 × 업태', 'heatmap', `<div class="hm-wrap" id="${cid(sid, 'hmGB')}"></div>`) +
         card('업종 × 업태', 'heatmap', `<div class="hm-wrap" id="${cid(sid, 'hmIB')}"></div>`) +
         card('업종 그룹 × 업종', 'heatmap', `<div class="hm-wrap" id="${cid(sid, 'hmGI')}"></div>`) +
         card('업종 그룹 상세', 'table', `<div id="${cid(sid, 'tbl')}"></div>`);
-      A.barIBOB(cid(sid, 'grpBar'), grp);
       A.rateBar(cid(sid, 'grpRate'), grp, '#0d9488');
-      A.barIBOB(cid(sid, 'indBar'), ind, { horizontal: true });
-      A.barIBOB(cid(sid, 'bizBar'), biz, { horizontal: true });
       document.getElementById(cid(sid, 'hmGB')).innerHTML = A.heatHTML(A.crosstab(rows, '업종 그룹', '업태', 8, 8));
       document.getElementById(cid(sid, 'hmIB')).innerHTML = A.heatHTML(A.crosstab(rows, '업종', '업태', 10, 8));
       document.getElementById(cid(sid, 'hmGI')).innerHTML = A.heatHTML(A.crosstab(rows, '업종 그룹', '업종', 8, 10));
       A.dimTable(cid(sid, 'tbl'), grp, { nameLabel: '업종 그룹' });
+
+      // 업종 그룹 클릭 → 해당 그룹의 업종/업태만 렌더 (기본: 전체)
+      let activeGrp = '';
+      const drawIndBiz = () => {
+        const sub = activeGrp ? rows.filter(r => normGrp(r) === activeGrp) : rows;
+        A.barIBOB(cid(sid, 'indBar'), A.byDim(sub, '업종', 12), { horizontal: true });
+        A.barIBOB(cid(sid, 'bizBar'), A.byDim(sub, '업태', 12), { horizontal: true });
+        const txt = activeGrp ? ('▸ ' + activeGrp + ' · 클릭 해제 시 전체') : '전체 (업종 그룹 막대 클릭 시 해당 그룹)';
+        const a = document.getElementById(cid(sid, 'indSel')); if (a) a.textContent = txt;
+        const b = document.getElementById(cid(sid, 'bizSel')); if (b) b.textContent = txt;
+      };
+      const grpChart = A.barIBOB(cid(sid, 'grpBar'), grp);
+      const cv = document.getElementById(cid(sid, 'grpBar'));
+      if (cv && grpChart) cv.onclick = (evt) => {
+        const pts = grpChart.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+        if (!pts || !pts.length) return;
+        const name = grpChart.data.labels[pts[0].index];
+        activeGrp = (activeGrp === name) ? '' : name;
+        drawIndBiz();
+      };
+      drawIndBiz();
     },
     aware(sid, rows, host) {
       const dim = A.byDim(rows, '인지채널');
@@ -318,9 +320,62 @@ window.AnalysisSections = (function () {
     });
   };
 
+  // 섹션별 비교 기준 차원 — 전월/전년 동월 비교 막대에 쓰는 축.
+  // null = 전체 KPI(전체/IB/OB/성약) 비교로 대체.
+  const CMP_DIM = {
+    overview: { key: '서비스 인입 구분', label: '서비스별 인입' },
+    service:  { key: '서비스 인입 구분', label: '서비스별 인입' },
+    time:     null,
+    dow:      null,
+    geo:      { key: '시도', label: '시도별 인입' },
+    size:     { key: '기업구분', label: '기업구분별 인입' },
+    industry: { key: '업종 그룹', label: '업종 그룹별 인입' },
+    aware:    { key: '인지채널', label: '인지채널별 인입' },
+    inflow:   { key: '_utmsrc', label: '유입경로(UTM)별 인입' },
+    keyword:  { key: '검색 키워드', label: '키워드별 인입' },
+    conv:     { key: '서비스 인입 구분', label: '서비스별 인입' },
+    cross:    null,
+    explore:  null
+  };
+
+  // 비교 모드일 때 섹션 상단에 '현 기간 vs 비교 기간' 막대 블록을 끼워 넣는다.
+  function prependCompareBlock(sid, cmp, host) {
+    const conf = (sid in CMP_DIM) ? CMP_DIM[sid] : null;
+    const chartId = cid(sid, 'cmpchart');
+    const titleTag = cmpModeLabel(cmpMode());
+    const html =
+      `<div class="an-card cmp-block">
+         <h3>기간 비교 — ${esc(conf ? conf.label : '전체 인입')} <span class="tag">${titleTag}</span>
+           <span class="cmp-period">${esc(cmp.curLabel)} vs ${esc(cmp.prevLabel)}</span></h3>`
+      + box(chartId, 'lg') + `</div>`;
+    const sh = host.querySelector('.sec-head');
+    const tmp = document.createElement('div'); tmp.innerHTML = html;
+    const node = tmp.firstElementChild;
+    if (sh && sh.parentNode) sh.parentNode.insertBefore(node, sh.nextSibling);
+    else host.insertBefore(node, host.firstChild);
+
+    if (!conf) {
+      A.barCompare(chartId, ['전체 인입', 'IB', 'OB', '성약'],
+        [cmp.cur.total, cmp.cur.ib, cmp.cur.ob, cmp.cur.conv],
+        [cmp.prev.total, cmp.prev.ib, cmp.prev.ob, cmp.prev.conv],
+        '현 기간', '비교 기간');
+      return;
+    }
+    const curDim = (conf.key === '_utmsrc') ? A.utmSource(cmp.curRows) : A.byDim(cmp.curRows, conf.key, 10);
+    const prevDim = (conf.key === '_utmsrc') ? A.utmSource(cmp.prevRows) : A.byDim(cmp.prevRows, conf.key);
+    const labels = curDim.map(d => d.name);
+    const pm = {}; prevDim.forEach(d => { pm[d.name] = d.total; });
+    A.barCompare(chartId, labels, curDim.map(d => d.total), labels.map(n => pm[n] || 0), '현 기간', '비교 기간');
+  }
+
   function render(sid, rows, host) {
     const fn = B[sid]; if (!fn) { host.innerHTML = '<div class="empty">준비 중</div>'; return; }
     fn(sid, rows, host);
+    // 전역 비교 모드 — 모든 하위 섹션에 비교 막대 적용
+    if (cmpMode()) {
+      const cmp = getCmp();
+      if (cmp.has) prependCompareBlock(sid, cmp, host);
+    }
   }
 
   return { LIST, flat, meta, render };

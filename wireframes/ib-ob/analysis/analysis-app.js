@@ -7,7 +7,9 @@ window.AnalysisApp = (function () {
   const $ = id => document.getElementById(id);
   let RAW = [];
   let onRender = function () {};
-  const STATE = { svc: '', aware: '', conv: false, dateStart: '', dateEnd: '', range: '' };
+  // STATE = 실제 적용된 값(렌더 기준). PENDING = 입력만 된 값([조회] 클릭 시 STATE 로 반영).
+  const STATE = { svc: '', aware: '', conv: false, dateStart: '', dateEnd: '', range: '', cmpMode: '' };
+  const PENDING = { svc: '', aware: '', conv: false, dateStart: '', dateEnd: '', range: '' };
 
   function setStatus(t, k) { const el = $('status'); if (!el) return; el.className = 'status ' + (k || ''); el.textContent = t; }
   function ymd(d) { return A.ymd(d); }
@@ -42,7 +44,9 @@ window.AnalysisApp = (function () {
     return ymd(d);
   }
   function compare(mode) {
-    mode = (mode === 'yoy') ? 'yoy' : 'mom';
+    if (mode === undefined) mode = STATE.cmpMode;       // 인자 없으면 전역 모드 사용
+    mode = (mode === 'yoy') ? 'yoy' : (mode === 'mom' ? 'mom' : '');
+    if (!mode) return { has: false, mode: '' };          // '전체'(비교 끔)
     const ds = STATE.dateStart, de = STATE.dateEnd;
     if (!ds || !de) return { has: false, mode };   // 양끝 기간이 있어야 비교 가능
     const base = applyNonDate(RAW);
@@ -72,20 +76,49 @@ window.AnalysisApp = (function () {
     fillSelect('fAware', '인지채널', '인지채널 전체');
   }
 
+  // ── 입력(PENDING)만 갱신: [조회] 클릭 전까지 화면 반영 안 함 ──
   function setQuickRange(days) {
     const end = yesterday(), start = new Date(end); start.setDate(start.getDate() - (days - 1));
     if ($('date-start')) $('date-start').value = ymd(start);
     if ($('date-end')) $('date-end').value = ymd(end);
-    STATE.dateStart = ymd(start); STATE.dateEnd = ymd(end); STATE.range = String(days); rerender();
+    PENDING.dateStart = ymd(start); PENDING.dateEnd = ymd(end); PENDING.range = String(days);
+    markDirty();
+  }
+  function isDirty() {
+    return PENDING.svc !== STATE.svc || PENDING.aware !== STATE.aware || PENDING.conv !== STATE.conv
+        || PENDING.dateStart !== STATE.dateStart || PENDING.dateEnd !== STATE.dateEnd;
+  }
+  function markDirty() {
+    const dirty = isDirty();
+    if ($('btn-apply')) $('btn-apply').classList.toggle('pending', dirty);
+    document.querySelectorAll('.qbtn').forEach(b => {
+      b.classList.toggle('pending', dirty && b.dataset.range === PENDING.range && !!PENDING.range);
+      b.classList.toggle('active', !dirty && b.dataset.range === STATE.range && !!STATE.range);
+    });
+  }
+  // [조회] — PENDING → STATE 반영 후 렌더
+  function applyPending() {
+    STATE.svc = PENDING.svc; STATE.aware = PENDING.aware; STATE.conv = PENDING.conv;
+    STATE.dateStart = PENDING.dateStart; STATE.dateEnd = PENDING.dateEnd; STATE.range = PENDING.range;
+    rerender(); markDirty();
   }
   function clearRange() {
     if ($('date-start')) $('date-start').value = '';
     if ($('date-end')) $('date-end').value = '';
-    STATE.dateStart = STATE.dateEnd = STATE.range = ''; rerender();
+    PENDING.dateStart = PENDING.dateEnd = PENDING.range = '';
+    STATE.dateStart = STATE.dateEnd = STATE.range = '';
+    rerender(); markDirty();
+  }
+  // 기간 비교 모드(전체/전월/전년 동월) — 즉시 반영, 모든 섹션에 적용
+  function setCompare(mode) {
+    STATE.cmpMode = (mode === 'mom' || mode === 'yoy') ? mode : '';
+    document.querySelectorAll('#cmp-seg button').forEach(b =>
+      b.classList.toggle('on', (b.dataset.cmp || '') === STATE.cmpMode));
+    rerender();
   }
   function updateRangeInfo() {
-    document.querySelectorAll('.qbtn').forEach(b => b.classList.toggle('active', b.dataset.range === STATE.range && !!STATE.range));
     const el = $('range-info'); if (el) el.textContent = (!STATE.dateStart && !STATE.dateEnd) ? '전체 기간' : `${STATE.dateStart || '...'} ~ ${STATE.dateEnd || '...'}`;
+    markDirty();
   }
 
   async function load(force) {
@@ -111,15 +144,22 @@ window.AnalysisApp = (function () {
   }
 
   function bind() {
-    if ($('fSvc')) $('fSvc').addEventListener('change', e => { STATE.svc = e.target.value; rerender(); });
-    if ($('fAware')) $('fAware').addEventListener('change', e => { STATE.aware = e.target.value; rerender(); });
-    if ($('fConv')) $('fConv').addEventListener('change', e => { STATE.conv = e.target.checked; rerender(); });
+    if ($('fSvc')) $('fSvc').addEventListener('change', e => { PENDING.svc = e.target.value; markDirty(); });
+    if ($('fAware')) $('fAware').addEventListener('change', e => { PENDING.aware = e.target.value; markDirty(); });
+    if ($('fConv')) $('fConv').addEventListener('change', e => { PENDING.conv = e.target.checked; markDirty(); });
     document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => setQuickRange(Number(b.dataset.range))));
-    if ($('date-start')) $('date-start').addEventListener('change', e => { STATE.dateStart = e.target.value; STATE.range = ''; rerender(); });
-    if ($('date-end')) $('date-end').addEventListener('change', e => { STATE.dateEnd = e.target.value; STATE.range = ''; rerender(); });
+    if ($('date-start')) $('date-start').addEventListener('change', e => { PENDING.dateStart = e.target.value; PENDING.range = ''; markDirty(); });
+    if ($('date-end')) $('date-end').addEventListener('change', e => { PENDING.dateEnd = e.target.value; PENDING.range = ''; markDirty(); });
+    if ($('btn-apply')) $('btn-apply').addEventListener('click', applyPending);
+    ['date-start', 'date-end'].forEach(id => { if ($(id)) $(id).addEventListener('keydown', e => { if (e.key === 'Enter') applyPending(); }); });
+    if ($('cmp-seg')) $('cmp-seg').addEventListener('click', e => {
+      const b = e.target.closest('button[data-cmp]'); if (!b) return;
+      setCompare(b.dataset.cmp || '');
+    });
     if ($('btn-clear-date')) $('btn-clear-date').addEventListener('click', clearRange);
     if ($('fReset')) $('fReset').addEventListener('click', () => {
       STATE.svc = STATE.aware = ''; STATE.conv = false;
+      PENDING.svc = PENDING.aware = ''; PENDING.conv = false;
       if ($('fSvc')) $('fSvc').value = ''; if ($('fAware')) $('fAware').value = ''; if ($('fConv')) $('fConv').checked = false;
       clearRange();
     });
@@ -142,5 +182,5 @@ window.AnalysisApp = (function () {
     bind();
     load();
   }
-  return { init, filtered, compare, state: STATE, reload: load };
+  return { init, filtered, compare, setCompare, state: STATE, reload: load };
 })();
