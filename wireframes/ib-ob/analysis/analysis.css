@@ -82,3 +82,18 @@
 .cmp-detail.open{ display:block; }
 .cmp-table .cmp-sub{ font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:400; color:var(--muted); margin-top:2px; }
 .cmp-table td b{ font-family:'JetBrains Mono',monospace; }
+
+/* 기간 비교 — 필터바 세그먼트 / 조회 버튼 / 라벨 우측 배지 (흔들림 방지) */
+.an-filter .cmp-lbl{ font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin-left:4px; }
+.cmp-seg button.on{ background:var(--accent); color:#fff; font-weight:600; }
+.an-filter .apply{ background:var(--accent); border:1px solid var(--accent); color:#fff; border-radius:8px; padding:6px 16px; font-size:12.5px; font-weight:600; cursor:pointer; }
+.an-filter .apply:hover{ filter:brightness(1.05); }
+.an-filter .apply.pending{ box-shadow:0 0 0 3px rgba(109,78,255,.18); }
+.an-filter .qbtn.pending{ border-color:var(--accent); color:var(--accent); }
+/* KPI 카드: 라벨 줄 우측에 증감 배지를 고정 배치 → 토글해도 높이 불변 */
+.fact{ min-height:84px; }
+.fact .ttl-row{ display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:16px; }
+.fact .ttl-row .ttl{ font-size:11.5px; color:var(--muted); }
+.fact .ttl-row .cmp-badge{ margin-top:0; }
+/* 비교 막대 블록 */
+.cmp-block .cmp-period{ font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:400; color:var(--muted); margin-left:6px; }

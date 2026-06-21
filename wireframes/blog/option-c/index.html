@@ -239,21 +239,22 @@
   .bopt-table thead, .bopt-table tbody{ display:block; }
   .table-head, .post-row{
     display:grid;
+    /* 고정 px 컬럼 — fr/minmax 가변 폭 제거(스크롤바 토글·페이지 이동 시 흔들림 방지) */
     grid-template-columns:
-      minmax(24px, 0.35fr)   /* NO */
-      minmax(64px, 1fr)      /* 발행일 */
-      minmax(120px, 4fr)     /* 제목 */
-      minmax(36px, 0.6fr)    /* 썸네일 */
-      minmax(48px, 0.85fr)   /* 서비스 */
-      minmax(60px, 1.1fr)    /* 카테고리 */
-      minmax(48px, 0.85fr)   /* 총방문 */
-      minmax(44px, 0.8fr)    /* 주간 */
-      minmax(44px, 0.8fr)    /* 월간 */
-      minmax(44px, 0.8fr)    /* 유입 */
-      minmax(24px, 0.35fr)   /* 링크 */
-      minmax(40px, 0.7fr);   /* 상세 */
+      44px      /* NO */
+      92px      /* 발행일 */
+      320px     /* 제목 */
+      56px      /* 썸네일 */
+      96px      /* 서비스 */
+      104px     /* 카테고리 */
+      80px      /* 총방문 */
+      70px      /* 주간 */
+      70px      /* 월간 */
+      72px      /* 유입 */
+      40px      /* 링크 */
+      64px;     /* 상세 */
     gap:6px; align-items:center;
-    min-width:700px;
+    width:1140px; min-width:1140px;   /* 합계 고정 — 컨테이너 폭과 무관 */
   }
   .post-row .svc-tag{
     font-size:10.5px; padding:2px 7px; border-radius:4px;

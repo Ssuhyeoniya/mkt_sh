@@ -161,8 +161,14 @@ window.Analysis = (function () {
   function dow(rows) {
     const m = DOW.map(d => ({ name: d, total: 0, conv: 0 }));
     rows.forEach(r => {
-      const d = new Date(String(r['IB 인입 일자'] || '').slice(0, 10)); if (isNaN(d)) return;
-      m[d.getDay()].total++; if (isConv(r)) m[d.getDay()].conv++;
+      // 'yyyy-mm-dd' / 'yyyy.mm.dd' / 'yyyy/mm/dd' 등 구분자 무관하게 파싱 (TZ 영향 없이 로컬 구성)
+      const s = String(r['IB 인입 일자'] || '').slice(0, 10);
+      const mm = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+      if (!mm) return;
+      const dt = new Date(+mm[1], +mm[2] - 1, +mm[3]);
+      if (isNaN(dt)) return;
+      const wd = dt.getDay();
+      m[wd].total++; if (isConv(r)) m[wd].conv++;
     });
     return m.map(d => Object.assign(d, { rate: d.total ? Math.round(d.conv * 100 / d.total) : 0 }));
   }
@@ -171,7 +177,9 @@ window.Analysis = (function () {
     const seg = [['1~30', 0, 30], ['31~100', 31, 100], ['101~300', 101, 300], ['301~', 301, 1e9]];
     const m = seg.map(s => ({ name: s[0], lo: s[1], hi: s[2], total: 0, conv: 0 }));
     rows.forEach(r => {
-      const e = Number(r['임직원 수']) || 0;
+      // '123명', '1,234 명' 등 숫자 외 문자가 섞여도 숫자만 추출
+      const e = parseInt(String(r['임직원 수'] == null ? '' : r['임직원 수']).replace(/[^0-9]/g, ''), 10) || 0;
+      if (!e) return;   // 값 없음/0 은 세그먼트에서 제외
       const b = m.find(x => e >= x.lo && e <= x.hi); if (!b) return;
       b.total++; if (isConv(r)) b.conv++;
     });
@@ -213,6 +221,33 @@ window.Analysis = (function () {
   }
 
   /* ── Chart.js 기본 테마 ── */
+  // 막대 위에 값(작은 숫자)을 그려주는 경량 플러그인 — 막대 데이터셋에만 적용.
+  const _valueLabels = {
+    id: 'valueLabels',
+    afterDatasetsDraw: function (chart) {
+      const ctx = chart.ctx;
+      const horizontal = chart.options && chart.options.indexAxis === 'y';
+      chart.data.datasets.forEach(function (ds, di) {
+        const meta = chart.getDatasetMeta(di);
+        if (!meta || meta.type !== 'bar' || meta.hidden) return;
+        ctx.save();
+        ctx.font = '600 9px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#6b7280';
+        meta.data.forEach(function (el, i) {
+          const v = ds.data[i];
+          if (v == null || v === 0 || !el) return;
+          if (horizontal) {
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText(fmt(v), el.x + 3, el.y);
+          } else {
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.fillText(fmt(v), el.x, el.y - 2);
+          }
+        });
+        ctx.restore();
+      });
+    }
+  };
   function theme() {
     if (!window.Chart || theme._done) return;
     Chart.defaults.font.family = "'Pretendard', sans-serif";
@@ -228,6 +263,7 @@ window.Analysis = (function () {
     Chart.defaults.animations = { colors: false, x: false, y: false };
     Chart.defaults.transitions = Chart.defaults.transitions || {};
     if (Chart.defaults.transitions.active) Chart.defaults.transitions.active.animation = { duration: 0 };
+    try { Chart.register(_valueLabels); } catch (_) {}
     theme._done = true;
   }
   const GRID = { color: '#e2e5ec' };
@@ -305,6 +341,24 @@ window.Analysis = (function () {
       }
     });
   }
+  /* 기간 비교용 그룹 막대: 현 기간 vs 비교 기간 (값 라벨 자동 표기) */
+  function barCompare(id, labels, curData, prevData, curLabel, prevLabel) {
+    return mk(id, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: curLabel || '현 기간', data: curData, backgroundColor: '#6d4eff', borderRadius: 3 },
+          { label: prevLabel || '비교 기간', data: prevData, backgroundColor: '#c7cdda', borderRadius: 3 }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'bottom' } },
+        scales: { x: { grid: { display: false } }, y: { grid: GRID, ticks: { precision: 0 } } }
+      }
+    });
+  }
   /* 버블: x=인입, y=성약률, r=성약수 */
   function bubble(id, dim) {
     const maxConv = Math.max(1, ...dim.map(d => d.conv));
@@ -366,6 +420,6 @@ window.Analysis = (function () {
   return {
     PALETTE, HEAT, esc, fmt, ymd,
     demo, kpi, byDim, series, dow, sizeSeg, crosstab, utmSource, keywords, isConv,
-    theme, barIBOB, rateBar, lineSeries, doughnut, bubble, heatHTML, dimTable, charts: _charts
+    theme, barIBOB, rateBar, lineSeries, doughnut, bubble, barCompare, heatHTML, dimTable, charts: _charts
   };
 })();
