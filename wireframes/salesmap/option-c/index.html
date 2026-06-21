@@ -249,27 +249,20 @@
 
     <!-- UTM 분석 -->
     <section class="grid-3">
-      <!-- 유입경로 랭킹 (아래 블럭으로 이동) -->
       <div class="panel panel-pad">
-        <div class="panel-title">
-          <h3>유입경로 TOP 5</h3>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span class="sub" id="ch-total">0개</span>
-            <button class="ghost-btn" id="btn-ch-more" type="button">더보기 ▸</button>
-          </div>
-        </div>
+        <div class="panel-title"><h3>유입경로</h3><span class="sub" id="ch-total">0건</span></div>
         <div id="ch-rank"></div>
       </div>
       <div class="panel panel-pad">
-        <div class="panel-title"><h3>utm_source TOP 6</h3></div>
+        <div class="panel-title"><h3>utm_source</h3><span class="sub" id="utm-source-total">0건</span></div>
         <div id="utm-source"></div>
       </div>
       <div class="panel panel-pad">
-        <div class="panel-title"><h3>utm_campaign TOP 6</h3></div>
+        <div class="panel-title"><h3>utm_campaign</h3><span class="sub" id="utm-campaign-total">0건</span></div>
         <div id="utm-campaign"></div>
       </div>
       <div class="panel panel-pad">
-        <div class="panel-title"><h3>임직원 규모 분포</h3></div>
+        <div class="panel-title"><h3>임직원 규모 분포</h3><span class="sub" id="emp-dist-total">0건</span></div>
         <div id="emp-dist"></div>
       </div>
     </section>
@@ -550,19 +543,35 @@
       </div>`).join('');
   }
 
+  // 섹션별 최대 7개 노출, 초과 시 [더보기]로 전체 확인. 반환값 = 조회 총 개수(합계)
+  const RANK_LIMIT = 7;
   function renderRank(rows, key, target, n){
+    const el = $(target); if (!el) return 0;
     const map = {};
     rows.forEach(r => { const k = r[key]||'(없음)'; map[k]=(map[k]||0)+1; });
-    const arr = Object.entries(map).map(([name,count]) => ({name,count})).sort((a,b)=>b.count-a.count).slice(0, n);
-    if (!arr.length){ $(target).innerHTML = '<div class="muted text-[12px] py-2">데이터 없음</div>'; return; }
+    const arr = Object.entries(map).map(([name,count]) => ({name,count})).sort((a,b)=>b.count-a.count);
+    const total = arr.reduce((s,x)=>s+x.count, 0);
+    if (!arr.length){ el.innerHTML = '<div class="muted text-[12px] py-2">데이터 없음</div>'; return 0; }
     const max = arr[0].count;
-    $(target).innerHTML = arr.map((x,i) => `
+    const row = (x,i) => `
       <div class="rank-row">
         <span class="idx">${i+1}</span>
         <span class="name" title="${esc(x.name)}">${esc(x.name)}</span>
         <span class="bar"><i style="width:${Math.round(x.count*100/max)}%"></i></span>
         <span class="v">${x.count}</span>
-      </div>`).join('');
+      </div>`;
+    function draw(){
+      const show = el._expanded ? arr : arr.slice(0, RANK_LIMIT);
+      let html = show.map(row).join('');
+      if (arr.length > RANK_LIMIT){
+        html += `<button class="ghost-btn rank-more" type="button" style="margin-top:8px;width:100%">${el._expanded ? '접기 ▴' : '더보기 +' + (arr.length - RANK_LIMIT) + ' ▾'}</button>`;
+      }
+      el.innerHTML = html;
+      const mb = el.querySelector('.rank-more');
+      if (mb) mb.addEventListener('click', () => { el._expanded = !el._expanded; draw(); });
+    }
+    draw();
+    return total;
   }
 
   function rerender(){
@@ -571,11 +580,14 @@
     renderKPI(filtered);
     renderTrend(filtered);
     renderServiceDonut(filtered);
-    renderRank(filtered, 'channel',     'ch-rank',      5);
-    renderRank(filtered, 'utm_source',  'utm-source',   6);
-    renderRank(filtered, 'utm_campaign','utm-campaign', 6);
-    renderRank(filtered, 'employeeCount','emp-dist',    7);
-    $('ch-total').textContent = (new Set(filtered.map(r => r.channel||'(없음)'))).size + '개';
+    const tCh   = renderRank(filtered, 'channel',      'ch-rank');
+    const tSrc  = renderRank(filtered, 'utm_source',   'utm-source');
+    const tCmp  = renderRank(filtered, 'utm_campaign', 'utm-campaign');
+    const tEmp  = renderRank(filtered, 'employeeCount','emp-dist');
+    $('ch-total').textContent          = fmt(tCh)  + '건';
+    $('utm-source-total').textContent  = fmt(tSrc) + '건';
+    $('utm-campaign-total').textContent= fmt(tCmp) + '건';
+    $('emp-dist-total').textContent    = fmt(tEmp) + '건';
   }
 
   function render(rows){
@@ -658,9 +670,9 @@
     $('ch-modal').classList.remove('open');
     $('ch-modal-back').classList.remove('open');
   }
-  $('btn-ch-more').addEventListener('click', openChModal);
-  $('ch-modal-close').addEventListener('click', closeChModal);
-  $('ch-modal-back').addEventListener('click', closeChModal);
+  if ($('btn-ch-more')) $('btn-ch-more').addEventListener('click', openChModal);
+  if ($('ch-modal-close')) $('ch-modal-close').addEventListener('click', closeChModal);
+  if ($('ch-modal-back')) $('ch-modal-back').addEventListener('click', closeChModal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChModal(); });
 
   window.addEventListener('DOMContentLoaded', () => load());
