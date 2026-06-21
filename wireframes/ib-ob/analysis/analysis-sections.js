@@ -13,7 +13,8 @@ window.AnalysisSections = (function () {
       { id: 'time', label: '시계열 추이', icon: '〰' },
       { id: 'dow', label: '요일 · 시점', icon: '▦' },
       { id: 'geo', label: '지역 분석', icon: '◉' },
-      { id: 'size', label: '기업 규모', icon: '▥' }
+      { id: 'size', label: '기업 규모', icon: '▥' },
+      { id: 'industry', label: '업종 · 업태', icon: '▤' }
     ] },
     { group: '채널 · 유입', items: [
       { id: 'aware', label: '인지채널', icon: '◐' },
@@ -109,6 +110,26 @@ window.AnalysisSections = (function () {
       A.rateBar(cid(sid, 'rate'), seg, '#d97706');
       A.doughnut(cid(sid, 'firm'), firm);
       A.dimTable(cid(sid, 'tbl'), seg, { nameLabel: '임직원', cols: [['name', '임직원 수', 'l'], ['total', '인입', 'n'], ['conv', '성약', 'n'], ['rate', '성약률', 'r']] });
+    },
+    industry(sid, rows, host) {
+      const grp = A.byDim(rows, '업종 그룹');
+      const ind = A.byDim(rows, '업종', 12);
+      const biz = A.byDim(rows, '업태');
+      host.innerHTML = head('Industry', '업종 · 업태 분석', '업종 그룹 · 업종 · 업태별 인입과 성약, 가능한 교차 조합 전체.') +
+        `<div class="an-grid an-g2">${card('업종 그룹별 인입', 'IB/OB', box(cid(sid, 'grpBar')))}${card('업종 그룹별 성약률', 'rate', box(cid(sid, 'grpRate')))}</div>` +
+        `<div class="an-grid an-g2">${card('업종별 인입', 'bar', box(cid(sid, 'indBar'), 'lg'))}${card('업태별 인입', 'bar', box(cid(sid, 'bizBar'), 'lg'))}</div>` +
+        card('업종 그룹 × 업태', 'heatmap', `<div class="hm-wrap" id="${cid(sid, 'hmGB')}"></div>`) +
+        card('업종 × 업태', 'heatmap', `<div class="hm-wrap" id="${cid(sid, 'hmIB')}"></div>`) +
+        card('업종 그룹 × 업종', 'heatmap', `<div class="hm-wrap" id="${cid(sid, 'hmGI')}"></div>`) +
+        card('업종 그룹 상세', 'table', `<div id="${cid(sid, 'tbl')}"></div>`);
+      A.barIBOB(cid(sid, 'grpBar'), grp);
+      A.rateBar(cid(sid, 'grpRate'), grp, '#0d9488');
+      A.barIBOB(cid(sid, 'indBar'), ind, { horizontal: true });
+      A.barIBOB(cid(sid, 'bizBar'), biz, { horizontal: true });
+      document.getElementById(cid(sid, 'hmGB')).innerHTML = A.heatHTML(A.crosstab(rows, '업종 그룹', '업태', 8, 8));
+      document.getElementById(cid(sid, 'hmIB')).innerHTML = A.heatHTML(A.crosstab(rows, '업종', '업태', 10, 8));
+      document.getElementById(cid(sid, 'hmGI')).innerHTML = A.heatHTML(A.crosstab(rows, '업종 그룹', '업종', 8, 10));
+      A.dimTable(cid(sid, 'tbl'), grp, { nameLabel: '업종 그룹' });
     },
     aware(sid, rows, host) {
       const dim = A.byDim(rows, '인지채널');

@@ -135,6 +135,7 @@
 
     <div class="ibdrw-section">
       <div class="section-h">사업자 정보</div>
+      <div class="ibdrw-row"><span class="k">업종 그룹</span><span class="v" id="ibdrw-industry-group">-</span></div>
       <div class="ibdrw-row"><span class="k">업종</span><span class="v" id="ibdrw-industry">-</span></div>
       <div class="ibdrw-row"><span class="k">업태</span><span class="v" id="ibdrw-bizcond">-</span></div>
       <div class="ibdrw-row"><span class="k">기업규모</span><span class="v" id="ibdrw-scale">-</span></div>
@@ -242,6 +243,7 @@
     setText('ibdrw-path',     row['상세 경로']);
     setText('ibdrw-utm',      row['트래킹 경로(UTM)']);
     setText('ibdrw-message',  row['문의내용']);
+    setText('ibdrw-industry-group', row['업종 그룹']);
     setText('ibdrw-industry', row['업종']);
     setText('ibdrw-bizcond',  row['업태']);
     setText('ibdrw-scale',    row['기업규모']);
