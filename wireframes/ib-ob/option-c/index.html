@@ -186,6 +186,14 @@
       <div class="an-card"><h3>기업구분 분포 <span class="tag">TOP 5</span></h3><div class="rank-list" id="rank-firm" style="margin-top:8px"></div></div>
     </div>
 
+    <!-- 업종 · 업태 -->
+    <div class="sec-head"><div class="eyebrow">Industry</div><h2>업종 · 업태 분석</h2>
+      <p>업종 · 업태별 인입 분포 (IB/OB).</p></div>
+    <div class="an-grid an-g2">
+      <div class="an-card"><h3>업종별 인입 <span class="tag">IB/OB</span></h3><div class="chartbox lg"><canvas id="cIndustry"></canvas></div></div>
+      <div class="an-card"><h3>업태별 인입 <span class="tag">IB/OB</span></h3><div class="chartbox lg"><canvas id="cBizCond"></canvas></div></div>
+    </div>
+
     <!-- 테이블 -->
     <div class="sec-head"><div class="eyebrow">Records</div><h2>인바운드 리스트</h2>
       <p>필터 적용 결과 원본 레코드. 우측 [상세보기]로 24필드 표시.</p></div>
@@ -323,6 +331,8 @@
     Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스명'), { legend:'bottom' });
     renderRank('rank-region', Analysis.byDim(filtered, '시도'));
     renderRank('rank-firm',   Analysis.byDim(filtered, '기업구분'));
+    Analysis.barIBOB('cIndustry', Analysis.byDim(filtered, '업종', 12), { horizontal:true });
+    Analysis.barIBOB('cBizCond',  Analysis.byDim(filtered, '업태', 12), { horizontal:true });
     const tableRows = sortRows(filtered);
     const totalPages = Math.max(1, Math.ceil(tableRows.length / PAGE_SIZE));
     if (PAGE > totalPages) PAGE = totalPages;
