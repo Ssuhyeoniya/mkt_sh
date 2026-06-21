@@ -458,7 +458,9 @@
       const tag = data && data._fromCache ? ' · 캐시됨' : '';
       setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
       fillFilterPanels(ROWS); PAGE = 1; rerender();
-      await fillInquiries(force); rerender();
+      // 문의내용(상세 모달 전용) 매핑은 백그라운드로만 — 같은 행 객체를 보강하므로
+      // 도표/표를 다시 그릴 필요가 없다 (재렌더 시 값이 다시 그려지는 현상 방지).
+      fillInquiries(force);
     } catch (err) {
       setStatus('연결 실패: ' + err.message, 'err');
       ROWS = []; fillFilterPanels(ROWS); PAGE = 1; rerender();

@@ -222,6 +222,12 @@ window.Analysis = (function () {
     Chart.defaults.plugins.legend.labels.boxHeight = 10;
     Chart.defaults.plugins.legend.labels.usePointStyle = true;
     Chart.defaults.maintainAspectRatio = false;
+    // 접속/페이지 이동 시 캐시 데이터로 즉시 그려지도록 애니메이션 비활성화 —
+    // 값이 매번 다시 그려지는 것처럼 보이는 현상 제거 (재조회는 [새로고침] 버튼만).
+    Chart.defaults.animation = false;
+    Chart.defaults.animations = { colors: false, x: false, y: false };
+    Chart.defaults.transitions = Chart.defaults.transitions || {};
+    if (Chart.defaults.transitions.active) Chart.defaults.transitions.active.animation = { duration: 0 };
     theme._done = true;
   }
   const GRID = { color: '#e2e5ec' };
