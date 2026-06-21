@@ -15,7 +15,7 @@ window.AnalysisApp = (function () {
 
   function applyFilter(rows) {
     let out = rows;
-    if (STATE.svc) out = out.filter(r => String(r['서비스 인입 구분'] || '') === STATE.svc);
+    if (STATE.svc) out = out.filter(r => String(r['서비스명'] || '') === STATE.svc);
     if (STATE.aware) out = out.filter(r => String(r['인지채널'] || '') === STATE.aware);
     if (STATE.conv) out = out.filter(A.isConv);
     if (STATE.dateStart || STATE.dateEnd) out = out.filter(r => {
@@ -38,7 +38,7 @@ window.AnalysisApp = (function () {
     el.innerHTML = `<option value="">${allLabel}</option>` + vals.map(v => `<option value="${A.esc(v)}">${A.esc(v)}</option>`).join('');
   }
   function fillFilters() {
-    fillSelect('fSvc', '서비스 인입 구분', '서비스 전체');
+    fillSelect('fSvc', '서비스명', '서비스 전체');   // 서비스명(식권대장·복지대장 등)
     fillSelect('fAware', '인지채널', '인지채널 전체');
   }
 

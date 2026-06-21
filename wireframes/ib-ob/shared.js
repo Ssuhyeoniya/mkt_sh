@@ -47,8 +47,8 @@
     const saved = loadWidths();
     cg.innerHTML = window.IBOB_ROW_COLS.map((c,i) => `<col data-i="${i}" style="width:${(saved[c.key]||c.w)}px"/>`).join('');
     th.innerHTML = window.IBOB_ROW_COLS.map((c,i) => {
-      const align = c.align === 'right' ? 'right' : (c.align === 'center' ? 'center' : 'left');
-      return `<th data-i="${i}" style="text-align:${align}">${esc(c.label)}<span class="resizer" data-i="${i}"></span></th>`;
+      // 헤더는 항상 중앙 정렬 (본문 셀 정렬과 무관)
+      return `<th data-i="${i}" style="text-align:center">${esc(c.label)}<span class="resizer" data-i="${i}"></span></th>`;
     }).join('');
     document.querySelectorAll('#th-row .resizer').forEach(h => {
       h.addEventListener('mousedown', startResize);
@@ -244,21 +244,27 @@
     });
     if (ACTIVE_CELL) ACTIVE_CELL.td.classList.add('cell-active');
   }
+  function _headerText(th){
+    if (!th) return '';
+    const cl = th.cloneNode(true);
+    cl.querySelectorAll('.resizer, .sort-arrow').forEach(el => el.remove());
+    return cl.textContent.trim();
+  }
   function _selectionAsTSV(){
     const tbody = document.querySelector('#tbl tbody');
     const trs = Array.from(tbody.querySelectorAll('tr'));
-    const grouped = {};
-    SELECTED.forEach(k => {
-      const [r, c] = k.split(',').map(Number);
-      if (!grouped[r]) grouped[r] = {};
+    const rowsSet = new Set(), colsSet = new Set();
+    SELECTED.forEach(k => { const [r, c] = k.split(',').map(Number); rowsSet.add(r); colsSet.add(c); });
+    const rows = [...rowsSet].sort((a,b)=>a-b);
+    const cols = [...colsSet].sort((a,b)=>a-b);
+    // 선택 영역 헤더 (복사 시 함께 포함)
+    const headTh = document.querySelectorAll('#tbl thead th');
+    const header = cols.map(c => _headerText(headTh[c])).join('\t');
+    const body = rows.map(r => cols.map(c => {
       const td = trs[r] && trs[r].children[c];
-      grouped[r][c] = td ? td.textContent.trim() : '';
-    });
-    const rows = Object.keys(grouped).map(Number).sort((a,b)=>a-b);
-    return rows.map(r => {
-      const cols = Object.keys(grouped[r]).map(Number).sort((a,b)=>a-b);
-      return cols.map(c => grouped[r][c]).join('\t');
-    }).join('\n');
+      return td ? td.textContent.trim() : '';
+    }).join('\t')).join('\n');
+    return header + '\n' + body;
   }
   async function _copySelection(){
     if (!SELECTED.size) return;

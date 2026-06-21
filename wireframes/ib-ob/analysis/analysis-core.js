@@ -38,6 +38,7 @@ window.Analysis = (function () {
   }
 
   /* ── 데모 데이터 생성 ── */
+  const SVCNAMES = ['식권대장', '복지대장', '식권대장 키오스크', '외식대장'];
   const SERVICES = ['마케팅 자동화', 'CRM 컨설팅', '세일즈 아웃리치', '제휴 운영', '데이터 분석', '광고 운영'];
   const AWARE = ['검색', 'SNS', '블로그', '지인 소개', '세미나', '전시회', '제휴 파트너', '광고'];
   const SIDO = ['서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '세종'];
@@ -82,6 +83,7 @@ window.Analysis = (function () {
       const kw = aw === '검색' ? pick(rng, KW) : (aw === '블로그' && rng() < .4 ? pick(rng, KW) : '');
       const utm = utmsrc ? `utm_source=${utmsrc}&utm_medium=${isOb ? 'outbound' : (rng() < .5 ? 'cpc' : 'organic')}` + (kw ? `&utm_term=${encodeURIComponent(kw)}` : '') : '';
       rows.push({
+        '서비스명': pick(rng, SVCNAMES),
         '주차': weekLabel(in_), '시작일': '', '종료일': '',
         'IB 인입 일자': ymd(in_), '최초 협의 일자': meet, '계약서 날인 일자': sign,
         '성약': conv, '영업대장': '담당' + (1 + Math.floor(rng() * 6)),
