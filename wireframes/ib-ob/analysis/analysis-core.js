@@ -44,6 +44,9 @@ window.Analysis = (function () {
   const SIDO = ['서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '세종'];
   const FIRM = ['스타트업', '중소', '중견', '대기업'];
   const LISTED = ['비상장', '코스닥', '코스피'];
+  const INDUSTRY = ['IT·소프트웨어', '제조', '유통·소매', '물류·운송', '바이오·제약', '미디어·광고', '금융', '교육', '전문서비스', '엔터테인먼트'];
+  const INDGROUP = { 'IT·소프트웨어': 'IT·서비스', '제조': '제조', '유통·소매': '유통', '물류·운송': '물류', '바이오·제약': '제조·바이오', '미디어·광고': '콘텐츠', '금융': '금융', '교육': '서비스', '전문서비스': '서비스', '엔터테인먼트': '콘텐츠' };
+  const BIZCOND = ['서비스', '제조업', '도소매', '운수', '컨설팅', '정보통신'];
   const UTMSRC = ['google', 'naver', 'linkedin', 'instagram', 'blog', 'partner', ''];
   const KW = ['마케팅 자동화', 'CRM 가격', 'CRM SaaS 비교', '리드 관리 툴', '세일즈 파이프라인',
     '마케팅 ROI 측정', '고객 데이터 플랫폼', '영업 자동화', '뉴스레터 솔루션', 'B2B 마케팅'];
@@ -69,6 +72,7 @@ window.Analysis = (function () {
       const sido = pick(rng, SIDO);
       const gu = pick(rng, (GU[sido] || ['-']));
       const firm = pick(rng, FIRM);
+      const ind = pick(rng, INDUSTRY);
       const isOb = (svc === '세일즈 아웃리치') ? (rng() < .8) : (rng() < .12);
       let utmsrc = isOb ? 'ob_call' : pick(rng, UTMSRC);
       const emp = [10, 30, 60, 120, 250, 480, 900][Math.floor(rng() * 7)] + Math.floor(rng() * 40);
@@ -91,6 +95,7 @@ window.Analysis = (function () {
         '고객사명': pick(rng, NAMES) + pick(rng, SUFFIX),
         '주소': sido + ' ' + gu, 'CH': conv === 'Y', '시도': sido, '지역구': gu, '동리': '-',
         '임직원 수': emp, '기업구분': firm, '상장 여부': pick(rng, LISTED),
+        '업종': ind, '업종 그룹': INDGROUP[ind] || ind, '업태': pick(rng, BIZCOND),
         '서비스 인입 구분': isOb ? '아웃바운드' : svc, '트래킹 경로(UTM)': utm,
         '상세 경로': aw === '검색' ? '/landing' : (aw === '블로그' ? '/blog' : (aw === 'SNS' ? '/sns' : '직접')),
         '인터뷰 기반': '', '인지채널': aw, '검색 키워드': kw
