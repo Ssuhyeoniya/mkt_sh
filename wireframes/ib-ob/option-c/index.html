@@ -29,12 +29,19 @@
   #th-row th{ cursor:pointer; }
   .sort-arrow{ color:var(--accent); font-size:10px; }
 
+  /* 조회 필터 — 블럭 → 인라인 (높이 축소) */
+  .filter-block{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:10px 14px; }
+  .filter-block .row{ flex:0 1 auto; gap:8px; }
+  .filter-block .ms-dropdown{ max-width:200px; }
+  .filter-block .search-input{ max-width:240px; }
+  .filter-block .actions{ border-top:0; padding-top:0; margin-left:auto; }
+
   @media (max-width:720px){
-    .funnel{ grid-template-columns:1fr !important; }
-    .funnel .stage::after{ display:none; }
     .main{ padding:18px 14px; }
     .sidebar{ display:none; }
     .conn{ min-width:0; width:100%; flex-wrap:wrap; }
+    .filter-block{ flex-direction:column; align-items:stretch; }
+    .filter-block .actions{ margin-left:0; }
   }
 </style>
 </head>
@@ -68,11 +75,12 @@
   <main class="main">
     <div class="page-head">
       <div>
-        <div class="page-eyebrow">인바운드 · IB / OB 종합 · TOTAL 시트</div>
+        <div class="page-eyebrow">인바운드 · IB / OB 종합 · 인바운드 통합 v2</div>
         <h1>IB / OB 종합</h1>
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
         <input id="gas-url" type="text" placeholder="GAS 프록시 URL 붙여넣기 → [연결]" spellcheck="false"/>
         <a class="btn-disconnect" id="gas-open" target="_blank" rel="noopener noreferrer" style="text-decoration:none" title="GAS 엔드포인트 열기">GAS ↗</a>
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
@@ -128,26 +136,19 @@
     <!-- KPI -->
     <section class="fact-grid" id="kpi"></section>
 
-    <!-- 전환 퍼널 + 인입 추이 -->
-    <div class="sec-head"><div class="eyebrow">Conversion & Trend</div><h2>전환 퍼널 · 인입 추이</h2>
-      <p>필터 적용 결과 기준. IB 인입 → 최초 협의 → 계약 날인 → 성약.</p></div>
-    <div class="an-grid an-g23">
-      <div class="an-card">
-        <h3>전환 퍼널 <span class="tag">funnel</span></h3>
-        <div class="hint">IB 인입 일자/협의/날인/성약 보유 건 기준</div>
-        <div class="funnel" id="funnel"></div>
-      </div>
-      <div class="an-card">
-        <h3>인입 추이 <span class="tag">IB/OB · 성약률</span>
-          <span class="an-seg" id="seg-unit" style="margin-left:auto">
-            <button data-u="day">일별</button>
-            <button data-u="week" class="active">주차별</button>
-            <button data-u="year">연도별</button>
-          </span>
-        </h3>
-        <div class="hint">막대=인입(IB/OB 누적), 선=성약률%</div>
-        <div class="chartbox lg"><canvas id="cTrend"></canvas></div>
-      </div>
+    <!-- 인입 추이 (풀폭 인라인) -->
+    <div class="sec-head"><div class="eyebrow">Trend</div><h2>인입 추이</h2>
+      <p>필터 적용 결과 기준 · IB/OB 인입 추이와 성약률.</p></div>
+    <div class="an-card">
+      <h3>인입 추이 <span class="tag">IB/OB · 성약률</span>
+        <span class="an-seg" id="seg-unit" style="margin-left:auto">
+          <button data-u="day">일별</button>
+          <button data-u="week" class="active">주차별</button>
+          <button data-u="year">연도별</button>
+        </span>
+      </h3>
+      <div class="hint">막대=인입(IB/OB 누적), 선=성약률%</div>
+      <div class="chartbox lg"><canvas id="cTrend"></canvas></div>
     </div>
 
     <!-- 분포 -->
@@ -193,7 +194,7 @@
       </div>
     </section>
 
-    <div class="text-center muted py-4" style="font-size:11.5px;color:var(--muted)">IB / OB 종합 · 시안 A(Analyst Workbench) 톤 · 전환 퍼널 + 인입 추이 + 분포 + 표준 로우테이블</div>
+    <div class="text-center muted py-4" style="font-size:11.5px;color:var(--muted)">IB / OB 종합 · 인입 추이 + 분포 + 표준 로우테이블</div>
   </main>
 </div>
 
@@ -268,36 +269,16 @@
     return out;
   }
 
-  /* ── KPI (시안 A fact 카드) ── */
+  /* ── KPI (fact 카드) ── */
   function renderKPI(rows){
     const k = Analysis.kpi(rows); const f = IBOB.fmt;
     $('kpi').innerHTML = [
-      ['📥','전체 리드',   f(k.total), `IB ${f(k.ib)} · OB ${f(k.ob)}`],
-      ['🟦','IB 인입',     f(k.ib),    'CH ≠ OB (빈 CH 포함)'],
-      ['🟩','OB 컨택',     f(k.ob),    'CH = OB'],
-      ['✅','성약',        f(k.conv),  `협의중 ${k.mid} · 드롭 ${k.drop}`],
-      ['📈','성약 전환율', k.rate+'%', '성약 / 전체']
-    ].map(x => `<div class="fact"><div class="ico">${x[0]}</div><div class="ttl">${x[1]}</div><div class="big">${x[2]}</div><div class="sub">${x[3]}</div></div>`).join('');
-  }
-
-  /* ── 전환 퍼널 ── */
-  function renderFunnel(rows){
-    const has = v => String(v == null ? '' : v).trim() !== '';
-    const ibIn = rows.filter(r => has(r['IB 인입 일자'])).length;
-    const meet = rows.filter(r => has(r['최초 협의 일자'])).length;
-    const sign = rows.filter(r => has(r['계약서 날인 일자'])).length;
-    const conv = rows.filter(r => { const s = String(r['성약'] == null ? '' : r['성약']).trim(); return s === 'Y' || s === '성약'; }).length;
-    const base = ibIn || 1;
-    const stages = [
-      { lbl:'IB 인입',   val:ibIn, rate:100, color:'#2563eb' },
-      { lbl:'최초 협의', val:meet, rate:Math.round(meet*100/base), color:'#6d4eff' },
-      { lbl:'계약 날인', val:sign, rate:Math.round(sign*100/base), color:'#d97706' },
-      { lbl:'성약',      val:conv, rate:Math.round(conv*100/base), color:'#16a34a' }
-    ];
-    $('funnel').innerHTML = stages.map(s => `
-      <div class="stage"><div class="lbl">${s.lbl}</div><div class="num-big">${IBOB.fmt(s.val)}</div>
-        <div class="rate"><span class="num" style="color:${s.color};font-weight:600;min-width:38px">${s.rate}%</span>
-        <span class="bar"><i style="width:${s.rate}%;background:${s.color}"></i></span></div></div>`).join('');
+      ['전체 리드',   f(k.total), `IB ${f(k.ib)} · OB ${f(k.ob)}`],
+      ['IB 인입',     f(k.ib),    '유입구분 ≠ 아웃바운드'],
+      ['OB 컨택',     f(k.ob),    '유입구분 = 아웃바운드'],
+      ['성약',        f(k.conv),  `협의중 ${k.mid} · 드롭 ${k.drop}`],
+      ['성약 전환율', k.rate+'%', '성약 / 전체']
+    ].map(x => `<div class="fact"><div class="ttl">${x[0]}</div><div class="big">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join('');
   }
 
   /* ── 랭킹 ── */
@@ -313,7 +294,6 @@
     updateRangeInfo();
     const filtered = applyAll(ROWS);
     renderKPI(filtered);
-    renderFunnel(filtered);
     Analysis.lineSeries('cTrend', Analysis.series(filtered, STATE.unit));
     Analysis.doughnut('cAware',   Analysis.byDim(filtered, '인지채널'), { legend:'right' });
     Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스 인입 구분'), { legend:'right' });
@@ -435,6 +415,7 @@
   /* ── 이벤트 ── */
   $('btn-connect').addEventListener('click', () => { const v = $('gas-url').value.trim(); if (!v) return; MktProxy.setUrl(v); MktProxy.ibobClearCache(); load(true); });
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value = ''; $('btn-disconnect').style.display = 'none'; MktProxy.ibobClearCache(); load(); });
+  $('btn-refresh').addEventListener('click', () => { if (window.MktProxy) MktProxy.ibobClearCache(); load(true); });
   $('seg-unit').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     $('seg-unit').querySelectorAll('button').forEach(x => x.classList.remove('active'));
@@ -457,8 +438,7 @@
     TableGrid.exportExcelFromTable(document.getElementById('tbl'), fname);
   });
 
-  window.addEventListener('DOMContentLoaded', () => load());
-  load();
+  load();   // 최초 1회만 로드 (이후는 새로고침 버튼 / 연결 토글로만 재요청)
 })();
 </script>
 </body>
