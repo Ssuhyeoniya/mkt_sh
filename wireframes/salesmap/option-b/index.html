@@ -8,6 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
 <style>
+  /* 기간+필터 스크롤 시 상단 고정 */
+  .date-filter{ position:sticky; top:0; z-index:31; background:var(--bg); padding-top:6px; }
+  .filter{ position:sticky; top:48px; z-index:30; background:var(--bg); }
+
   /* Option B: CRM Pipeline — 칸반 보드 + 컬럼 리사이즈 가능 컴팩트 테이블 */
   .view-toggle{ display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:3px; }
   .view-toggle button{ background:transparent; border:0; color:var(--muted); font-size:12.5px; padding:6px 12px; border-radius:7px; cursor:pointer; }
@@ -15,7 +19,7 @@
   .seg{ display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:2px; }
   .seg button{ background:transparent; border:0; color:var(--muted); font-size:12px; padding:5px 10px; border-radius:7px; cursor:pointer; }
   .seg button.active{ background:var(--hover-bg); color:var(--text); }
-  .table-wrap{ overflow:auto; max-height:60vh; }
+  .table-wrap{ overflow:auto; max-height:60vh;  scrollbar-gutter:stable;}
   .col-color-strip{ width:6px; align-self:stretch; border-radius:3px; }
   .row-action{ font-size:11.5px; padding:3px 10px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--text-2); cursor:pointer; line-height:1.5; white-space:nowrap; }
   .row-action:hover{ background:var(--accent); border-color:var(--accent); color:#fff; }

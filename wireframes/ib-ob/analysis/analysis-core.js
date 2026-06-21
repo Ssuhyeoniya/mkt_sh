@@ -242,6 +242,7 @@ window.Analysis = (function () {
       },
       options: {
         indexAxis: opt.horizontal ? 'y' : 'x',
+        interaction: { mode: 'index', intersect: false },
         plugins: { legend: { position: 'bottom' } },
         scales: { x: { stacked: true, grid: opt.horizontal ? GRID : { display: false } }, y: { stacked: true, grid: opt.horizontal ? { display: false } : GRID, ticks: { precision: 0 } } }
       }
@@ -251,7 +252,7 @@ window.Analysis = (function () {
     return mk(id, {
       type: 'bar',
       data: { labels: data.map(d => d.name || d.key), datasets: [{ label: '성약률(%)', data: data.map(d => d.rate), backgroundColor: color || '#6d4eff', borderRadius: 3 }] },
-      options: { plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: GRID, ticks: { callback: v => v + '%' } } } }
+      options: { interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: GRID, ticks: { callback: v => v + '%' } } } }
     });
   }
   function lineSeries(id, data) {
@@ -266,6 +267,7 @@ window.Analysis = (function () {
         ]
       },
       options: {
+        interaction: { mode: 'index', intersect: false },
         plugins: { legend: { position: 'bottom' } },
         scales: {
           x: { stacked: true, grid: { display: false } },
@@ -278,10 +280,31 @@ window.Analysis = (function () {
   function doughnut(id, dist, opt) {
     opt = opt || {};
     const d = dist.slice(0, opt.limit || 7);
+    const total = d.reduce((s, x) => s + (x.total || 0), 0) || 1;
     return mk(id, {
       type: 'doughnut',
       data: { labels: d.map(x => x.name), datasets: [{ data: d.map(x => x.total), backgroundColor: PALETTE, borderColor: '#fff', borderWidth: 2 }] },
-      options: { cutout: '62%', plugins: { legend: { position: opt.legend || 'right' } } }
+      options: {
+        cutout: '62%',
+        plugins: {
+          legend: {
+            position: opt.legend || 'right',
+            labels: {
+              boxWidth: 10, boxHeight: 10, usePointStyle: true, font: { size: 11 },
+              // 범례에 개수 + 조회기간 내 퍼센티지 함께 표기
+              generateLabels: function (chart) {
+                const ds = chart.data.datasets[0];
+                return chart.data.labels.map(function (lab, i) {
+                  const v = ds.data[i] || 0;
+                  const pct = Math.round(v * 100 / total);
+                  return { text: lab + '  ' + v + ' (' + pct + '%)', fillStyle: PALETTE[i % PALETTE.length], strokeStyle: '#fff', lineWidth: 1, index: i };
+                });
+              }
+            }
+          },
+          tooltip: { callbacks: { label: function (ctx) { const v = ctx.parsed || 0; return ctx.label + ': ' + v + '건 (' + Math.round(v * 100 / total) + '%)'; } } }
+        }
+      }
     });
   }
   /* 버블: x=인입, y=성약률, r=성약수 */

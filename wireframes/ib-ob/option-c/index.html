@@ -29,8 +29,18 @@
   #kpi .fact .big{ font-size:17px; margin:0; }
   #kpi .fact .sub{ font-size:10.5px; margin:0; }
 
+  /* 분포 인사이트 4열 1행 */
+  .an-g4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:1100px){ .an-g4{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .an-g4{ grid-template-columns:1fr; } }
+
+  /* 기간 + 검색/조회 블록 스크롤 시 상단 고정 */
+  .sticky-filters{ position:sticky; top:0; z-index:30; background:var(--bg); padding-top:6px; }
+  .sticky-filters .date-filter,
+  .sticky-filters .filter-block{ margin-bottom:8px; }
+
   .table-panel{ min-width:0; overflow:hidden; }
-  .table-panel .table-wrap{ overflow:auto; max-height:60vh; }
+  .table-panel .table-wrap{ overflow:auto; max-height:60vh;  scrollbar-gutter:stable;}
   #th-row th{ cursor:pointer; }
   .sort-arrow{ color:var(--accent); font-size:10px; }
 
@@ -93,6 +103,7 @@
       </div>
     </div>
 
+    <div class="sticky-filters">
     <!-- 기간 조회 -->
     <div class="date-filter">
       <span class="lbl">기간</span>
@@ -137,6 +148,7 @@
       </div>
       <div class="actions"><button class="btn-apply" id="btn-apply">조회</button></div>
     </div>
+    </div><!-- /sticky-filters -->
 
     <!-- KPI -->
     <section class="fact-grid" id="kpi"></section>
@@ -159,11 +171,9 @@
     <!-- 분포 -->
     <div class="sec-head"><div class="eyebrow">Distribution</div><h2>분포 인사이트</h2>
       <p>인지채널 · 서비스 · 지역 · 기업구분.</p></div>
-    <div class="an-grid an-g2">
+    <div class="an-grid an-g4">
       <div class="an-card"><h3>인지채널 비중 <span class="tag">P·O·E</span></h3><div class="chartbox"><canvas id="cAware"></canvas></div></div>
       <div class="an-card"><h3>서비스별 인입 비중 <span class="tag">service</span></h3><div class="chartbox"><canvas id="cService"></canvas></div></div>
-    </div>
-    <div class="an-grid an-g2">
       <div class="an-card"><h3>시도 랭킹 <span class="tag">TOP 5</span></h3><div class="rank-list" id="rank-region" style="margin-top:8px"></div></div>
       <div class="an-card"><h3>기업구분 분포 <span class="tag">TOP 5</span></h3><div class="rank-list" id="rank-firm" style="margin-top:8px"></div></div>
     </div>
@@ -300,8 +310,8 @@
     const filtered = applyAll(ROWS);
     renderKPI(filtered);
     Analysis.lineSeries('cTrend', Analysis.series(filtered, STATE.unit));
-    Analysis.doughnut('cAware',   Analysis.byDim(filtered, '인지채널'), { legend:'right' });
-    Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스 인입 구분'), { legend:'right' });
+    Analysis.doughnut('cAware',   Analysis.byDim(filtered, '인지채널'), { legend:'bottom' });
+    Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스명'), { legend:'bottom' });
     renderRank('rank-region', Analysis.byDim(filtered, '시도'));
     renderRank('rank-firm',   Analysis.byDim(filtered, '기업구분'));
     const tableRows = sortRows(filtered);

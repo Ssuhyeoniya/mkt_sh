@@ -8,6 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
 <style>
+  /* 기간+필터 스크롤 시 상단 고정 */
+  .date-filter{ position:sticky; top:0; z-index:31; background:var(--bg); padding-top:6px; }
+  .filter{ position:sticky; top:48px; z-index:30; background:var(--bg); }
+
   /* Option C: Analytics Hybrid — 분석 위젯 + 리사이즈 테이블 */
   .panel-pad{ padding:18px 20px; }
   .panel-title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
@@ -54,7 +58,7 @@
   .donut-legend .row .lbl .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .donut-legend .row .pct{ text-align:right; font-family:'JetBrains Mono',monospace; color:var(--muted); }
   .donut-legend .row .cnt{ text-align:right; font-family:'JetBrains Mono',monospace; color:var(--text); }
-  .table-wrap{ overflow:auto; max-height:50vh; }
+  .table-wrap{ overflow:auto; max-height:50vh;  scrollbar-gutter:stable;}
 
   /* 월별 리드 추이 차트 */
   .trend-chart{ position:relative; display:flex; gap:8px; }
