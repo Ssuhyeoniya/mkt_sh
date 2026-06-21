@@ -994,9 +994,12 @@
     renderTopList(rows, function(r){ return rowVisits(r, idx); }, $('top-list'));
   }
   // 인바운드 TOP 5 — INBOUND_BY_DATE (인입 일자 + utm_term) 의 utm_term 별 카운트 (idx 재사용).
+  // 인바운드는 인입일(세일즈맵 제출일) 기준이므로 발행/조회 기간 필터(SCOPED_ROWS)와 무관하게
+  // 전체 글(CURRENT_ROWS)을 모집단으로 두고 utm 매칭 건수로 순위를 매긴다.
   function renderInboundTop(rows, idx){
     idx = idx || buildPeriodIndex();
-    renderTopList(rows, function(r){ return rowInbound(r, idx); }, $('inbound-list'));
+    const pool = (CURRENT_ROWS && CURRENT_ROWS.length) ? CURRENT_ROWS : (rows || []);
+    renderTopList(pool, function(r){ return rowInbound(r, idx); }, $('inbound-list'));
   }
 
   // 카테고리별 발행 분포 — 게시물 수 + 기간 조회수 합계 (idx 재사용).
