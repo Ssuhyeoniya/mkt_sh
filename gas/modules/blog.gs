@@ -264,6 +264,7 @@ function Blog_inboundCounts(params) {
   for (let i = 0; i < list.length; i++) {
     const r = list[i];
     if (from || to) {
+      // 기간 필터 시에만 날짜로 거른다. 전체 기간이면 날짜 없는 건도 카운트(드로어와 일치).
       const date = (r.d || '').slice(0, 10);
       if (!date) continue;
       if (from && date < from) continue;
@@ -379,9 +380,13 @@ function Blog_inboundByDate(params) {
   for (let i = 0; i < list.length; i++) {
     const r = list[i];
     const date = (r.d || '').slice(0, 10);
-    if (!date) continue;
-    if (from && date < from) continue;
-    if (to   && date > to)   continue;
+    // 기간 필터가 있으면 날짜로 거른다. 필터가 없으면(전체 기간) 날짜가 비어 있어도
+    // utm 카운트에는 포함시켜야 상세 드로어(Blog_inboundDates)와 합계가 일치한다.
+    if (from || to) {
+      if (!date) continue;
+      if (from && date < from) continue;
+      if (to   && date > to)   continue;
+    }
     out.push({ date: date, utm_term: r.u });
   }
   return { rows: out, total: out.length, from: from, to: to };
