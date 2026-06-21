@@ -13,20 +13,50 @@ window.AnalysisApp = (function () {
   function ymd(d) { return A.ymd(d); }
   function yesterday() { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(0, 0, 0, 0); return d; }
 
-  function applyFilter(rows) {
+  // 날짜 외 필터(서비스·인지채널·성약)만 적용 — 기간 비교 시 두 기간에 공통으로 쓴다.
+  function applyNonDate(rows) {
     let out = rows;
     if (STATE.svc) out = out.filter(r => String(r['서비스명'] || '') === STATE.svc);
     if (STATE.aware) out = out.filter(r => String(r['인지채널'] || '') === STATE.aware);
     if (STATE.conv) out = out.filter(A.isConv);
-    if (STATE.dateStart || STATE.dateEnd) out = out.filter(r => {
-      const d = String(r['IB 인입 일자'] || '').slice(0, 10); if (!d) return false;
-      if (STATE.dateStart && d < STATE.dateStart) return false;
-      if (STATE.dateEnd && d > STATE.dateEnd) return false;
-      return true;
-    });
+    return out;
+  }
+  function inPeriod(r, ds, de) {
+    const d = String(r['IB 인입 일자'] || '').slice(0, 10); if (!d) return false;
+    if (ds && d < ds) return false;
+    if (de && d > de) return false;
+    return true;
+  }
+  function applyFilter(rows) {
+    let out = applyNonDate(rows);
+    if (STATE.dateStart || STATE.dateEnd) out = out.filter(r => inPeriod(r, STATE.dateStart, STATE.dateEnd));
     return out;
   }
   function filtered() { return applyFilter(RAW); }
+
+  // 기간 비교: 현재 선택 기간을 전월(-1개월) 또는 전년 동월(-1년)로 시프트해 동일 필터로 집계.
+  function shiftYmd(s, mode) {
+    const d = new Date(s + 'T00:00:00');
+    if (mode === 'yoy') d.setFullYear(d.getFullYear() - 1);
+    else d.setMonth(d.getMonth() - 1);
+    return ymd(d);
+  }
+  function compare(mode) {
+    mode = (mode === 'yoy') ? 'yoy' : 'mom';
+    const ds = STATE.dateStart, de = STATE.dateEnd;
+    if (!ds || !de) return { has: false, mode };   // 양끝 기간이 있어야 비교 가능
+    const base = applyNonDate(RAW);
+    const cur = base.filter(r => inPeriod(r, ds, de));
+    const ps = shiftYmd(ds, mode), pe = shiftYmd(de, mode);
+    const prev = base.filter(r => inPeriod(r, ps, pe));
+    return {
+      has: true, mode,
+      curLabel: ds + ' ~ ' + de,
+      prevLabel: ps + ' ~ ' + pe,
+      cur: A.kpi(cur), prev: A.kpi(prev),
+      curRows: cur, prevRows: prev
+    };
+  }
   function rerender() {
     updateRangeInfo();
     onRender(filtered());
@@ -112,5 +142,5 @@ window.AnalysisApp = (function () {
     bind();
     load();
   }
-  return { init, filtered, state: STATE, reload: load };
+  return { init, filtered, compare, state: STATE, reload: load };
 })();
