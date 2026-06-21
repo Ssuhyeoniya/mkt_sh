@@ -18,6 +18,7 @@
 const IBOB_SHEET_ID   = '1evHT_QWJ7tHuCykdW4Hh1bIN7CQpw-G2bdUFtL4yP40';
 const IBOB_SHEET_NAME = '인바운드 통합 v2';
 const IBOB_TZ         = 'Asia/Seoul';
+const IBOB_HEADER_ROW = 4;   // 헤더가 위치한 행 (1-based). 그 아래 행부터 데이터.
 
 const IBOB_RENAME = {
   '유입구분': '서비스 인입 구분'
@@ -42,13 +43,14 @@ function Ibob_list(params) {
   if (!sheet) throw new Error('sheet_not_found:' + IBOB_SHEET_NAME);
 
   const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { rows: [], total: 0, headers: [] };
+  const hi = Math.max(0, (IBOB_HEADER_ROW || 1) - 1);   // 헤더 행 인덱스 (0-based)
+  if (values.length < hi + 2) return { rows: [], total: 0, headers: [] };
 
-  const headers = values[0].map(function (h) { return String(h || '').trim(); });
+  const headers = values[hi].map(function (h) { return String(h || '').trim(); });
   const companyIdx = headers.indexOf('고객사명');
   const outKeys = headers.map(function (h) { return IBOB_RENAME[h] || h; });
 
-  let rows = values.slice(1)
+  let rows = values.slice(hi + 1)
     .filter(function (r) {
       if (!r.some(function (c) { return c !== '' && c !== null && c !== undefined; })) return false;
       if (companyIdx >= 0) {
