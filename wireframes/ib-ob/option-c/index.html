@@ -260,7 +260,7 @@
       } else if (arrow){ arrow.remove(); }
     });
   }
-  let ROWS = window.SAMPLE_IBOB.slice();
+  let ROWS = [];   // 샘플 미리보기 없음 — load() 가 실제 데이터를 채운다
 
   function setStatus(t, k){ const el = $('status'); if (!el) return; el.className = 'status ' + (k || ''); el.textContent = t; }
 
@@ -314,16 +314,38 @@
     ).join('') || '<div class="muted text-[11.5px]">-</div>';
   }
 
+  let LAST_FILTERED = [];   // 현재 기간/필터로 집계된 행 — 페이지네이션/정렬은 이 캐시만 다시 그린다
+
+  // 분석 도표(KPI·추이·도넛·랭킹) — 기간 조회/필터 변경 시에만 호출한다.
   function rerender(){
     updateRangeInfo();
     const filtered = applyAll(ROWS);
+    LAST_FILTERED = filtered;
     renderKPI(filtered);
     Analysis.lineSeries('cTrend', Analysis.series(filtered, STATE.unit));
     Analysis.doughnut('cAware',   Analysis.byDim(filtered, '인지채널'), { legend:'bottom' });
     Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스명'), { legend:'bottom' });
     renderRank('rank-region', Analysis.byDim(filtered, '시도'));
-    renderRank('rank-firm',   Analysis.byDim(filtered, '기업구분'));
-    const tableRows = sortRows(filtered);
+    // 기업구분 분포 = 로우테이블 '규모' 컬럼과 동일 값(기업구분 우선, 없으면 기업규모)으로 집계
+    renderRank('rank-firm',   Analysis.byDim(filtered.map(r => Object.assign({}, r, {
+      _규모: (String(r['기업구분']||'').trim() || String(r['기업규모']||'').trim())
+    })), '_규모'));
+    renderPage();
+  }
+
+  // 로우테이블 + 페이지네이션만 다시 그린다 (도표는 건드리지 않음).
+  // → 같은 기간 내 페이지 이동·정렬 시 분석 도표가 재렌더/변경되지 않는다.
+  function renderPage(){
+    // 원본 데이터가 아예 없으면(미연결/실패/빈 시트) 샘플 대신 '데이터 필요' 안내를 표에 표기
+    if (!ROWS.length){
+      const cols = (window.IBOB_ROW_COLS || []).length || 12;
+      $('rows').innerHTML = '<tr><td colspan="' + cols + '"><div class="empty" style="padding:32px; text-align:center; color:var(--muted)">표시할 데이터가 없습니다. GAS 연결 및 데이터를 확인해 주세요.</div></td></tr>';
+      const rc = document.getElementById('result-count'); if (rc) rc.textContent = '0건';
+      $('pg-info').textContent = '0 / 1';
+      $('pg-prev').disabled = true; $('pg-next').disabled = true;
+      return;
+    }
+    const tableRows = sortRows(LAST_FILTERED);
     const totalPages = Math.max(1, Math.ceil(tableRows.length / PAGE_SIZE));
     if (PAGE > totalPages) PAGE = totalPages;
     $('pg-info').textContent = PAGE + ' / ' + totalPages;
@@ -379,7 +401,7 @@
     if (!col || col.key === '_detail') return;
     if (STATE.sortKey === col.key) STATE.sortDir = STATE.sortDir === 'asc' ? 'desc' : 'asc';
     else { STATE.sortKey = col.key; STATE.sortDir = 'asc'; }
-    PAGE = 1; rerender();
+    PAGE = 1; renderPage();
   });
   bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', 'services');
   bindMS('ms-utm', 'ms-utm-panel', 'UTM 전체', 'utm');
@@ -420,8 +442,8 @@
     $('btn-disconnect').style.display = url ? '' : 'none';
     if (!url){
       if (window.MktProxy) MktProxy.ibobClearCache();
-      ROWS = window.SAMPLE_IBOB.slice();
-      setStatus('데모 데이터 표시 중 (' + ROWS.length + '건)', 'demo');
+      ROWS = [];
+      setStatus('GAS 연결이 필요합니다', 'amber');
       fillFilterPanels(ROWS); PAGE = 1; rerender(); return;
     }
     try {
@@ -438,8 +460,8 @@
       fillFilterPanels(ROWS); PAGE = 1; rerender();
       await fillInquiries(force); rerender();
     } catch (err) {
-      setStatus('연결 실패: ' + err.message + ' (데모로 대체)', 'err');
-      ROWS = window.SAMPLE_IBOB.slice(); fillFilterPanels(ROWS); PAGE = 1; rerender();
+      setStatus('연결 실패: ' + err.message, 'err');
+      ROWS = []; fillFilterPanels(ROWS); PAGE = 1; rerender();
     }
   }
 
@@ -462,8 +484,8 @@
   $('date-start').addEventListener('change', () => { STATE.dateStart = $('date-start').value; STATE.activeRange = ''; PAGE = 1; rerender(); });
   $('date-end').addEventListener('change', () => { STATE.dateEnd = $('date-end').value; STATE.activeRange = ''; PAGE = 1; rerender(); });
   $('btn-clear-date').addEventListener('click', clearDateRange);
-  $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); rerender(); });
-  $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; rerender(); });
+  $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); renderPage(); });
+  $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; renderPage(); });
   $('btn-export').addEventListener('click', () => alert('CSV 내보내기 (목업)'));
   $('btn-export-xls').addEventListener('click', () => {
     const d = new Date(); const fname = 'ibob_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.xls';

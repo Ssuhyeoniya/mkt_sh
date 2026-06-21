@@ -602,8 +602,8 @@
     $('btn-disconnect').style.display = url ? '' : 'none';
     if (!url){
       MktProxy.salesmapClearCache();
-      setStatus('데모 데이터 표시 중', 'demo');
-      render(SAMPLE_SALESMAP);
+      setStatus('GAS 연결이 필요합니다', 'amber');
+      render([]);
       return;
     }
     try{
@@ -614,7 +614,7 @@
       setStatus('● 연결됨 · ' + (data.total || (data.rows||[]).length) + '건' + tag, 'ok');
     }catch(err){
       setStatus('연결 실패: '+err.message, 'err');
-      render(SAMPLE_SALESMAP);
+      render([]);
     }
   }
 

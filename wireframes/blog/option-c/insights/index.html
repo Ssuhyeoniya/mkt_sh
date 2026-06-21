@@ -550,6 +550,7 @@
   let INBOUND_BY_DATE_ROWS = [];   // 인바운드 raw rows (인입 일자 + utm_term, 조회 기간 한정)
   let INBOUND_BY_DATE_LOADED = false;
   let SCOPED_ROWS_GLOBAL = [];
+  let IDX_GLOBAL = null;            // refresh() 가 만든 현재 기간 인덱스 — 모달/위젯이 차트와 동일 산식을 쓰도록 공유
   let COMPARE_MODE = 'mom';
 
   function ymdStr(d){
@@ -1275,14 +1276,25 @@
   // ── 카테고리 모달 ─────────────────────────────────
   function openCategoryModal(catName){
     if (!catName) return;
-    const posts = SCOPED_ROWS_GLOBAL.filter(function(r){ return (r.category||'미분류') === catName; });
-    // 인바운드 = 세일즈맵 매칭 + fallback
+    // 차트(기간 추이)와 동일 산식: 카테고리 귀속은 발행/조회 여부와 무관하게 ALL_ROWS 기준,
+    // 인바운드는 기간 인덱스(idx.ibByUtm), 방문자는 기간 조회(idx.visByPid) 로 집계한다.
+    // (이전엔 모달이 INBOUND_COUNTS·totalVisit 를 써서 차트와 값이 어긋났다 — 차트 1 / 모달 0)
+    const idx = IDX_GLOBAL;
+    const posts = (ALL_ROWS || []).filter(function(r){ return (r.category||'미분류') === catName; });
+    // 인바운드 = 기간 ibByUtm (없으면 INBOUND_COUNTS 폴백)
     const inbOf = function(r){
       const u = String(r.utm_term || '').trim();
       if (!u) return 0;
+      if (idx && idx.hasIb) return Number(idx.ibByUtm[u]) || 0;
       return Number(INBOUND_COUNTS[u]) || 0;
     };
-    const sumV = posts.reduce(function(s,r){ return s + Number(r.totalVisit||0); }, 0);
+    // 방문자 = 기간 조회수 (없으면 누적 totalVisit 폴백)
+    const visOf = function(r){
+      const pid = String(r && r.postid || '');
+      if (idx && idx.hasStats) return (pid && Number(idx.visByPid[pid])) || 0;
+      return Number(r.totalVisit||0);
+    };
+    const sumV = posts.reduce(function(s,r){ return s + visOf(r); }, 0);
     const sumI = posts.reduce(function(s,r){ return s + inbOf(r); }, 0);
 
     $('cat-modal-title').textContent = catName + ' 카테고리';
@@ -1317,14 +1329,14 @@
       return rowsHtml;
     };
 
-    const byVisit   = posts.slice().sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
+    const byVisit   = posts.slice().sort(function(a,b){ return visOf(b) - visOf(a); });
     const byInbound = posts.slice().sort(function(a,b){ return inbOf(b) - inbOf(a); });
 
     body.innerHTML =
       '<div class="cm-section">'
         + '<div class="cm-section-title"><span class="dot visit"></span>방문자 많은 순<span style="margin-left:auto; color:var(--muted); font-weight:400; font-size:11px;">'+ posts.length +'건</span></div>'
         + '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div></div>'
-        + '<div class="cm-section-list">' + renderList(byVisit, function(r){ return Number(r.totalVisit||0); }) + '</div>'
+        + '<div class="cm-section-list">' + renderList(byVisit, function(r){ return visOf(r); }) + '</div>'
       + '</div>'
       + '<div class="cm-section">'
         + '<div class="cm-section-title"><span class="dot inbound"></span>인바운드 많은 순<span style="margin-left:auto; color:var(--muted); font-weight:400; font-size:11px;">'+ posts.length +'건</span></div>'
@@ -1637,6 +1649,7 @@
 
   function refresh(){
     const idx = buildPeriodIndex();
+    IDX_GLOBAL = idx;
     const filtered = applyDateFilter(ALL_ROWS, idx.pidSet);
     SCOPED_ROWS_GLOBAL = filtered;
     updateRangeInfo();
@@ -1699,9 +1712,9 @@
     updatePendingState();
 
     if (!url){
-      setStatus('데모 데이터 분석 중', 'demo');
-      ALL_ROWS = SAMPLE_BLOG;
-      SOURCE_LABEL = '데모 데이터';
+      setStatus('GAS 연결이 필요합니다', 'amber');
+      ALL_ROWS = [];
+      SOURCE_LABEL = '데이터 없음';
       await loadStatsAndInboundForCurrent();
       refresh();
       return;
@@ -1712,8 +1725,8 @@
       const rows = data.rows || [];
       if (!rows.length){
         setStatus('● 연결됨 · 데이터 없음', 'amber');
-        ALL_ROWS = SAMPLE_BLOG;
-        SOURCE_LABEL = '연결됨 · 데이터 없음 → 데모 사용';
+        ALL_ROWS = [];
+        SOURCE_LABEL = '연결됨 · 데이터 없음';
         await loadStatsAndInboundForCurrent();
         refresh();
         return;
@@ -1734,8 +1747,8 @@
       }
       setStatus('연결 실패: ' + err.message + hint, 'err');
       console.error('[MktProxy] blog.list 실패:', err);
-      ALL_ROWS = SAMPLE_BLOG;
-      SOURCE_LABEL = '연결 실패 · 데모 사용';
+      ALL_ROWS = [];
+      SOURCE_LABEL = '연결 실패 · 데이터 없음';
       await loadStatsAndInboundForCurrent();
       refresh();
     }
