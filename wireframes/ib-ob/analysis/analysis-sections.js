@@ -42,13 +42,13 @@ window.AnalysisSections = (function () {
     overview(sid, rows, host) {
       const k = A.kpi(rows);
       const facts = [
-        ['📥', '전체 인입', fmt(k.total), `IB ${k.ib} · OB ${k.ob}`],
-        ['🤝', '최초 협의', fmt(k.meet), `협의 전환 ${k.total ? Math.round(k.meet * 100 / k.total) : 0}%`],
-        ['🖊', '계약 날인', fmt(k.sign), `진행 ${k.mid}건`],
-        ['✅', '성약', fmt(k.conv), `성약률 ${k.rate}%`]
+        ['전체 인입', fmt(k.total), `IB ${k.ib} · OB ${k.ob}`],
+        ['최초 협의', fmt(k.meet), `협의 전환 ${k.total ? Math.round(k.meet * 100 / k.total) : 0}%`],
+        ['계약 날인', fmt(k.sign), `진행 ${k.mid}건`],
+        ['성약', fmt(k.conv), `성약률 ${k.rate}%`]
       ];
       host.innerHTML = head('Overview', '개요 대시보드', '전체 인바운드 인입을 한눈에. 상단 필터가 모든 카테고리에 적용됩니다.') +
-        `<div class="fact-grid">${facts.map(f => `<div class="fact"><div class="ico">${f[0]}</div><div class="ttl">${f[1]}</div><div class="big">${f[2]}</div><div class="sub">${f[3]}</div></div>`).join('')}</div>` +
+        `<div class="fact-grid">${facts.map(f => `<div class="fact"><div class="ttl">${f[0]}</div><div class="big">${f[1]}</div><div class="sub">${f[2]}</div></div>`).join('')}</div>` +
         `<div class="an-grid an-g23">${card('월별 인입 & 성약률', 'time series', box(cid(sid, 'trend'), 'lg'))}${card('인지채널 믹스', 'P·O·E', box(cid(sid, 'aware'), 'lg'))}</div>` +
         `<div class="an-grid an-g2">${card('서비스별 인입 TOP', 'rank', box(cid(sid, 'svc')))}${card('유입경로(UTM) 분포', 'inflow', box(cid(sid, 'utm')))}</div>`;
       A.lineSeries(cid(sid, 'trend'), A.series(rows, 'month'));

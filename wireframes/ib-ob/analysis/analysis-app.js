@@ -101,6 +101,10 @@ window.AnalysisApp = (function () {
       if (!window.MktProxy) return; MktProxy.setUrl(''); $('gas-url').value = '';
       MktProxy.ibobClearCache && MktProxy.ibobClearCache(); load();
     });
+    if ($('btn-refresh')) $('btn-refresh').addEventListener('click', () => {
+      if (window.MktProxy && MktProxy.ibobClearCache) MktProxy.ibobClearCache();
+      load(true);
+    });
   }
 
   function init(cfg) {

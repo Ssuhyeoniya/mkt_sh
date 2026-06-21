@@ -314,6 +314,7 @@
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 분석 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
         <input id="gas-url" type="text" placeholder="GAS 프록시 URL을 붙여넣고 [연결]" spellcheck="false"/>
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
@@ -890,7 +891,7 @@
         const usedRows = d.rows.filter(function(r){ return r.service === a.name || r.service === b.name; });
         cards.push({
           key:'svc',
-          icon:'⚡', tone:'',
+          icon:'', tone:'',
           score: Math.min(85, 65 + Math.round(ratio*5)),
           title:'누적 방문 — 서비스 비교',
           statement:`<b>${escapeHtml(a.name)}</b> 서비스 평균 누적 방문이 ${escapeHtml(b.name)} 대비 <b class="green">${ratio.toFixed(1)}배</b>`,
@@ -922,7 +923,7 @@
         });
         cards.push({
           key:'dow',
-          icon:'📈', tone:'green',
+          icon:'', tone:'green',
           score: Math.min(92, 70 + Math.round(lift*0.5)),
           title:'주간 방문 — 발행 요일',
           statement:`<b>${days}</b> 발행 글의 주간 방문이 <b class="green">+${lift.toFixed(0)}%</b> 더 높음`,
@@ -950,7 +951,7 @@
       const usedRows = d.rows.filter(function(r){ return String(r['제목']||'').indexOf(kw) >= 0; });
       cards.push({
         key:'kw',
-        icon:'🔍', tone:'blue',
+        icon:'', tone:'blue',
         score: Math.min(85, 65 + Math.round(lift*0.4)),
         title:'키워드',
         statement:`<b>'${escapeHtml(kw)}' 키워드</b> 포함 글의 평균 조회수가 <b class="green">+${lift.toFixed(0)}%</b>`,
@@ -979,7 +980,7 @@
         const lift = avgVisit / Math.max(overallAvg, 1);
         cards.push({
           key:'cat-view',
-          icon:'👁️', tone:'amber',
+          icon:'', tone:'amber',
           score: Math.min(92, 70 + Math.round(lift*8)),
           title:'카테고리 조회수 — 최상위',
           statement:'<b>'+escapeHtml(topByVisit.name)+'</b> 카테고리가 평균 조회수 <b class="green">'+fmtK(avgVisit)+'</b> — 전체 평균 대비 <b class="green">'+lift.toFixed(1)+'배</b>',
@@ -1008,7 +1009,7 @@
       const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.topCat.name; });
       cards.push({
         key:'cat-top',
-        icon:'🏆', tone:'',
+        icon:'', tone:'',
         score: Math.min(95, 70 + Math.round(lift*5)),
         title:'카테고리 인바운드 — 최상위',
         statement:`<b>${escapeHtml(d.topCat.name)}</b> 카테고리가 평균 인바운드 <b class="green">${fmt(Math.round(d.topCat.avgInbound))}건</b> — 전체 평균 대비 <b class="green">${lift.toFixed(1)}배</b>`,
@@ -1036,7 +1037,7 @@
       const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.worstCat.name; });
       cards.push({
         key:'cat-worst',
-        icon:'⚠️', tone:'red',
+        icon:'⚠', tone:'red',
         score: 70,
         title:'카테고리 인바운드 — 최하위',
         statement:`<b>'${escapeHtml(d.worstCat.name)}'</b> 카테고리는 발행 대비 인바운드 효율 <b class="red">-${drop.toFixed(0)}%</b>`,
@@ -1736,6 +1737,7 @@
     MktProxy.invalidateAll();
     load();
   });
+  $('btn-refresh').addEventListener('click', () => { MktProxy.invalidateAll(); load(); });
   $('btn-disconnect').addEventListener('click', () => {
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });

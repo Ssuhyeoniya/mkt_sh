@@ -503,6 +503,7 @@
       </div>
       <div class="conn">
         <span class="status" id="status">데모 데이터 표시 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
         <input id="gas-url" type="text" placeholder="GAS 프록시 URL을 붙여넣고 [연결]" spellcheck="false"/>
         <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
         <button class="btn-connect" id="btn-connect">연결</button>
@@ -1489,6 +1490,7 @@
     MktProxy.invalidateAll();
     load();
   });
+  $('btn-refresh').addEventListener('click', function(){ MktProxy.invalidateAll(); load(); });
   $('btn-disconnect').addEventListener('click', function(){
     MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
   });
