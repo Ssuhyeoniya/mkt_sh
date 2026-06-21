@@ -158,7 +158,7 @@ a{ color:inherit; text-decoration:none; }
 .tag-ch{   background:rgba(109,78,255,.10); color:#5b3fd9; border:1px solid rgba(109,78,255,.25); }
 
 /* === resizable table === */
-.table-wrap{ overflow:auto; max-height:60vh; }
+.table-wrap{ overflow:auto; max-height:60vh;  scrollbar-gutter:stable;}
 .ibob-table{ width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }
 .ibob-table thead th{
   position:sticky; top:0; z-index:3;
