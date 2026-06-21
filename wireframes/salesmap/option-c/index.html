@@ -8,9 +8,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
 <style>
-  /* 기간+필터 스크롤 시 상단 고정 */
-  .date-filter{ position:sticky; top:0; z-index:31; background:var(--bg); padding-top:6px; }
-  .filter{ position:sticky; top:48px; z-index:30; background:var(--bg); }
+  /* 기간+검색 블록 스크롤 시 상단 고정 (IB/OB 종합과 동일) */
+  .sticky-filters{ position:sticky; top:0; z-index:30; background:var(--bg); padding-top:6px; }
+  .sticky-filters .date-filter, .sticky-filters .filter{ margin-bottom:8px; }
+  /* KPI 인라인 (총 리드 섹션 높이 축소) */
+  .kpi-grid .kpi{ display:flex; align-items:baseline; flex-wrap:wrap; gap:3px 7px; padding:9px 12px; }
+  .kpi-grid .kpi .kpi-value{ font-size:17px; margin:0; }
+  .kpi-grid .kpi .kpi-sub{ margin:0; }
+  .ms-group{ display:flex; align-items:center; gap:8px; }
 
   /* Option C: Analytics Hybrid — 분석 위젯 + 리사이즈 테이블 */
   .panel-pad{ padding:18px 20px; }
@@ -149,6 +154,7 @@
       <a class="tab active" href="../option-c/">인사이트</a>
     </nav>
 
+    <div class="sticky-filters">
     <!-- 기간 조회 -->
     <div class="date-filter">
       <span class="lbl">기간</span>
@@ -163,7 +169,30 @@
       <span class="range-info" id="range-info"></span>
     </div>
 
-    <!-- KPI -->
+    <!-- Filter -->
+    <div class="filter">
+      <div class="search">
+        <span style="color:var(--muted)">⌕</span>
+        <input id="q" type="text" placeholder="기업명 / 담당자 / 이메일 검색..."/>
+      </div>
+      <div class="ms-group">
+        <span class="ms-tag">서비스</span>
+        <div class="ms-dropdown" id="ms-svc">
+          <button class="ms-trigger" type="button"><span class="ms-text">서비스 전체</span><span class="ms-caret">▾</span></button>
+          <div class="ms-panel" id="ms-svc-panel"></div>
+        </div>
+      </div>
+      <div class="ms-group">
+        <span class="ms-tag ch">유입경로</span>
+        <div class="ms-dropdown" id="ms-ch">
+          <button class="ms-trigger" type="button"><span class="ms-text">유입경로 전체</span><span class="ms-caret">▾</span></button>
+          <div class="ms-panel" id="ms-ch-panel"></div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /sticky-filters -->
+
+    <!-- KPI (총 리드 — 인라인) -->
     <section class="kpi-grid">
       <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
       <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
@@ -171,16 +200,6 @@
       <div class="kpi"><div class="kpi-label">UTM 추적</div><div class="kpi-value" id="kpi-utm">0%</div><div class="kpi-sub" id="kpi-utm-sub">utm_source 보유율</div></div>
       <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
     </section>
-
-    <!-- Filter -->
-    <div class="filter">
-      <div class="search">
-        <span style="color:var(--muted)">⌕</span>
-        <input id="q" type="text" placeholder="기업명 / 담당자 / 이메일 검색..."/>
-      </div>
-      <select id="svc"><option value="">전체 서비스</option></select>
-      <select id="ch"><option value="">전체 유입경로</option></select>
-    </div>
 
     <!-- Charts -->
     <section class="grid-3 lead">
@@ -331,13 +350,15 @@
     $('range-info').textContent = (!ds && !de) ? '전체 기간' : `${ds||'...'} ~ ${de||'...'}`;
   }
 
+  let SVC_SEL = [], CH_SEL = [];
   function applyFilter(rows){
     const q = ($('q').value||'').toLowerCase().trim();
-    const sv = $('svc').value, ch = $('ch').value;
+    const svcSet = SVC_SEL.length ? new Set(SVC_SEL) : null;
+    const chSet  = CH_SEL.length ? new Set(CH_SEL) : null;
     const ds = $('date-start').value, de = $('date-end').value;
     return rows.filter(r => {
-      if (sv && String(r.service||'') !== sv) return false;
-      if (ch && String(r.channel||'') !== ch) return false;
+      if (svcSet && !svcSet.has(String(r.service||''))) return false;
+      if (chSet  && !chSet.has(String(r.channel||''))) return false;
       if (q){
         const hay = (r.company+' '+r.manager+' '+r.email).toLowerCase();
         if (hay.indexOf(q) < 0) return false;
@@ -349,15 +370,36 @@
     });
   }
 
+  function buildMSPanel(panelId, allLabel, items){
+    $(panelId).innerHTML =
+      `<label class="ms-item ms-all"><input type="checkbox" data-all checked /><span>${esc(allLabel)}</span></label>` +
+      `<div class="ms-divider"></div>` +
+      (items.map(v => `<label class="ms-item"><input type="checkbox" value="${esc(v)}" /><span>${esc(v)}</span></label>`).join('') || `<div class="ms-item muted">옵션 없음</div>`);
+  }
+  function bindMS(rootId, panelId, allLabel, onChange){
+    const root = $(rootId), panel = $(panelId), txt = root.querySelector('.ms-text');
+    root.querySelector('.ms-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.ms-dropdown.open').forEach(d => { if (d !== root) d.classList.remove('open'); });
+      root.classList.toggle('open');
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('change', e => {
+      const t = e.target; if (!(t instanceof HTMLInputElement) || t.type !== 'checkbox') return;
+      const items = panel.querySelectorAll('input[type="checkbox"]:not([data-all])');
+      const allBox = panel.querySelector('input[data-all]');
+      if (t.dataset.all !== undefined){ items.forEach(i => i.checked = false); t.checked = true; }
+      else { allBox.checked = [...items].filter(i => i.checked).length === 0; }
+      const checked = [...items].filter(i => i.checked);
+      txt.textContent = checked.length === 0 ? allLabel : (checked.length === 1 ? checked[0].value : checked.length + '개 선택');
+      onChange(checked.map(i => i.value));
+    });
+  }
   function fillSelects(rows){
-    const fill = (id, key, head) => {
-      const sel = $(id); const cur = sel.value;
-      const opts = Array.from(new Set(rows.map(r => r[key]).filter(Boolean))).sort();
-      sel.innerHTML = `<option value="">${head}</option>` + opts.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
-      sel.value = cur;
-    };
-    fill('svc','service','전체 서비스');
-    fill('ch','channel','전체 유입경로');
+    const svcs = Array.from(new Set(rows.map(r => String(r.service||'')).filter(Boolean))).sort();
+    const chs  = Array.from(new Set(rows.map(r => String(r.channel||'')).filter(Boolean))).sort();
+    buildMSPanel('ms-svc-panel', '서비스 전체', svcs);
+    buildMSPanel('ms-ch-panel',  '유입경로 전체', chs);
   }
 
   function renderKPI(rows){
@@ -568,8 +610,10 @@
   $('btn-connect').addEventListener('click', () => { const v=$('gas-url').value.trim(); if(!v) return; MktProxy.setUrl(v); MktProxy.salesmapClearCache(); load(true); });
   $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; MktProxy.salesmapClearCache(); load(); });
   $('btn-refresh').addEventListener('click', () => load(true));
-  ['q','svc','ch'].forEach(id => $(id).addEventListener('input', rerender));
-  ['svc','ch'].forEach(id => $(id).addEventListener('change', rerender));
+  $('q').addEventListener('input', rerender);
+  bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', vals => { SVC_SEL = vals; rerender(); });
+  bindMS('ms-ch',  'ms-ch-panel',  '유입경로 전체', vals => { CH_SEL = vals; rerender(); });
+  document.addEventListener('click', () => document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open')));
 
   // 기간 조회
   document.querySelectorAll('.qbtn').forEach(b => {

@@ -146,6 +146,14 @@
           <input id="q" type="text" placeholder="검색 키워드 입력..."/>
         </div>
       </div>
+      <div class="row">
+        <span class="ms-tag">성약</span>
+        <select id="conv-filter" class="search-field">
+          <option value="">전체</option>
+          <option value="y">성약</option>
+          <option value="n">미성약</option>
+        </select>
+      </div>
       <div class="actions"><button class="btn-apply" id="btn-apply">조회</button></div>
     </div>
     </div><!-- /sticky-filters -->
@@ -224,8 +232,8 @@
   const $ = id => document.getElementById(id);
   const PAGE_SIZE = 10;
   let PAGE = 1;
-  let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'' };
-  let STATE = { services:[], utm:[], searchField:'고객사명', searchQuery:'', dateStart:'', dateEnd:'', activeRange:'', unit:'week', sortKey:'IB 인입 일자', sortDir:'desc' };
+  let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'', conv:'' };
+  let STATE = { services:[], utm:[], searchField:'고객사명', searchQuery:'', conv:'', dateStart:'', dateEnd:'', activeRange:'', unit:'week', sortKey:'IB 인입 일자', sortDir:'desc' };
 
   /* 정렬 — 기본 IB 인입 일자 내림차순(최신 상단), 헤더 클릭 시 토글 */
   function sortRows(rows){
@@ -277,6 +285,7 @@
     if (STATE.services.length){ const set = new Set(STATE.services); out = out.filter(r => set.has(String(r['서비스 인입 구분']||''))); }
     if (STATE.utm.length){ const set = new Set(STATE.utm); out = out.filter(r => set.has(parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)')); }
     if (STATE.searchQuery){ const q = STATE.searchQuery.toLowerCase(); const f = STATE.searchField; out = out.filter(r => String(r[f]||'').toLowerCase().indexOf(q) >= 0); }
+    if (STATE.conv){ out = out.filter(r => { const s = String(r['성약']==null?'':r['성약']).trim(); const yes = /^(y|yes|true|성약|o|1)$/i.test(s); return STATE.conv === 'y' ? yes : !yes; }); }
     if (STATE.dateStart || STATE.dateEnd){
       out = out.filter(r => { const d = String(r['IB 인입 일자']||'').slice(0,10); if (!d) return false;
         if (STATE.dateStart && d < STATE.dateStart) return false; if (STATE.dateEnd && d > STATE.dateEnd) return false; return true; });
@@ -439,7 +448,8 @@
   $('search-field').addEventListener('change', () => { PENDING.searchField = $('search-field').value; });
   $('q').addEventListener('input', () => { PENDING.searchQuery = $('q').value.trim(); });
   $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
-  function applySearch(){ STATE.services = PENDING.services.slice(); STATE.utm = PENDING.utm.slice(); STATE.searchField = PENDING.searchField; STATE.searchQuery = PENDING.searchQuery; PAGE = 1; rerender(); }
+  $('conv-filter').addEventListener('change', () => { PENDING.conv = $('conv-filter').value; });
+  function applySearch(){ STATE.services = PENDING.services.slice(); STATE.utm = PENDING.utm.slice(); STATE.searchField = PENDING.searchField; STATE.searchQuery = PENDING.searchQuery; STATE.conv = PENDING.conv; PAGE = 1; rerender(); }
   $('btn-apply').addEventListener('click', applySearch);
   document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => setQuickRange(Number(b.dataset.range))));
   $('date-start').addEventListener('change', () => { STATE.dateStart = $('date-start').value; STATE.activeRange = ''; PAGE = 1; rerender(); });

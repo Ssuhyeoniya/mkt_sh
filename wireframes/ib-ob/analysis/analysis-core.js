@@ -287,21 +287,8 @@ window.Analysis = (function () {
       options: {
         cutout: '62%',
         plugins: {
-          legend: {
-            position: opt.legend || 'right',
-            labels: {
-              boxWidth: 10, boxHeight: 10, usePointStyle: true, font: { size: 11 },
-              // 범례에 개수 + 조회기간 내 퍼센티지 함께 표기
-              generateLabels: function (chart) {
-                const ds = chart.data.datasets[0];
-                return chart.data.labels.map(function (lab, i) {
-                  const v = ds.data[i] || 0;
-                  const pct = Math.round(v * 100 / total);
-                  return { text: lab + '  ' + v + ' (' + pct + '%)', fillStyle: PALETTE[i % PALETTE.length], strokeStyle: '#fff', lineWidth: 1, index: i };
-                });
-              }
-            }
-          },
+          // 범례는 색상-구분값(이름)만, 개수/퍼센티지는 도넛 툴팁(hover)에서만 표기
+          legend: { position: opt.legend || 'right', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, font: { size: 11 } } },
           tooltip: { callbacks: { label: function (ctx) { const v = ctx.parsed || 0; return ctx.label + ': ' + v + '건 (' + Math.round(v * 100 / total) + '%)'; } } }
         }
       }

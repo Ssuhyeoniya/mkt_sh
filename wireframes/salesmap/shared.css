@@ -9,6 +9,7 @@
   --hover-bg:#eef0f5; --pill-bg:#f0f2f7;
 }
 *{ box-sizing:border-box; }
+html{ overflow-y:scroll; }   /* 스크롤바 항상 예약 — 정렬/페이지네이션/툴팁 시 가로 너비 흔들림 방지 */
 html,body{ margin:0; background:var(--bg); color:var(--text); font-family:'Pretendard',-apple-system,system-ui,sans-serif; }
 a{ color:inherit; text-decoration:none; }
 
@@ -155,7 +156,7 @@ a{ color:inherit; text-decoration:none; }
 
 /* === resizable table (시안 A 핵심) === */
 /* table-layout:fixed + 각 컬럼 width 직접 제어, 헤더에 그립 핸들 부착 */
-.smap-table{ width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }
+.smap-table{ width:max-content; border-collapse:separate; border-spacing:0; table-layout:fixed; }
 .smap-table thead th{
   position:sticky; top:0; z-index:3;
   background:var(--panel-2); color:var(--muted);

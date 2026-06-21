@@ -8,9 +8,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared.css">
 <style>
-  /* 기간+필터 스크롤 시 상단 고정 */
-  .date-filter{ position:sticky; top:0; z-index:31; background:var(--bg); padding-top:6px; }
-  .filter{ position:sticky; top:48px; z-index:30; background:var(--bg); }
+  /* 기간+검색 블록 스크롤 시 상단 고정 (IB/OB 종합과 동일) */
+  .sticky-filters{ position:sticky; top:0; z-index:30; background:var(--bg); padding-top:6px; }
+  .sticky-filters .date-filter, .sticky-filters .filter{ margin-bottom:8px; }
+  /* KPI 인라인 (IB/OB 종합 전체 리드 섹션과 동일 구조) */
+  .kpi-grid .kpi{ display:flex; align-items:baseline; flex-wrap:wrap; gap:3px 7px; padding:9px 12px; }
+  .kpi-grid .kpi .kpi-value{ font-size:17px; margin:0; }
+  .kpi-grid .kpi .kpi-sub{ margin:0; }
 
   /* Option B: CRM Pipeline — 칸반 보드 + 컬럼 리사이즈 가능 컴팩트 테이블 */
   .view-toggle{ display:inline-flex; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:3px; }
@@ -75,6 +79,7 @@
       <a class="tab" href="../option-c/">인사이트</a>
     </nav>
 
+    <div class="sticky-filters">
     <!-- 기간 조회 -->
     <div class="date-filter">
       <span class="lbl">기간</span>
@@ -88,15 +93,6 @@
       <button class="clear" id="btn-clear-date">초기화</button>
       <span class="range-info" id="range-info"></span>
     </div>
-
-    <!-- KPI -->
-    <section class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
-      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
-      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
-      <div class="kpi"><div class="kpi-label">서비스 종류</div><div class="kpi-value" id="kpi-svc">0</div><div class="kpi-sub">관심 서비스</div></div>
-      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
-    </section>
 
     <!-- Filter & view controls -->
     <div class="filter">
@@ -135,6 +131,15 @@
         </div>
       </div>
 
+      <div class="ms-group">
+        <span class="ms-tag">성약</span>
+        <select id="conv-filter" class="search-field">
+          <option value="">전체</option>
+          <option value="y">성약</option>
+          <option value="n">미성약</option>
+        </select>
+      </div>
+
       <button id="btn-apply" class="btn-apply">조회</button>
 
       <div style="flex:1"></div>
@@ -144,6 +149,16 @@
         <button data-v="board">⊞ 보드</button>
       </div>
     </div>
+    </div><!-- /sticky-filters -->
+
+    <!-- KPI (IB/OB 종합과 동일한 인라인 fact 구조) -->
+    <section class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">총 리드</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub">전체 합계</div></div>
+      <div class="kpi"><div class="kpi-label">금일 신규</div><div class="kpi-value" id="kpi-today">0</div><div class="kpi-sub">오늘 제출</div></div>
+      <div class="kpi"><div class="kpi-label">최근 7일</div><div class="kpi-value" id="kpi-week">0</div><div class="kpi-sub">주간 유입</div></div>
+      <div class="kpi"><div class="kpi-label">성약</div><div class="kpi-value" id="kpi-conv">0</div><div class="kpi-sub" id="kpi-conv-sub">IB/OB 연결</div></div>
+      <div class="kpi"><div class="kpi-label">마케팅 동의율</div><div class="kpi-value" id="kpi-mkt">0%</div><div class="kpi-sub" id="kpi-mkt-sub">- / -</div></div>
+    </section>
 
     <!-- Kanban board -->
     <section id="view-board" style="display:none">
@@ -202,6 +217,7 @@
   const COLS = [
     { key:'_no',             label:'NO',           w: 56,  align:'right' },
     { key:'submittedAt',     label:'제출 날짜',    w:148 },
+    { key:'_ibobConv',       label:'성약',         w: 74,  align:'center', render: (_,r) => convCell(r) },
     { key:'inflowForm',      label:'유입폼',       w:130,  render: v => v ? `<span class="tag-mini tag-ch">${esc(v)}</span>` : '-' },
     { key:'service',         label:'서비스',       w:120,  render: v => v ? `<span class="tag-mini tag-svc">${esc(v)}</span>` : '-' },
     { key:'company',         label:'기업명',       w:170,  bold:true },
@@ -230,7 +246,8 @@
     services: [],     // [] = 전체
     channels: [],     // [] = 전체
     searchField: 'company',
-    searchQuery: ''
+    searchQuery: '',
+    conv: ''          // '' 전체 | 'y' 성약 | 'n' 미성약
   };
 
   function $(id){ return document.getElementById(id); }
@@ -252,6 +269,43 @@
     if (lbl === 'N') return `<span class="tag-mini tag-n">N</span>`;
     if (lbl === 'Y') return `<span class="tag-mini tag-y">Y</span>`;
     return `<span class="tag-mini">${esc(lbl)}</span>`;
+  }
+  // 성약 셀 — IB/OB 종합 매칭 결과(_ibobMatched/_ibobConv) 기반
+  function convCell(r){
+    if (!r || !r._ibobMatched) return '<span class="muted">-</span>';
+    return r._ibobConv === 'Y'
+      ? `<span class="tag-mini tag-y">Y</span>`
+      : `<span class="tag-mini tag-n">N</span>`;
+  }
+  /* IB/OB 종합과 매칭: 기업명=고객사명 & |제출일-IB인입일| ≤ 3일 → 성약(K열) 연결 */
+  let IBOB_INDEX = null;   // { 회사명: [{date, conv}] }
+  async function buildIbobIndex(){
+    try {
+      const r = await MktProxy.ibobListCached(false);   // 캐시 우선 (재요청 없음)
+      const rows = (r && r.rows) || (r && r.data && r.data.rows) || [];
+      const idx = {};
+      rows.forEach(row => {
+        const name = String(row['고객사명']||'').trim(); if (!name) return;
+        const d = String(row['IB 인입 일자']||'').slice(0,10); if (!d) return;
+        const s = String(row['성약']==null?'':row['성약']).trim();
+        const conv = /^(y|yes|true|성약|o|1)$/i.test(s) ? 'Y' : 'N';
+        (idx[name] = idx[name] || []).push({ date: d, conv: conv });
+      });
+      IBOB_INDEX = idx;
+    } catch (_) { IBOB_INDEX = {}; }
+  }
+  function annotateConv(rows){
+    if (!IBOB_INDEX) return;
+    const dayDiff = (a,b) => { const da=new Date(a), db=new Date(b); if(isNaN(da)||isNaN(db)) return 1e9; return Math.abs((da-db)/86400000); };
+    rows.forEach(r => {
+      r._ibobMatched = false; r._ibobConv = '';
+      const cand = IBOB_INDEX[String(r.company||'').trim()];
+      if (!cand) return;
+      const sd = String(r.submittedAt||'').slice(0,10); if (!sd) return;
+      let best = null;
+      cand.forEach(c => { const diff = dayDiff(sd, c.date); if (diff <= 3 && (!best || diff < best.diff)) best = { diff, conv: c.conv }; });
+      if (best){ r._ibobMatched = true; r._ibobConv = best.conv; }
+    });
   }
   function setStatus(t,k){ const el=$('status'); el.className='status '+(k||''); el.textContent=t; }
   function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -302,6 +356,8 @@
         const v = String(r[field]||'').toLowerCase();
         if (v.indexOf(q) < 0) return false;
       }
+      if (APPLIED.conv === 'y' && r._ibobConv !== 'Y') return false;
+      if (APPLIED.conv === 'n' && r._ibobConv === 'Y') return false;
       const d = String(r.submittedAt||'').slice(0,10);
       if (ds && d < ds) return false;
       if (de && d > de) return false;
@@ -321,8 +377,9 @@
     const td = todayStr(), wk = daysAgo(7);
     $('kpi-today').textContent = fmt(rows.filter(r => String(r.submittedAt||'').slice(0,10) === td).length);
     $('kpi-week').textContent  = fmt(rows.filter(r => String(r.submittedAt||'').slice(0,10) >= wk).length);
-    const svcs = new Set(rows.map(r => r.service||'미지정'));
-    $('kpi-svc').textContent   = fmt(svcs.size);
+    const conv = rows.filter(r => r._ibobConv === 'Y').length;
+    $('kpi-conv').textContent = fmt(conv);
+    $('kpi-conv-sub').textContent = 'IB/OB 성약 매칭';
     const mkt = rows.filter(r => ynLabel(r.marketingAgreed) === 'Y').length;
     const rate = rows.length ? Math.round(mkt*100/rows.length) : 0;
     $('kpi-mkt').textContent = rate + '%';
@@ -375,6 +432,7 @@
     APPLIED.channels = [...document.querySelectorAll('#ms-ch-panel input[type="checkbox"]:not([data-all]):checked')].map(i => i.value);
     APPLIED.searchField = $('search-field').value;
     APPLIED.searchQuery = ($('q').value || '').trim();
+    APPLIED.conv = ($('conv-filter') ? $('conv-filter').value : '');
   }
 
   // ── kanban ────────────────────────────────────────────
@@ -600,6 +658,7 @@
 
   function render(rows){
     CURRENT = rows;
+    annotateConv(CURRENT);          // IB/OB 성약 매칭 주입
     fillFilterPanels(rows);
     rerender();
   }
@@ -608,6 +667,7 @@
     const url = MktProxy.getUrl();
     $('gas-url').value = url;
     $('btn-disconnect').style.display = url ? '' : 'none';
+    await buildIbobIndex();         // 성약 매칭 인덱스 (캐시 우선, 재요청 없음)
     if (!url){
       MktProxy.salesmapClearCache();
       setStatus('데모 데이터 표시 중', 'demo');
