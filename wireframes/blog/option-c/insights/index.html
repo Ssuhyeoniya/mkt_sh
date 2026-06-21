@@ -783,21 +783,33 @@
     const overallCV    = totalVisit > 0 ? totalInbound / totalVisit : 0;
     const avgInbound   = totalInbound / rows.length;
 
-    // 카테고리별 집계 (인바운드/조회수는 idx 기반)
+    // 카테고리별 집계 — 지표별 기간 귀속 분리:
+    //   방문자(totalVisit) = 기간 내 조회 (글 무관 전체)
+    //   인바운드(inbound)  = 기간 내 인바운드 (인입일 기준, 발행/조회 무관 전체)
+    //   발행(count)        = 발행일(날짜)이 기간 내인 글만
+    // 따라서 모집단을 filtered(조회된 글)가 아닌 ALL_ROWS 전체로 순회한다.
+    const _ds = APPLIED_DATE_START, _de = APPLIED_DATE_END;
+    const _inPubRange = function (s){
+      if (!_ds && !_de) return true;
+      const d = String(s || '').slice(0,10);
+      return !!d && (!_ds || d >= _ds) && (!_de || d <= _de);
+    };
     const byCat = {};
-    for (let i = 0; i < rows.length; i++){
-      const r = rows[i];
+    for (let i = 0; i < ALL_ROWS.length; i++){
+      const r = ALL_ROWS[i];
       const c = r.category || '미분류';
       if (!byCat[c]) byCat[c] = { count:0, totalVisit:0, weekly:0, inbound:0 };
-      byCat[c].count++;
-      byCat[c].totalVisit += rowVisits(r);
-      byCat[c].weekly     += +r.weeklyVisitor || 0;
-      byCat[c].inbound    += actualInbound(r);
+      byCat[c].totalVisit += rowVisits(r);        // 기간 조회
+      byCat[c].inbound    += actualInbound(r);     // 기간 인바운드(인입일)
+      if (_inPubRange(r['날짜'])){                 // 발행일이 기간 내인 글만
+        byCat[c].count  += 1;
+        byCat[c].weekly += +r.weeklyVisitor || 0;
+      }
     }
     const catList = Object.entries(byCat).map(([name,v]) => ({
       name, ...v,
-      avgInbound: v.inbound / v.count,
-      avgVisit:   v.totalVisit / v.count
+      avgInbound: v.count ? v.inbound / v.count : 0,
+      avgVisit:   v.count ? v.totalVisit / v.count : 0
     }));
     const topCat   = catList.slice().sort((a,b)=>b.avgInbound-a.avgInbound)[0];
     const worstCat = catList.filter(c=>c.count>=2).sort((a,b)=>a.avgInbound-b.avgInbound)[0];
