@@ -31,6 +31,9 @@
 .an-table th.sorted{ color:var(--accent); }
 .an-table td{ padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
 .an-table td.num{ text-align:right; font-family:'JetBrains Mono',monospace; }
+/* 긴 텍스트 셀은 열을 넓히지 않고 말줄임(…) — table-layout:auto 에서도 동작하도록 내부 span 폭 제한 */
+.an-table td.txt-cell{ max-width:220px; }
+.an-table td.txt-cell .clip{ display:inline-block; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
 .an-table tbody tr:hover td{ background:var(--panel-2); }
 .an-table tbody tr:last-child td{ border-bottom:0; }
 .an-table .cell-bar{ display:inline-block; width:46px; height:5px; background:var(--hover-bg); border-radius:99px; overflow:hidden; vertical-align:middle; margin-right:7px; }

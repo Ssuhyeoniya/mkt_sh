@@ -227,25 +227,67 @@ window.Analysis = (function () {
     afterDatasetsDraw: function (chart) {
       const ctx = chart.ctx;
       const horizontal = chart.options && chart.options.indexAxis === 'y';
+      // 값 축이 stacked 인지 판별 — 누적 막대는 세그먼트별 값이 아니라
+      // 스택 합계를 최상단에 1번만 그린다(작은 세그먼트끼리 라벨이 겹치는 문제 방지).
+      const vScale = chart.scales[horizontal ? 'x' : 'y'];
+      const stacked = !!(vScale && vScale.options && vScale.options.stacked);
+
+      // 그릴 대상 막대 데이터셋만 추림
+      const bars = [];
       chart.data.datasets.forEach(function (ds, di) {
         const meta = chart.getDatasetMeta(di);
         if (!meta || meta.type !== 'bar' || meta.hidden) return;
-        ctx.save();
-        ctx.font = '600 9px "JetBrains Mono", monospace';
-        ctx.fillStyle = '#6b7280';
-        meta.data.forEach(function (el, i) {
-          const v = ds.data[i];
-          if (v == null || v === 0 || !el) return;
-          if (horizontal) {
-            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-            ctx.fillText(fmt(v), el.x + 3, el.y);
-          } else {
-            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-            ctx.fillText(fmt(v), el.x, el.y - 2);
+        bars.push({ ds: ds, meta: meta });
+      });
+      if (!bars.length) return;
+
+      ctx.save();
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#6b7280';
+
+      const drawAt = function (el, text) {
+        if (horizontal) {
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, el.x + 3, el.y);
+        } else {
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.fillText(text, el.x, el.y - 2);
+        }
+      };
+
+      if (stacked) {
+        // 스택 id 별로 묶어 각 인덱스마다 합계를 최상단 세그먼트 위치에 1회 표기
+        const groups = {};
+        bars.forEach(function (b, gi) {
+          const key = b.meta.stack != null ? String(b.meta.stack) : ('__s' + gi);
+          (groups[key] = groups[key] || []).push(b);
+        });
+        Object.keys(groups).forEach(function (key) {
+          const group = groups[key];
+          const n = group[0].meta.data.length;
+          for (let i = 0; i < n; i++) {
+            let sum = 0, topEl = null, topCoord = Infinity;
+            group.forEach(function (b) {
+              const el = b.meta.data[i];
+              if (!el) return;
+              sum += Number(b.ds.data[i]) || 0;
+              const coord = horizontal ? -el.x : el.y; // 최상단(세로) / 최우측(가로)
+              if (coord < topCoord) { topCoord = coord; topEl = el; }
+            });
+            if (topEl && sum !== 0) drawAt(topEl, fmt(sum));
           }
         });
-        ctx.restore();
-      });
+      } else {
+        // 비누적(단일/그룹) 막대는 세그먼트별 값 그대로 표기
+        bars.forEach(function (b) {
+          b.meta.data.forEach(function (el, i) {
+            const v = b.ds.data[i];
+            if (v == null || v === 0 || !el) return;
+            drawAt(el, fmt(v));
+          });
+        });
+      }
+      ctx.restore();
     }
   };
   function theme() {
@@ -328,9 +370,11 @@ window.Analysis = (function () {
     opt = opt || {};
     const d = dist.slice(0, opt.limit || 7);
     const total = d.reduce((s, x) => s + (x.total || 0), 0) || 1;
+    // 서비스명 라벨은 브랜드 고정 컬러, 그 외에는 기본 팔레트(index) 사용
+    const colors = d.map((x, i) => (window.serviceColor && window.serviceColor(x.name)) || PALETTE[i % PALETTE.length]);
     return mk(id, {
       type: 'doughnut',
-      data: { labels: d.map(x => x.name), datasets: [{ data: d.map(x => x.total), backgroundColor: PALETTE, borderColor: '#fff', borderWidth: 2 }] },
+      data: { labels: d.map(x => x.name), datasets: [{ data: d.map(x => x.total), backgroundColor: colors, borderColor: '#fff', borderWidth: 2 }] },
       options: {
         cutout: '62%',
         plugins: {
@@ -407,7 +451,9 @@ window.Analysis = (function () {
         if (c[0] === 'rate') return `<td class="num"><span class="rate-pill">${d.rate}%</span></td>`;
         if (c[0] === 'total') return `<td class="num"><span class="cell-bar"><i style="width:${Math.round(d.total / maxTotal * 100)}%"></i></span><b>${fmt(d.total)}</b></td>`;
         if (c[2] === 'n') return `<td class="num">${fmt(d[c[0]])}</td>`;
-        return `<td>${esc(d[c[0]])}</td>`;
+        // 텍스트 셀(업종/업태/서비스명 등)은 길어도 열을 넓히지 않고 말줄임 처리(hover 시 전체 표기)
+        const tv = esc(d[c[0]]);
+        return `<td class="txt-cell"><span class="clip" title="${tv}">${tv}</span></td>`;
       }).join('') + '</tr>').join('');
       el.innerHTML = `<table class="an-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
       el.querySelectorAll('th[data-k]').forEach(th => th.addEventListener('click', () => {

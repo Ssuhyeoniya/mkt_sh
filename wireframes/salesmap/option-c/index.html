@@ -113,7 +113,7 @@
     <div class="nav-section">Overview</div>
     <a class="nav-item" href="../../dashboard/">대시보드</a>
     <div class="nav-section">인바운드</div>
-    <a class="nav-item">IB / OB 분석</a>
+    <a class="nav-item" href="../../ib-ob/analysis/">IB / OB 분석</a>
     <a class="nav-item" href="../../ib-ob/">IB / OB 종합</a>
     <a class="nav-item active" href="../">세일즈맵</a>
     <div class="nav-section">고객사 관리</div>
@@ -282,6 +282,7 @@
 </div>
 
 <script src="../proxy-client.js"></script>
+<script src="../../service-colors.js"></script>
 <script>
   const HUES = ['#6d4eff','#16a34a','#2563eb','#d97706','#db2777','#dc2626','#8a72ff','#22c55e','#3b82f6','#f59e0b'];
 
@@ -527,17 +528,19 @@
       $('svc-legend').innerHTML = '<div class="muted text-[12px]">데이터 없음</div>';
       return;
     }
+    // 서비스명 라벨은 브랜드 고정 컬러, 그 외에는 기본 HUES(index) 사용
+    const svcColor = (name, i) => (window.serviceColor && window.serviceColor(name)) || HUES[i % HUES.length];
     let acc = 0;
     const stops = arr.slice(0, HUES.length).map((x, i) => {
       const start = acc / total * 100;
       acc += x.count;
       const end = acc / total * 100;
-      return `${HUES[i]} ${start}% ${end}%`;
+      return `${svcColor(x.name, i)} ${start}% ${end}%`;
     });
     $('svc-donut').style.background = 'conic-gradient(' + stops.join(', ') + ', #e2e5ec ' + (acc/total*100) + '% 100%)';
     $('svc-legend').innerHTML = arr.slice(0, 8).map((x,i) => `
       <div class="row">
-        <span class="lbl"><span class="dot" style="background:${HUES[i % HUES.length]}"></span><span class="name" title="${esc(x.name)}">${esc(x.name)}</span></span>
+        <span class="lbl"><span class="dot" style="background:${svcColor(x.name, i)}"></span><span class="name" title="${esc(x.name)}">${esc(x.name)}</span></span>
         <span class="cnt">${x.count}</span>
         <span class="pct">${Math.round(x.count*100/total)}%</span>
       </div>`).join('');
