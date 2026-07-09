@@ -235,26 +235,29 @@
   .table-scroll::-webkit-scrollbar{ width:8px; height:8px; }
   .table-scroll::-webkit-scrollbar-thumb{ background:#262c35; border-radius:4px; }
   /* 실제 <table> 위에 grid 레이아웃을 얹기 위해 block 표시로 전환 */
-  .bopt-table{ display:block; width:100%; border-collapse:separate; border-spacing:0; }
-  .bopt-table thead, .bopt-table tbody{ display:block; }
+  .bopt-table{ display:block; width:100%; min-width:100%; border-collapse:separate; border-spacing:0; }
+  .bopt-table thead, .bopt-table tbody{ display:block; width:100%; }
   .table-head, .post-row{
     display:grid;
-    /* 고정 px 컬럼 — fr/minmax 가변 폭 제거(스크롤바 토글·페이지 이동 시 흔들림 방지) */
+    /* 숫자/메타 컬럼은 고정 px(스크롤바 토글·페이지 이동 시 흔들림 방지),
+     * 제목만 1fr 로 늘려 테이블이 항상 컨테이너 폭을 꽉 채우게 한다.
+     * (제목만 가변이라 스크롤바 토글 시에도 숫자 컬럼은 흔들리지 않음) */
     grid-template-columns:
-      44px      /* NO */
-      92px      /* 발행일 */
-      320px     /* 제목 */
-      56px      /* 썸네일 */
-      96px      /* 서비스 */
-      104px     /* 카테고리 */
-      80px      /* 총방문 */
-      70px      /* 주간 */
-      70px      /* 월간 */
-      72px      /* 유입 */
-      40px      /* 링크 */
-      64px;     /* 상세 */
+      44px               /* NO */
+      92px               /* 발행일 */
+      minmax(320px, 1fr) /* 제목 — 남는 폭 흡수 */
+      56px               /* 썸네일 */
+      96px               /* 서비스 */
+      104px              /* 카테고리 */
+      80px               /* 총방문 */
+      70px               /* 주간 */
+      70px               /* 월간 */
+      72px               /* 유입 */
+      40px               /* 링크 */
+      64px;              /* 상세 */
     gap:6px; align-items:center;
-    width:1140px; min-width:1140px;   /* 합계 고정 — 컨테이너 폭과 무관 */
+    /* width:100% — 컨테이너를 꽉 채움. min-width 로 좁은 화면에선 가로 스크롤 */
+    width:100%; min-width:1140px;
   }
   .post-row .svc-tag{
     font-size:10.5px; padding:2px 7px; border-radius:4px;
@@ -467,6 +470,16 @@
   .pager button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .pager button:disabled{ opacity:.3; cursor:not-allowed; }
   .pager .ellipsis{ padding:5px 4px; color:var(--muted); }
+
+  /* 제목 검색 [조회] 버튼 — 클릭(또는 Enter) 시에만 검색 적용 */
+  .filter .search-btn{
+    background:var(--accent); border:1px solid var(--accent); border-radius:9px;
+    padding:7px 16px; color:#fff; font-size:12.5px; font-weight:600; cursor:pointer;
+    white-space:nowrap; flex-shrink:0;
+  }
+  .filter .search-btn:hover{ background:#6a4ce6; border-color:#6a4ce6; }
+  /* 검색어가 입력되었지만 아직 [조회] 하지 않은 상태 표시 */
+  .filter .search.pending{ border-color:var(--accent); box-shadow:0 0 0 2px rgba(124,92,255,.15); }
 </style>
 </head>
 <body>
@@ -605,6 +618,7 @@
         <span style="color:var(--muted)">⌕</span>
         <input id="q" type="text" placeholder="제목으로 검색..."/>
       </div>
+      <button class="search-btn" id="btn-search" title="제목 검색 실행">조회</button>
       <select id="cat"><option value="">전체 카테고리</option></select>
       <select id="sort">
         <option value="date_desc">최신순</option>
@@ -949,8 +963,11 @@
     updatePendingState();
   }
 
+  // 제목 검색어는 [조회] 버튼(또는 Enter) 을 눌러야만 확정된다. 입력 중에는
+  // 아직 적용되지 않도록 확정값을 별도 변수(SEARCH_Q)에 보관한다.
+  let SEARCH_Q = '';
   function applyFilter(rows){
-    const q   = ($('q').value || '').toLowerCase().trim();
+    const q   = SEARCH_Q;
     const cat = $('cat').value;
     let out = rows.filter(function(r){
       if (cat && String(r.category||'') !== cat) return false;
@@ -1496,7 +1513,22 @@
     const fname = 'blog_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.xls';
     TableGrid.exportExcelFromTable(document.getElementById('tbl'), fname);
   });
-  $('q').addEventListener('input',     function(){ CURRENT_PAGE=1; renderTable(); });
+  // 제목 검색: [조회] 버튼 클릭 또는 Enter 키로만 검색 실행
+  function runSearch(){
+    SEARCH_Q = ($('q').value || '').toLowerCase().trim();
+    document.querySelector('.filter .search').classList.remove('pending');
+    CURRENT_PAGE = 1;
+    renderTable();
+  }
+  $('btn-search').addEventListener('click', runSearch);
+  $('q').addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ e.preventDefault(); runSearch(); }
+  });
+  // 입력 중에는 "조회 대기" 상태만 표시 (아직 미적용). 빈칸으로 지우면 대기 해제.
+  $('q').addEventListener('input', function(){
+    const dirty = (($('q').value || '').toLowerCase().trim()) !== SEARCH_Q;
+    document.querySelector('.filter .search').classList.toggle('pending', dirty);
+  });
   $('cat').addEventListener('change',  function(){ CURRENT_PAGE=1; renderTable(); });
   $('sort').addEventListener('change', function(){ CURRENT_PAGE=1; renderTable(); });
 
@@ -1755,7 +1787,10 @@
             + '<span class="dt">'+ escHtml(it.datetime || it.date || '-') +'</span>'
             + (it.service ? '<span class="svc">'+escHtml(it.service)+'</span>' : '')
           + '</div>'
-          + '<div class="iro2">'+ escHtml(it.company || '-') + (it.manager ? ' <span class="mgr">· '+escHtml(it.manager)+'</span>' : '') +'</div>'
+          + '<div class="iro2">'+ escHtml(it.company || '-')
+            + (it.manager ? ' <span class="mgr">· '+escHtml(it.manager)+'</span>' : '')
+            + (it.form ? ' <span class="mgr">· '+escHtml(it.form)+'</span>' : '')
+          + '</div>'
         + '</div>';
       });
       html += '</div>';

@@ -167,12 +167,20 @@ function Blog_update(params) {
  * 블로그 글의 utm_term 으로 세일즈맵(인바운드)에서 매칭되는 제출 건들 반환
  *   params.utm_term : 필수
  * 반환:
- *   { utm_term, count, items:[{date,datetime,company,manager,service}], byDate:[{date,count}] }
+ *   { utm_term, count, items:[{date,datetime,form,company,manager,service}], byDate:[{date,count}] }
+ *
+ * 인바운드 소스 시트 (SALESMAP_IB) 컬럼 구조:
+ *   제출 날짜, 유입 폼, 관심 서비스, 기업명, 기업주소, 담당자명, 휴대전화번호,
+ *   회사 이메일, 임직원수, 유입경로, 문의내용, 개인정보 수집 동의, 마케팅 수신 동의,
+ *   utm_source, utm_medium, utm_campaign, utm_content, utm_term, WebFormID
+ *   (컬럼 매칭은 헤더명 기준 indexOf 이므로 컬럼 순서가 바뀌어도 안전)
  */
 // 세일즈맵 행을 5분 캐시 (utm 단위 lookup용)
 function blog_loadSalesmap_() {
   const cache = CacheService.getScriptCache();
-  const CACHE_KEY = 'salesmap_inbound_v1';
+  // 시트/매핑이 바뀌면 캐시 키를 bump 해 이전 stale 엔트리를 자동 무효화.
+  // v2: 소스 시트 Data_Result_Final → SALESMAP_IB (유입 폼 컬럼 추가)
+  const CACHE_KEY = 'salesmap_inbound_v2';
   let parsed = null;
   try {
     const cached = cache.get(CACHE_KEY);
@@ -180,7 +188,7 @@ function blog_loadSalesmap_() {
   } catch (_) {}
   if (parsed) return parsed;
 
-  const SALESMAP_NAME = 'Data_Result_Final';
+  const SALESMAP_NAME = 'SALESMAP_IB';
   const sheet = SpreadsheetApp.openById(BLOG_SHEET_ID).getSheetByName(SALESMAP_NAME);
   if (!sheet) throw new Error('sheet_not_found:' + SALESMAP_NAME);
 
@@ -191,6 +199,7 @@ function blog_loadSalesmap_() {
     const headers = headRow.map(function (h) { return String(h || '').trim(); });
     const utmIdx     = headers.indexOf('utm_term');
     const dateIdx    = headers.indexOf('제출 날짜');
+    const formIdx    = headers.indexOf('유입 폼');
     const companyIdx = headers.indexOf('기업명');
     const managerIdx = headers.indexOf('담당자명');
     const serviceIdx = headers.indexOf('관심 서비스');
@@ -208,6 +217,7 @@ function blog_loadSalesmap_() {
       else if (raw) d = String(raw).slice(0, 16);
       rows.push({
         u: u, d: d,
+        f: formIdx    >= 0 ? String(r[formIdx]    || '') : '',
         c: companyIdx >= 0 ? String(r[companyIdx] || '') : '',
         m: managerIdx >= 0 ? String(r[managerIdx] || '') : '',
         s: serviceIdx >= 0 ? String(r[serviceIdx] || '') : ''
@@ -235,7 +245,7 @@ function Blog_inboundDates(params) {
     if (r.u !== utm) continue;
     const dt = r.d || '';
     const date = dt.slice(0, 10);
-    items.push({ date: date, datetime: dt, company: r.c, manager: r.m, service: r.s });
+    items.push({ date: date, datetime: dt, form: r.f, company: r.c, manager: r.m, service: r.s });
     if (date) byDateMap[date] = (byDateMap[date] || 0) + 1;
   }
   items.sort(function (a, b) { return (b.datetime || b.date) < (a.datetime || a.date) ? -1 : 1; });

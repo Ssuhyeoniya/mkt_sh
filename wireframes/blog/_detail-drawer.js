@@ -182,7 +182,10 @@
             + '<span class="dt">'+ escHtml(it.datetime || it.date || '-') +'</span>'
             + (it.service ? '<span class="svc">'+escHtml(it.service)+'</span>' : '')
           + '</div>'
-          + '<div class="iro2">'+ escHtml(it.company || '-') + (it.manager ? ' <span class="mgr">· '+escHtml(it.manager)+'</span>' : '') +'</div>'
+          + '<div class="iro2">'+ escHtml(it.company || '-')
+            + (it.manager ? ' <span class="mgr">· '+escHtml(it.manager)+'</span>' : '')
+            + (it.form ? ' <span class="mgr">· '+escHtml(it.form)+'</span>' : '')
+          + '</div>'
         + '</div>';
       });
       html += '</div>';
