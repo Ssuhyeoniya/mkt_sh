@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IB / OB 종합 · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="analysis/analysis.css">
+<style>
+  .main{ min-width:0; }
+  .main > section, .main > div { max-width:100%; }
+
+  /* 섹션 헤더 (시안 A · Analyst Workbench 톤) */
+  .sec-head{ margin:18px 0 12px; }
+  .sec-head .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  .sec-head h2{ font-size:18px; font-weight:600; margin:3px 0 0; }
+  .sec-head p{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+
+  /* KPI fact 그리드 — 5열 */
+  #kpi{ grid-template-columns:repeat(5,1fr); gap:8px; }
+  @media (max-width:1100px){ #kpi{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:640px){ #kpi{ grid-template-columns:repeat(2,1fr); } }
+  /* 텍스트 블록 → 인라인(가로) 배치로 카드 높이 축소 */
+  #kpi .fact{ display:flex; align-items:baseline; flex-wrap:wrap; gap:3px 7px; padding:9px 12px; }
+  #kpi .fact .ttl{ font-size:11.5px; }
+  #kpi .fact .big{ font-size:17px; margin:0; }
+  #kpi .fact .sub{ font-size:10.5px; margin:0; }
+
+  /* 분포 인사이트 4열 1행 */
+  .an-g4{ grid-template-columns:repeat(4,1fr); }
+  @media (max-width:1100px){ .an-g4{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .an-g4{ grid-template-columns:1fr; } }
+
+  /* 기간 + 검색/조회 블록 스크롤 시 상단 고정 */
+  .sticky-filters{ position:sticky; top:0; z-index:30; background:var(--bg); padding-top:6px; }
+  .sticky-filters .date-filter,
+  .sticky-filters .filter-block{ margin-bottom:8px; }
+
+  .table-panel{ min-width:0; overflow:hidden; }
+  .table-panel .table-wrap{ overflow:auto; max-height:60vh;  scrollbar-gutter:stable;}
+  #th-row th{ cursor:pointer; }
+  .sort-arrow{ color:var(--accent); font-size:10px; }
+
+  /* 조회 필터 — 블럭 → 인라인 (높이 축소) */
+  .filter-block{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:10px 14px; }
+  .filter-block .row{ flex:0 1 auto; gap:8px; }
+  .filter-block .ms-dropdown{ max-width:200px; }
+  .filter-block .search-input{ max-width:240px; }
+  .filter-block .actions{ border-top:0; padding-top:0; margin-left:auto; }
+
+  @media (max-width:720px){
+    .main{ padding:18px 14px; }
+    .sidebar{ display:none; }
+    .conn{ min-width:0; width:100%; flex-wrap:wrap; }
+    .filter-block{ flex-direction:column; align-items:stretch; }
+    .filter-block .actions{ margin-left:0; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.06 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item" href="analysis/">IB / OB 분석</a>
+    <a class="nav-item active" href="./">IB / OB 종합</a>
+    <a class="nav-item" href="../salesmap/">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item" href="../blog/">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">인바운드 · IB / OB 종합 · 인바운드 통합 v2</div>
+        <h1>IB / OB 종합</h1>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 표시 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL 붙여넣기 → [연결]" spellcheck="false"/>
+        <a class="btn-disconnect" id="gas-open" target="_blank" rel="noopener noreferrer" style="text-decoration:none" title="GAS 엔드포인트 열기">GAS ↗</a>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <div class="sticky-filters">
+    <!-- 기간 조회 -->
+    <div class="date-filter">
+      <span class="lbl">기간</span>
+      <input type="date" id="date-start" />
+      <span class="sep">~</span>
+      <input type="date" id="date-end" />
+      <button class="qbtn" data-range="7">7일</button>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <button class="clear" id="btn-clear-date">초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
+    <!-- 필터 -->
+    <div class="filter-block">
+      <div class="row">
+        <span class="ms-tag">서비스</span>
+        <div class="ms-dropdown" id="ms-svc">
+          <button class="ms-trigger" type="button"><span class="ms-text">서비스 전체</span><span class="ms-caret">▾</span></button>
+          <div class="ms-panel" id="ms-svc-panel"></div>
+        </div>
+      </div>
+      <div class="row">
+        <span class="ms-tag utm">UTM</span>
+        <div class="ms-dropdown" id="ms-utm">
+          <button class="ms-trigger" type="button"><span class="ms-text">UTM 전체</span><span class="ms-caret">▾</span></button>
+          <div class="ms-panel" id="ms-utm-panel"></div>
+        </div>
+      </div>
+      <div class="row">
+        <select id="search-field" class="search-field">
+          <option value="고객사명">고객사명</option>
+          <option value="시도">시도</option>
+          <option value="지역구">지역구</option>
+          <option value="동리">동리</option>
+        </select>
+        <div class="search-input">
+          <span style="color:var(--muted)">⌕</span>
+          <input id="q" type="text" placeholder="검색 키워드 입력..."/>
+        </div>
+      </div>
+      <div class="row">
+        <span class="ms-tag">성약</span>
+        <select id="conv-filter" class="search-field">
+          <option value="">전체</option>
+          <option value="y">성약</option>
+          <option value="n">미성약</option>
+        </select>
+      </div>
+      <div class="actions"><button class="btn-apply" id="btn-apply">조회</button></div>
+    </div>
+    </div><!-- /sticky-filters -->
+
+    <!-- KPI -->
+    <section class="fact-grid" id="kpi"></section>
+
+    <!-- 인입 추이 (풀폭 인라인) -->
+    <div class="sec-head"><div class="eyebrow">Trend</div><h2>인입 추이</h2>
+      <p>필터 적용 결과 기준 · IB/OB 인입 추이와 성약률.</p></div>
+    <div class="an-card">
+      <h3>인입 추이 <span class="tag">IB/OB · 성약률</span>
+        <span class="an-seg" id="seg-unit" style="margin-left:auto">
+          <button data-u="day">일별</button>
+          <button data-u="week" class="active">주차별</button>
+          <button data-u="year">연도별</button>
+        </span>
+      </h3>
+      <div class="hint">막대=인입(IB/OB 누적), 선=성약률%</div>
+      <div class="chartbox lg"><canvas id="cTrend"></canvas></div>
+    </div>
+
+    <!-- 분포 -->
+    <div class="sec-head"><div class="eyebrow">Distribution</div><h2>분포 인사이트</h2>
+      <p>인지채널 · 서비스 · 지역 · 기업구분.</p></div>
+    <div class="an-grid an-g4">
+      <div class="an-card"><h3>인지채널 비중 <span class="tag">P·O·E</span></h3><div class="chartbox"><canvas id="cAware"></canvas></div></div>
+      <div class="an-card"><h3>서비스별 인입 비중 <span class="tag">service</span></h3><div class="chartbox"><canvas id="cService"></canvas></div></div>
+      <div class="an-card"><h3>시도 랭킹 <span class="tag">TOP 5</span></h3><div class="rank-list" id="rank-region" style="margin-top:8px"></div></div>
+      <div class="an-card"><h3>기업구분 분포 <span class="tag">TOP 5</span></h3><div class="rank-list" id="rank-firm" style="margin-top:8px"></div></div>
+    </div>
+
+    <!-- 테이블 -->
+    <div class="sec-head"><div class="eyebrow">Records</div><h2>인바운드 리스트</h2>
+      <p>필터 적용 결과 원본 레코드. 우측 [상세보기]로 24필드 표시.</p></div>
+    <section>
+      <div class="an-card table-panel" style="padding:0">
+        <div class="toolbar">
+          <div class="left">
+            <span class="text-[13px] font-medium" style="font-size:13px;font-weight:600">리드 테이블</span>
+            <span class="chip" id="result-count">0건</span>
+            <span class="text-[11.5px] muted" style="font-size:11.5px;color:var(--muted)">셀 클릭 · Ctrl+C 복사 · Shift+Space 행 · Ctrl+Space 열 · 더블클릭 상세</span>
+          </div>
+          <div class="right">
+            <div class="pager">
+              <button id="pg-prev" disabled>‹</button>
+              <span id="pg-info" class="text-[12px] muted px-2" style="font-size:12px;color:var(--muted);padding:0 8px">1 / 1</span>
+              <button id="pg-next">›</button>
+            </div>
+            <button class="ghost-btn" id="btn-export">⇩ CSV</button>
+            <button class="ghost-btn" id="btn-export-xls" title="엑셀 다운로드 (.xls)">⇩ 엑셀</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="ibob-table" id="tbl">
+            <colgroup id="cg"></colgroup>
+            <thead><tr id="th-row"></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center muted py-4" style="font-size:11.5px;color:var(--muted)">IB / OB 종합 · 인입 추이 + 분포 + 표준 로우테이블</div>
+  </main>
+</div>
+
+<script src="sample-data.js"></script>
+<script src="_detail-drawer.js"></script>
+<script src="shared.js"></script>
+<script src="proxy-client.js"></script>
+<script src="../table-grid.js"></script>
+<script src="analysis/analysis-core.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const PAGE_SIZE = 10;
+  let PAGE = 1;
+  let PENDING = { services:[], utm:[], searchField:'고객사명', searchQuery:'', conv:'' };
+  let STATE = { services:[], utm:[], searchField:'고객사명', searchQuery:'', conv:'', dateStart:'', dateEnd:'', activeRange:'', unit:'week', sortKey:'IB 인입 일자', sortDir:'desc' };
+
+  /* 정렬 — 기본 IB 인입 일자 내림차순(최신 상단), 헤더 클릭 시 토글 */
+  function sortRows(rows){
+    const key = STATE.sortKey; if (!key) return rows;
+    const dir = STATE.sortDir === 'asc' ? 1 : -1;
+    const col = (window.IBOB_ROW_COLS || []).find(c => c.key === key) || {};
+    return rows.slice().sort((a, b) => {
+      let av = a[key], bv = b[key];
+      if ((av == null || av === '') && col.fallback) av = a[col.fallback];
+      if ((bv == null || bv === '') && col.fallback) bv = b[col.fallback];
+      const an = Number(av), bn = Number(bv);
+      if (col.mono && isFinite(an) && isFinite(bn)) return (an - bn) * dir;
+      av = String(av == null ? '' : av); bv = String(bv == null ? '' : bv);
+      return av < bv ? -dir : av > bv ? dir : 0;
+    });
+  }
+  function updateSortIndicator(){
+    document.querySelectorAll('#th-row th').forEach(th => {
+      const col = (window.IBOB_ROW_COLS || [])[Number(th.dataset.i)];
+      let arrow = th.querySelector('.sort-arrow');
+      if (col && col.key === STATE.sortKey){
+        if (!arrow){ arrow = document.createElement('span'); arrow.className = 'sort-arrow'; th.insertBefore(arrow, th.querySelector('.resizer')); }
+        arrow.textContent = STATE.sortDir === 'asc' ? ' ▲' : ' ▼';
+      } else if (arrow){ arrow.remove(); }
+    });
+  }
+  let ROWS = [];   // 샘플 미리보기 없음 — load() 가 실제 데이터를 채운다
+
+  function setStatus(t, k){ const el = $('status'); if (!el) return; el.className = 'status ' + (k || ''); el.textContent = t; }
+
+  /* ── 날짜 helpers ── */
+  function ymdStr(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+  function yesterday(){ const d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d; }
+  function setQuickRange(days){
+    const end = yesterday(); const start = new Date(end); start.setDate(start.getDate() - (days - 1));
+    $('date-start').value = ymdStr(start); $('date-end').value = ymdStr(end);
+    STATE.dateStart = ymdStr(start); STATE.dateEnd = ymdStr(end); STATE.activeRange = String(days); PAGE = 1; rerender();
+  }
+  function clearDateRange(){ $('date-start').value=''; $('date-end').value=''; STATE.dateStart=''; STATE.dateEnd=''; STATE.activeRange=''; PAGE=1; rerender(); }
+  function updateRangeInfo(){
+    document.querySelectorAll('.qbtn').forEach(b => b.classList.toggle('active', b.dataset.range === STATE.activeRange));
+    $('range-info').textContent = (!STATE.dateStart && !STATE.dateEnd) ? '전체 기간' : `${STATE.dateStart||'...'} ~ ${STATE.dateEnd||'...'}`;
+  }
+
+  /* ── 필터 ── */
+  function parseUtmSource(s){ if (!s) return ''; const m = String(s).match(/utm_source=([^&\s]+)/i); return m ? decodeURIComponent(m[1]) : ''; }
+  function applyAll(rows){
+    let out = rows.slice();
+    if (STATE.services.length){ const set = new Set(STATE.services); out = out.filter(r => set.has(String(r['서비스 인입 구분']||''))); }
+    if (STATE.utm.length){ const set = new Set(STATE.utm); out = out.filter(r => set.has(parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)')); }
+    if (STATE.searchQuery){ const q = STATE.searchQuery.toLowerCase(); const f = STATE.searchField; out = out.filter(r => String(r[f]||'').toLowerCase().indexOf(q) >= 0); }
+    if (STATE.conv){ out = out.filter(r => { const s = String(r['성약']==null?'':r['성약']).trim(); const yes = /^(y|yes|true|성약|o|1)$/i.test(s); return STATE.conv === 'y' ? yes : !yes; }); }
+    if (STATE.dateStart || STATE.dateEnd){
+      out = out.filter(r => { const d = String(r['IB 인입 일자']||'').slice(0,10); if (!d) return false;
+        if (STATE.dateStart && d < STATE.dateStart) return false; if (STATE.dateEnd && d > STATE.dateEnd) return false; return true; });
+    }
+    return out;
+  }
+
+  /* ── KPI (fact 카드) ── */
+  function renderKPI(rows){
+    const k = Analysis.kpi(rows); const f = IBOB.fmt;
+    $('kpi').innerHTML = [
+      ['전체 리드',   f(k.total), `IB ${f(k.ib)} · OB ${f(k.ob)}`],
+      ['IB 인입',     f(k.ib),    '유입구분 ≠ 아웃바운드'],
+      ['OB 컨택',     f(k.ob),    '유입구분 = 아웃바운드'],
+      ['성약',        f(k.conv),  `협의중 ${k.mid} · 드롭 ${k.drop}`],
+      ['성약 전환율', k.rate+'%', '성약 / 전체']
+    ].map(x => `<div class="fact"><div class="ttl">${x[0]}</div><div class="big">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join('');
+  }
+
+  /* ── 랭킹 ── */
+  function renderRank(id, dim){
+    const max = dim[0] ? dim[0].total : 1;
+    $(id).innerHTML = dim.slice(0,5).map((d,i) => `
+      <div class="rank-row"><span class="idx">${i+1}</span><span class="name">${IBOB.esc(d.name)}</span>
+        <span class="bar"><i style="width:${Math.round(d.total*100/max)}%"></i></span><span class="v">${d.total}</span></div>`
+    ).join('') || '<div class="muted text-[11.5px]">-</div>';
+  }
+
+  let LAST_FILTERED = [];   // 현재 기간/필터로 집계된 행 — 페이지네이션/정렬은 이 캐시만 다시 그린다
+
+  // 분석 도표(KPI·추이·도넛·랭킹) — 기간 조회/필터 변경 시에만 호출한다.
+  function rerender(){
+    updateRangeInfo();
+    const filtered = applyAll(ROWS);
+    LAST_FILTERED = filtered;
+    renderKPI(filtered);
+    Analysis.lineSeries('cTrend', Analysis.series(filtered, STATE.unit));
+    Analysis.doughnut('cAware',   Analysis.byDim(filtered, '인지채널'), { legend:'bottom' });
+    Analysis.doughnut('cService', Analysis.byDim(filtered, '서비스명'), { legend:'bottom' });
+    renderRank('rank-region', Analysis.byDim(filtered, '시도'));
+    // 기업구분 분포 = 로우테이블 '규모' 컬럼과 동일 값(기업구분 우선, 없으면 기업규모)으로 집계
+    renderRank('rank-firm',   Analysis.byDim(filtered.map(r => Object.assign({}, r, {
+      _규모: (String(r['기업구분']||'').trim() || String(r['기업규모']||'').trim())
+    })), '_규모'));
+    renderPage();
+  }
+
+  // 로우테이블 + 페이지네이션만 다시 그린다 (도표는 건드리지 않음).
+  // → 같은 기간 내 페이지 이동·정렬 시 분석 도표가 재렌더/변경되지 않는다.
+  function renderPage(){
+    // 원본 데이터가 아예 없으면(미연결/실패/빈 시트) 샘플 대신 '데이터 필요' 안내를 표에 표기
+    if (!ROWS.length){
+      const cols = (window.IBOB_ROW_COLS || []).length || 12;
+      $('rows').innerHTML = '<tr><td colspan="' + cols + '"><div class="empty" style="padding:32px; text-align:center; color:var(--muted)">표시할 데이터가 없습니다. GAS 연결 및 데이터를 확인해 주세요.</div></td></tr>';
+      const rc = document.getElementById('result-count'); if (rc) rc.textContent = '0건';
+      $('pg-info').textContent = '0 / 1';
+      $('pg-prev').disabled = true; $('pg-next').disabled = true;
+      return;
+    }
+    const tableRows = sortRows(LAST_FILTERED);
+    const totalPages = Math.max(1, Math.ceil(tableRows.length / PAGE_SIZE));
+    if (PAGE > totalPages) PAGE = totalPages;
+    $('pg-info').textContent = PAGE + ' / ' + totalPages;
+    $('pg-prev').disabled = PAGE <= 1; $('pg-next').disabled = PAGE >= totalPages;
+    const pageRows = tableRows.slice((PAGE-1)*PAGE_SIZE, PAGE*PAGE_SIZE);
+    IBOB.renderTable(pageRows);
+    updateSortIndicator();
+    const tbody = $('rows');
+    tbody.querySelectorAll('tr').forEach((tr, i) => tr.addEventListener('dblclick', () => IBOB.openModal(pageRows[i])));
+  }
+
+  /* ── 다중선택 드롭다운 ── */
+  function buildMSPanel(panelId, allLabel, items){
+    $(panelId).innerHTML =
+      `<label class="ms-item ms-all"><input type="checkbox" data-all checked /><span>${IBOB.esc(allLabel)}</span></label>` +
+      `<div class="ms-divider"></div>` +
+      (items.map(v => `<label class="ms-item"><input type="checkbox" value="${IBOB.esc(v)}" /><span>${IBOB.esc(v)}</span></label>`).join('') ||
+       `<div class="ms-item muted">옵션 없음</div>`);
+  }
+  function bindMS(rootId, panelId, triggerLabel, pendingKey){
+    const root = $(rootId), panel = $(panelId), triggerText = root.querySelector('.ms-text');
+    root.querySelector('.ms-trigger').addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.ms-dropdown.open').forEach(d => { if (d !== root) d.classList.remove('open'); });
+      root.classList.toggle('open');
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    panel.addEventListener('change', e => {
+      const t = e.target; if (!(t instanceof HTMLInputElement) || t.type !== 'checkbox') return;
+      const items = panel.querySelectorAll('input[type="checkbox"]:not([data-all])');
+      const allBox = panel.querySelector('input[data-all]');
+      if (t.dataset.all !== undefined){ items.forEach(i => i.checked = false); t.checked = true; }
+      else { allBox.checked = [...items].filter(i => i.checked).length === 0; }
+      const checked = [...items].filter(i => i.checked);
+      triggerText.textContent = checked.length === 0 ? triggerLabel : (checked.length === 1 ? checked[0].value : checked.length + '개 선택');
+      PENDING[pendingKey] = checked.map(i => i.value);
+    });
+  }
+  function fillFilterPanels(rows){
+    const svcs = Array.from(new Set(rows.map(r => String(r['서비스 인입 구분']||'')).filter(Boolean))).sort();
+    const utms = Array.from(new Set(rows.map(r => parseUtmSource(r['트래킹 경로(UTM)']) || '(없음)'))).sort();
+    buildMSPanel('ms-svc-panel', '서비스 전체', svcs);
+    buildMSPanel('ms-utm-panel', 'UTM 전체', utms);
+  }
+
+  IBOB.buildHeader();
+  TableGrid.attach(document.getElementById('tbl'));
+  // 헤더 클릭 정렬 (리사이저 클릭은 제외)
+  $('th-row').addEventListener('click', e => {
+    if (e.target.closest('.resizer')) return;
+    const th = e.target.closest('th'); if (!th) return;
+    const col = (window.IBOB_ROW_COLS || [])[Number(th.dataset.i)];
+    if (!col || col.key === '_detail') return;
+    if (STATE.sortKey === col.key) STATE.sortDir = STATE.sortDir === 'asc' ? 'desc' : 'asc';
+    else { STATE.sortKey = col.key; STATE.sortDir = 'asc'; }
+    PAGE = 1; renderPage();
+  });
+  bindMS('ms-svc', 'ms-svc-panel', '서비스 전체', 'services');
+  bindMS('ms-utm', 'ms-utm-panel', 'UTM 전체', 'utm');
+  document.addEventListener('click', () => document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open')));
+  fillFilterPanels(ROWS);
+  rerender();
+
+  /* ── GAS 연결 / 로드 ── */
+  // 세일즈맵 문의내용 매핑 (고객사명 + IB 인입 일자 = 기업명 + 제출 날짜)
+  // F5 시 재요청 없이 캐시 사용, [새로고침] 버튼(force)일 때만 재조회
+  const INQ_CACHE_KEY = 'ibob_inq_smap_v1';
+  async function fillInquiries(force){
+    try {
+      let rows = null;
+      if (!force){ try { const c = localStorage.getItem(INQ_CACHE_KEY); if (c) rows = JSON.parse(c); } catch(_){} }
+      if (!rows){
+        const sm = await MktProxy.call('salesmap.list', {});
+        rows = (sm && sm.data && sm.data.rows) || [];
+        try { localStorage.setItem(INQ_CACHE_KEY, JSON.stringify(rows)); } catch(_){}
+      }
+      const map = {};
+      rows.forEach(r => {
+        const k = String(r.company || '').trim() + '|' + String(r.submittedAt || '').slice(0,10);
+        if (r.message) map[k] = r.message;
+      });
+      ROWS.forEach(r => {
+        if (r['문의내용']) return;
+        const k = String(r['고객사명'] || '').trim() + '|' + String(r['IB 인입 일자'] || '').slice(0,10);
+        if (map[k]) r['문의내용'] = map[k];
+      });
+    } catch (_) { /* 세일즈맵 미연결/실패 시 무시 */ }
+  }
+
+  async function load(force){
+    const url = (window.MktProxy && MktProxy.getUrl()) || '';
+    $('gas-url').value = url;
+    if ($('gas-open')) { $('gas-open').href = url || '#'; $('gas-open').style.display = url ? '' : 'none'; }
+    $('btn-disconnect').style.display = url ? '' : 'none';
+    if (!url){
+      if (window.MktProxy) MktProxy.ibobClearCache();
+      ROWS = [];
+      setStatus('GAS 연결이 필요합니다', 'amber');
+      fillFilterPanels(ROWS); PAGE = 1; rerender(); return;
+    }
+    try {
+      setStatus(force ? '새로고침 중…' : '불러오는 중…');
+      const data = await MktProxy.ibobListCached(force);
+      ROWS = (data && data.rows) || [];
+      try {
+        const distinct = (k) => { const m = {}; ROWS.forEach(r => { const v = String(r[k] == null ? '' : r[k]); m[v] = (m[v]||0)+1; }); return m; };
+        console.info('[ib-ob] CH 값 분포:', distinct('CH'));
+        console.info('[ib-ob] 성약 값 분포:', distinct('성약'));
+      } catch (_) {}
+      const tag = data && data._fromCache ? ' · 캐시됨' : '';
+      setStatus('● 연결됨 · ' + ((data && data.total) || ROWS.length) + '건' + tag, 'ok');
+      fillFilterPanels(ROWS); PAGE = 1; rerender();
+      // 문의내용(상세 모달 전용) 매핑은 백그라운드로만 — 같은 행 객체를 보강하므로
+      // 도표/표를 다시 그릴 필요가 없다 (재렌더 시 값이 다시 그려지는 현상 방지).
+      fillInquiries(force);
+    } catch (err) {
+      setStatus('연결 실패: ' + err.message, 'err');
+      ROWS = []; fillFilterPanels(ROWS); PAGE = 1; rerender();
+    }
+  }
+
+  /* ── 이벤트 ── */
+  $('btn-connect').addEventListener('click', () => { const v = $('gas-url').value.trim(); if (!v) return; MktProxy.setUrl(v); MktProxy.ibobClearCache(); load(true); });
+  $('btn-disconnect').addEventListener('click', () => { MktProxy.setUrl(''); $('gas-url').value = ''; $('btn-disconnect').style.display = 'none'; MktProxy.ibobClearCache(); load(); });
+  $('btn-refresh').addEventListener('click', () => { if (window.MktProxy) MktProxy.ibobClearCache(); load(true); });
+  $('seg-unit').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    $('seg-unit').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); STATE.unit = b.dataset.u; rerender();
+  });
+  $('search-field').addEventListener('change', () => { PENDING.searchField = $('search-field').value; });
+  $('q').addEventListener('input', () => { PENDING.searchQuery = $('q').value.trim(); });
+  $('q').addEventListener('keydown', e => { if (e.key === 'Enter') applySearch(); });
+  $('conv-filter').addEventListener('change', () => { PENDING.conv = $('conv-filter').value; });
+  function applySearch(){ STATE.services = PENDING.services.slice(); STATE.utm = PENDING.utm.slice(); STATE.searchField = PENDING.searchField; STATE.searchQuery = PENDING.searchQuery; STATE.conv = PENDING.conv; PAGE = 1; rerender(); }
+  $('btn-apply').addEventListener('click', applySearch);
+  document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => setQuickRange(Number(b.dataset.range))));
+  $('date-start').addEventListener('change', () => { STATE.dateStart = $('date-start').value; STATE.activeRange = ''; PAGE = 1; rerender(); });
+  $('date-end').addEventListener('change', () => { STATE.dateEnd = $('date-end').value; STATE.activeRange = ''; PAGE = 1; rerender(); });
+  $('btn-clear-date').addEventListener('click', clearDateRange);
+  $('pg-prev').addEventListener('click', () => { PAGE = Math.max(1, PAGE-1); renderPage(); });
+  $('pg-next').addEventListener('click', () => { PAGE = PAGE + 1; renderPage(); });
+  $('btn-export').addEventListener('click', () => alert('CSV 내보내기 (목업)'));
+  $('btn-export-xls').addEventListener('click', () => {
+    const d = new Date(); const fname = 'ibob_' + d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '.xls';
+    TableGrid.exportExcelFromTable(document.getElementById('tbl'), fname);
+  });
+
+  load();   // 최초 1회만 로드 (이후는 새로고침 버튼 / 연결 토글로만 재요청)
+})();
+</script>
+<script src="../sidebar-nav.js"></script>
+</body>
+</html>

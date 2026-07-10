@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IB / OB 분석 · 시안 B (BI Report)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared.css">
+<link rel="stylesheet" href="../analysis.css">
+<style>
+  .an-filter{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+  .an-filter .fl{ font-size:10.5px; font-weight:600; letter-spacing:.08em; color:var(--muted); }
+  .an-filter select{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 10px; color:var(--text); font-size:12.5px; cursor:pointer; }
+  .an-filter input[type="date"]{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 9px; color:var(--text); font-size:12px; font-family:'JetBrains Mono',monospace; color-scheme:light; }
+  .an-filter .sep{ color:var(--muted); }
+  .an-filter .qbtn{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 11px; color:var(--text-2); font-size:12px; cursor:pointer; }
+  .an-filter .qbtn:hover{ border-color:var(--accent-2); } .an-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .an-filter .chk{ display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--text-2); } .an-filter .chk input{ accent-color:var(--accent); }
+  .an-filter .clear,.an-filter .reset{ background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 11px; font-size:12px; cursor:pointer; }
+  .an-filter .clear{ color:var(--muted); } .an-filter .reset{ color:var(--accent); border-color:var(--accent-2); }
+  .an-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
+
+  /* 상단 카테고리 탭 (스티키) */
+  .cat-tabs{ position:sticky; top:56px; z-index:20; display:flex; gap:4px; flex-wrap:wrap; background:var(--bg); padding:8px 0 10px; margin-bottom:6px; border-bottom:1px solid var(--line); }
+  .cat-tabs button{ background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:8px 15px; font-size:13px; color:var(--text-2); cursor:pointer; }
+  .cat-tabs button:hover{ border-color:var(--accent-2); color:var(--text); }
+  .cat-tabs button.active{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+
+  /* 상시 KPI 스트립 */
+  .kpi-strip{ display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin:12px 0 16px; }
+  @media (max-width:1100px){ .kpi-strip{ grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:640px){ .kpi-strip{ grid-template-columns:repeat(2,1fr); } }
+  .sec-head{ margin:18px 0 12px; }
+  .sec-head .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  .sec-head h2{ font-size:19px; font-weight:600; margin:3px 0 0; }
+  .sec-head p{ font-size:12.5px; color:var(--muted); margin-top:5px; max-width:760px; }
+  .sec-block + .sec-block{ margin-top:10px; padding-top:6px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.06 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item active">IB / OB 분석</a>
+    <a class="nav-item" href="../../">IB / OB 종합</a>
+    <a class="nav-item" href="../../../salesmap/">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item" href="../../../blog/">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">인바운드 · IB / OB 분석 · 시안 B</div>
+        <h1>IB / OB 분석 · BI Report</h1>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 분석 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL 붙여넣기 → [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <div class="an-filter">
+      <span class="fl">FILTER</span>
+      <select id="fSvc"><option value="">서비스 전체</option></select>
+      <select id="fAware"><option value="">인지채널 전체</option></select>
+      <input type="date" id="date-start"/><span class="sep">~</span><input type="date" id="date-end"/>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <label class="chk"><input type="checkbox" id="fConv"> 성약건만</label>
+      <button class="clear" id="btn-clear-date">기간 초기화</button>
+      <button class="reset" id="fReset">전체 초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
+    <nav class="cat-tabs" id="cat-tabs"></nav>
+    <section class="kpi-strip" id="kpi-strip"></section>
+    <div id="sec-host"></div>
+
+    <div class="text-center muted py-4" style="font-size:11.5px;color:var(--muted)">IB / OB 분석 · 상단 카테고리 탭 + 상시 KPI · 데이터: 고객사 인바운드 리스트</div>
+  </main>
+</div>
+
+<script src="../../sample-data.js"></script>
+<script src="../../shared.js"></script>
+<script src="../../_detail-drawer.js"></script>
+<script src="../../proxy-client.js"></script>
+<script src="../../../table-grid.js"></script>
+<script src="../analysis-core.js"></script>
+<script src="../analysis-sections.js"></script>
+<script src="../analysis-app.js"></script>
+<script>
+(function(){
+  const tabsEl = document.getElementById('cat-tabs');
+  const host = document.getElementById('sec-host');
+  const strip = document.getElementById('kpi-strip');
+  const GROUPS = AnalysisSections.LIST;
+  let active = 0;
+
+  tabsEl.innerHTML = GROUPS.map((g,i) => `<button data-i="${i}" class="${i===active?'active':''}">${g.group}</button>`).join('');
+  tabsEl.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    active = Number(b.dataset.i);
+    tabsEl.querySelectorAll('button').forEach(x => x.classList.toggle('active', Number(x.dataset.i)===active));
+    drawGroup(AnalysisApp.filtered());
+  });
+
+  function drawKPI(rows){
+    const k = Analysis.kpi(rows), f = Analysis.fmt;
+    strip.innerHTML = [
+      ['전체 인입', f(k.total), `IB ${k.ib} · OB ${k.ob}`],
+      ['IB 인입', f(k.ib), k.total?Math.round(k.ib*100/k.total)+'%':'0%'],
+      ['OB 컨택', f(k.ob), k.total?Math.round(k.ob*100/k.total)+'%':'0%'],
+      ['최초 협의', f(k.meet), '협의 진입'],
+      ['성약', f(k.conv), '협의중 '+k.mid],
+      ['성약 전환율', k.rate+'%', '성약 / 전체']
+    ].map(x => `<div class="kpi"><div class="kpi-label">${x[0]}</div><div class="kpi-value">${x[1]}</div><div class="kpi-sub">${x[2]}</div></div>`).join('');
+  }
+  function drawGroup(rows){
+    drawKPI(rows);
+    const g = GROUPS[active];
+    host.innerHTML = g.items.map(it => `<div class="sec-block" id="host-${it.id}"></div>`).join('');
+    g.items.forEach(it => AnalysisSections.render(it.id, rows, document.getElementById('host-'+it.id)));
+  }
+
+  AnalysisApp.init({ onRender: drawGroup });
+})();
+</script>
+<script src="../../../sidebar-nav.js"></script>
+</body>
+</html>

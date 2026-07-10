@@ -41,8 +41,8 @@
 
 ### 진입 경로
 - 루트(`/`) 접속 시 `index.html` 이 대시보드로 리다이렉트합니다.
-- IB/OB 분석 3안 비교: `/wireframes/ib-ob/analysis/`
-- IB/OB 종합: `/wireframes/ib-ob/`
+- IB/OB 분석: `/ib-ob/analysis/` (3안 비교: `/ib-ob/analysis/compare.html`)
+- IB/OB 종합: `/ib-ob/` · 블로그: `/blog/` · 세일즈맵: `/salesmap/` · 대시보드: `/dashboard/`
 
 ---
 

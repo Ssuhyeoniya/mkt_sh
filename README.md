@@ -13,16 +13,16 @@
 
 ## 와이어프레임 시안
 
-브라우저에서 `wireframes/index.html`을 열어 3가지 시안을 비교할 수 있습니다.
+브라우저에서 `drafts/index.html`을 열어 3가지 시안을 비교할 수 있습니다.
 
-- `wireframes/option-a/` · **Dark Minimal** — 좌측 사이드바, 다크 콘솔
-- `wireframes/option-b/` · **Light BI** — 상단 탭, 라이트 BI
-- `wireframes/option-c/` · **Bento Grid** — 카드형 그리드, 모던
+- `drafts/a/` · **Dark Minimal** — 좌측 사이드바, 다크 콘솔
+- `drafts/b/` · **Light BI** — 상단 탭, 라이트 BI
+- `drafts/c/` · **Bento Grid** — 카드형 그리드, 모던
 
 ## 하위 페이지 시안
 
-- `wireframes/blog/` · 블로그 분석/관리 (Power Table · Card Gallery · Analytics Hybrid)
-- `wireframes/salesmap/` · 세일즈맵 CRM 보드 (Power Table · CRM Pipeline · Analytics Hybrid)
+- `blog/` · 블로그 분석/관리 (Power Table · Card Gallery · Analytics Hybrid)
+- `salesmap/` · 세일즈맵 CRM 보드 (Power Table · CRM Pipeline · Analytics Hybrid)
   - 17개 컬럼 로우테이블 + 헤더 우측 드래그로 컬럼 너비 자유 조절
   - GAS 라우트: `?action=salesmap.list` · `?action=salesmap.summary`
 

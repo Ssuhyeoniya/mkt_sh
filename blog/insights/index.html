@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="referrer" content="no-referrer" />
+<title>블로그 인사이트 · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css?v=20260523-1">
+<style>
+  /* 기간 조회 바 (blog/option-c 와 동일 UX — PENDING/조회 버튼 패턴) */
+  .date-filter{ display:flex; align-items:center; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .date-filter .lbl{ font-size:12px; color:var(--muted); margin-right:2px; }
+  .date-filter input[type="date"]{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 10px; color:var(--text); font-size:12.5px; outline:0;
+    color-scheme:dark; font-family:'JetBrains Mono',monospace;
+  }
+  .date-filter input[type="date"]:focus{ border-color:var(--accent); }
+  .date-filter input[type="date"].pending{ border-color:var(--accent); }
+  .date-filter input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(.7); cursor:pointer; }
+  .date-filter .sep{ color:var(--muted); padding:0 2px; }
+  .date-filter .qbtn{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 12px; color:var(--text-2); font-size:12px; cursor:pointer;
+  }
+  .date-filter .qbtn:hover{ border-color:var(--accent-2); color:var(--text); }
+  .date-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .date-filter .qbtn.pending{ border-style:dashed; border-color:var(--accent-2); color:var(--accent); }
+  .date-filter .apply{
+    background:var(--accent); border:1px solid var(--accent); border-radius:8px;
+    padding:6px 14px; color:#fff; font-size:12.5px; font-weight:600; cursor:pointer;
+    margin-left:4px;
+  }
+  .date-filter .apply:hover{ background:#6a4ce6; border-color:#6a4ce6; }
+  .date-filter .apply:disabled{ opacity:.55; cursor:default; }
+  .date-filter .apply.pending{ box-shadow:0 0 0 2px rgba(124,92,255,.25); }
+  .date-filter .clear{
+    background:transparent; border:1px solid var(--line); border-radius:8px;
+    padding:6px 12px; color:var(--muted); font-size:12px; cursor:pointer; margin-left:4px;
+  }
+  .date-filter .clear:hover{ color:var(--text); border-color:var(--text-2); }
+  .date-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
+
+  /* KPI 최상단 — 4 카드 (blog/option-c 와 동일: 총 게시물 / 조회수 / 인바운드 / 전환율) */
+  .kpi-top{ grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:12px; }
+  @media (max-width:900px){ .kpi-top{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:640px){ .kpi-top{ grid-template-columns:1fr; } }
+
+  /* 종합 성과 점수 + 기간 추이 1행 2열 */
+  .score-trend-row{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px;
+    margin-bottom:12px; align-items:stretch;
+  }
+  @media (max-width:1100px){ .score-trend-row{ grid-template-columns:1fr; } }
+  .score-trend-row .hero{ margin-bottom:0; }
+  .score-trend-row .cat-chart-card{ margin-bottom:0; }
+
+  .kpi{ padding:10px 14px; border-radius:10px; }
+  .kpi .kpi-label{ font-size:11px; color:var(--muted); }
+  .kpi .kpi-value{ font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:600; margin-top:2px; line-height:1.2; }
+  .kpi .kpi-sub{ font-size:10.5px; color:var(--muted); margin-top:1px; line-height:1.3; }
+
+  /* 비교 버튼 */
+  .cmp-btn{
+    background:transparent; border:1px solid var(--line);
+    color:var(--text-2); font-size:11.5px; padding:5px 11px; border-radius:6px;
+    cursor:pointer; line-height:1.3;
+  }
+  .cmp-btn:hover{ border-color:var(--accent); color:var(--text); }
+  .cmp-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  /* 비교 테이블 */
+  .cmp-table-wrap{ margin-top:12px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .cmp-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .cmp-table th, .cmp-table td{
+    padding:10px 12px; text-align:left;
+    border-bottom:1px solid var(--line);
+  }
+  .cmp-table td{ background:#fff; }
+  .cmp-table th{
+    background:var(--panel-2); color:var(--muted);
+    font-size:10.5px; font-weight:500; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .cmp-table th.num, .cmp-table td.num{ text-align:right; font-family:'JetBrains Mono', monospace; }
+  .cmp-table tbody tr:last-child td{ border-bottom:0; }
+  .cmp-table .badge{
+    display:inline-block; font-size:10px; padding:1px 6px; border-radius:4px; margin-left:6px;
+    font-family:'Pretendard', sans-serif;
+  }
+  .cmp-table .badge.cur{ background:rgba(109,78,255,.12); color:var(--accent); }
+  .cmp-table .badge.cmp{ background:var(--pill-bg); color:var(--muted); }
+  .cmp-table .diff-row td{ background:var(--panel-2); font-weight:600; }
+  .cmp-table .diff-row .label{ color:var(--text-2); }
+  .cmp-table .pos{ color:var(--green); }
+  .cmp-table .neg{ color:var(--red); }
+  .cmp-table .neu{ color:var(--muted); }
+
+  /* 카테고리 막대그래프 — 세로형 (X: 카테고리, Y: 값) */
+  .cat-chart-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:14px;
+  }
+  .cat-chart-card .ph{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:14px; }
+  .cat-chart-card .eyebrow{ font-size:11.5px; color:var(--muted); }
+  .cat-chart-card h2{ font-size:14px; font-weight:600; margin:2px 0 0; }
+  .cat-chart-card .legend{ display:flex; gap:12px; font-size:11.5px; color:var(--muted); flex-wrap:wrap; }
+  .cat-chart-card .legend .it{ display:inline-flex; align-items:center; gap:5px; }
+
+  .vchart{
+    position:relative;
+    display:flex; align-items:stretch;
+    gap:10px;
+    padding:24px 0 6px;        /* 위쪽: 값 라벨, 아래쪽: x축 라벨용 (안쪽에서 처리) */
+  }
+  .vchart .y-axis{
+    width:42px; flex-shrink:0; position:relative; height:240px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--muted);
+    text-align:right; padding-right:6px;
+  }
+  .vchart .y-axis span{ line-height:1; }
+  .vchart .plot{
+    flex:1; min-width:0; position:relative; height:240px;
+    display:flex; align-items:flex-end; justify-content:space-around;
+    gap:6px;
+    border-left:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    padding:0 6px;
+  }
+  /* 가이드 그리드 라인 */
+  .vchart .plot::before, .vchart .plot::after,
+  .vchart .plot .gl{
+    content:""; position:absolute; left:0; right:0; height:1px;
+    background:var(--panel-2); pointer-events:none;
+  }
+  .vchart .plot::before{ top:0; }
+  .vchart .plot::after{ top:50%; }
+  .vchart .plot .gl1{ top:25%; }
+  .vchart .plot .gl3{ top:75%; }
+
+  .vgroup{
+    flex:1; min-width:0; height:100%;
+    display:flex; flex-direction:column; align-items:center;
+    position:relative;
+  }
+  .vgroup .vbars{
+    display:flex; align-items:flex-end; justify-content:center;
+    gap:4px; width:100%; height:100%;
+    padding:0 4px;
+  }
+  .vbar{
+    flex:1; max-width:22px;
+    border-radius:4px 4px 0 0;
+    position:relative;
+    transition:filter .15s;
+    min-height:2px;
+  }
+  .vbar.visit{   background:linear-gradient(180deg, #9c83ff, var(--accent)); }
+  .vbar.inbound{ background:linear-gradient(180deg, #76eaba, var(--green)); }
+  .vbar:hover{ filter:brightness(1.2); }
+  .vbar .vlabel{
+    position:absolute; bottom:100%; left:50%; transform:translateX(-50%);
+    margin-bottom:4px;
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    color:var(--text); white-space:nowrap;
+    opacity:.85;
+  }
+  .vgroup .xlabel{
+    position:absolute; top:100%; left:0; right:0;
+    margin-top:8px;
+    text-align:center;
+    font-size:11px; color:var(--text-2);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .vchart-bottom-gap{ height:28px; }   /* x 라벨 차지하는 영역 확보 */
+
+  .hero{
+    background:linear-gradient(135deg, rgba(124,92,255,.18), rgba(124,92,255,.04));
+    border:1px solid rgba(109,78,255,.25); border-radius:14px;
+    padding:14px 18px; margin-bottom:12px;
+    display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center;
+  }
+  @media (max-width:768px){ .hero{ grid-template-columns:1fr; padding:14px; } }
+  .hero .score-side{
+    display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0;
+  }
+  .hero .score-circle{
+    width:108px; height:108px; border-radius:50%;
+    position:relative; display:flex; align-items:center; justify-content:center;
+    transition:background .4s ease;
+  }
+  .hero .score-circle::after{
+    content:""; position:absolute; inset:7px; border-radius:50%; background:var(--bg);
+  }
+  .hero .score-circle .num{ position:relative; z-index:1; text-align:center; line-height:1; }
+  .hero .score-circle .num .v{
+    font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:600; color:var(--text);
+  }
+  .hero .score-circle .num .total{ font-size:10px; color:var(--muted); margin-top:-2px; }
+  .hero .tier-below{
+    font-size:11.5px; color:var(--text-2); font-weight:500;
+    white-space:nowrap; text-align:center;
+  }
+  .hero .info .label{ font-size:11px; color:var(--accent); margin-bottom:4px; }
+  .hero .info .deltas{ display:flex; gap:16px; flex-wrap:wrap; }
+  .hero .info .deltas .delta{ display:flex; flex-direction:column; gap:2px; }
+  .hero .info .deltas .delta .l{ font-size:11px; color:var(--muted); }
+  .hero .info .deltas .delta .v{ font-family:'JetBrains Mono', monospace; font-size:13.5px; font-weight:600; }
+
+  /* 인사이트 카드: wide 6열 1행 → 좁아지면 단계적 축소 */
+  .insights-grid{ display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; margin-bottom:14px; }
+  @media (max-width:1500px){ .insights-grid{ grid-template-columns:repeat(3, 1fr); } }
+  @media (max-width:1100px){ .insights-grid{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:640px){ .insights-grid{ grid-template-columns:1fr; } }
+
+  .insight-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:16px; display:flex; flex-direction:column; gap:10px;
+    transition:all .15s;
+  }
+  .insight-card:hover{ border-color:var(--accent-2); }
+  .insight-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .insight-icon{
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    background:rgba(109,78,255,.10); border:1px solid rgba(109,78,255,.25); color:var(--accent);
+    flex-shrink:0;
+  }
+  .insight-icon.green{ background:rgba(61,220,151,.15); border-color:rgba(61,220,151,.3); color:var(--green); }
+  .insight-icon.amber{ background:rgba(255,182,72,.15); border-color:rgba(255,182,72,.3); color:var(--amber); }
+  .insight-icon.blue{ background:rgba(78,163,255,.15); border-color:rgba(78,163,255,.3); color:var(--blue); }
+  .insight-icon.red{ background:rgba(255,93,115,.15); border-color:rgba(255,93,115,.3); color:var(--red); }
+  .score-pill{
+    font-size:11px; padding:3px 8px; border-radius:99px;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--muted);
+    font-family:'JetBrains Mono', monospace; flex-shrink:0;
+  }
+  .score-pill .v{ color:var(--green); font-weight:600; }
+  .insight-statement{ font-size:13.5px; line-height:1.5; font-weight:500; }
+  .insight-statement b{ color:var(--accent); font-weight:600; }
+  .insight-statement b.green{ color:var(--green); }
+  .insight-statement b.red{ color:var(--red); }
+  .insight-detail{ font-size:11.5px; color:var(--muted); line-height:1.5; }
+  .insight-mini{
+    margin-top:auto; padding-top:8px; border-top:1px solid var(--line);
+    display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted);
+  }
+  .mini-bar{ flex:1; height:5px; background:var(--panel-2); border-radius:99px; overflow:hidden; }
+  .mini-bar > i{ display:block; height:100%; background:linear-gradient(90deg, var(--accent), #9c83ff); border-radius:99px; }
+  .mini-num{ font-family:'JetBrains Mono', monospace; color:var(--text); font-weight:500; }
+
+  .reco{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:14px;
+  }
+  .reco h2{ font-size:14px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  .reco h2 .badge{
+    font-size:10px; padding:2px 8px; border-radius:4px;
+    background:rgba(109,78,255,.10); color:var(--accent); border:1px solid rgba(109,78,255,.25);
+  }
+  /* 추천 액션 리스트: wide 4열 1행 */
+  .reco-list{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  @media (max-width:1280px){ .reco-list{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .reco-list{ grid-template-columns:1fr; } }
+  .reco-item{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; display:flex; gap:10px; align-items:center;
+  }
+  .reco-item .dot-num{
+    flex-shrink:0; width:22px; height:22px; border-radius:99px;
+    background:var(--accent); color:var(--text); font-size:11px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .reco-item .text{ font-size:12.5px; line-height:1.5; }
+  .reco-item .text small{ color:var(--muted); display:block; margin-top:2px; font-size:11px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.05 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item" href="../../ib-ob/analysis/">IB / OB 분석</a>
+    <a class="nav-item" href="../../ib-ob/">IB / OB 종합</a>
+    <a class="nav-item" href="../../salesmap/">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item active" href="../">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div style="display:flex; align-items:flex-end; gap:10px;">
+        <div>
+          <div class="page-eyebrow">SNS · 블로그 · 인사이트</div>
+          <h1>블로그 인사이트</h1>
+        </div>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 분석 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL을 붙여넣고 [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <nav class="page-tabs">
+      <a class="tab" href="../">블로그</a>
+      <a class="tab active" href="./">인사이트</a>
+      <a class="tab" href="../source/">원본</a>
+    </nav>
+
+    <!-- 기간 조회 (blog/option-c 와 동일 UX) -->
+    <div class="date-filter">
+      <span class="lbl">기간</span>
+      <input type="date" id="date-start" />
+      <span class="sep">~</span>
+      <input type="date" id="date-end" />
+      <button class="qbtn" data-range="7">7일</button>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <button class="apply" id="btn-apply-date">조회</button>
+      <button class="clear" id="btn-clear-date">초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
+    <!-- KPI — blog/option-c 와 동일 4 카드 -->
+    <section class="kpi-grid kpi-top">
+      <div class="kpi"><div class="kpi-label">총 게시물</div><div class="kpi-value" id="kpi-count">0</div><div class="kpi-sub" id="kpi-cat-sub">카테고리 0개</div></div>
+      <div class="kpi"><div class="kpi-label">조회수</div><div class="kpi-value" id="kpi-total">0</div><div class="kpi-sub">기간 평균 <span id="kpi-avg">0</span>/글</div></div>
+      <div class="kpi"><div class="kpi-label">인바운드</div><div class="kpi-value" id="kpi-inbound">0</div><div class="kpi-sub">조회 기간 인입 합계</div></div>
+      <div class="kpi"><div class="kpi-label">전환율</div><div class="kpi-value" id="kpi-cvr">0%</div><div class="kpi-sub">인바운드 / 조회수</div></div>
+    </section>
+
+    <!-- 종합 성과 점수 + 기간 추이 — 1행 2열 -->
+    <div class="score-trend-row">
+    <section class="hero">
+      <div class="score-side">
+        <div class="score-circle" id="score-ring">
+          <div class="num">
+            <div class="v" id="score-val">–</div>
+            <div class="total">/100</div>
+          </div>
+        </div>
+        <div class="tier-below" id="score-tier">–</div>
+      </div>
+      <div class="info">
+        <div class="label">종합 성과 점수</div>
+        <!-- 전월/전년 비교 버튼 -->
+        <div class="cmp-row" style="display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:var(--muted);">기준 비교</span>
+          <button class="cmp-btn" data-cmp="mom">전월 대비</button>
+          <button class="cmp-btn" data-cmp="yoy">전년 대비</button>
+        </div>
+        <!-- 비교 테이블 (항상 표시) -->
+        <div class="cmp-table-wrap" id="cmp-table-wrap">
+          <table class="cmp-table" id="cmp-tbl">
+            <thead>
+              <tr>
+                <th>조회 기간</th>
+                <th class="num">발행글</th>
+                <th class="num">총 방문 수</th>
+                <th class="num">인바운드 수</th>
+                <th class="num">전환율</th>
+              </tr>
+            </thead>
+            <tbody id="cmp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 기간 추이 — 카테고리별 방문자 + 인바운드 막대그래프 -->
+    <section class="cat-chart-card">
+      <div class="ph">
+        <div>
+          <div class="eyebrow">기간 추이</div>
+          <h2>카테고리별 방문자 · 인바운드</h2>
+        </div>
+        <div class="legend">
+          <span class="it"><span class="dot" style="background:var(--accent)"></span>방문자</span>
+          <span class="it"><span class="dot" style="background:var(--green)"></span>인바운드</span>
+        </div>
+      </div>
+      <div class="cat-chart" id="cat-chart"></div>
+    </section>
+    </div>   <!-- /score-trend-row -->
+
+    <!-- 인사이트 카드 (실데이터 기반 동적 생성) -->
+    <section class="insights-grid" id="insights-grid"></section>
+
+    <!-- 추천 액션 -->
+    <section class="reco">
+      <h2>다음 액션 추천 <span class="badge">AUTO</span></h2>
+      <div class="reco-list" id="reco-list"></div>
+    </section>
+
+    <div class="text-center muted py-6" style="font-size:11.5px;" id="footer-note">
+      자동 도출 인사이트 · 종합 성과 점수 · 다음 액션 추천
+    </div>
+  </main>
+</div>
+
+<!-- 카테고리 클릭 → 게시글 목록 모달 -->
+<style>
+  .cat-modal-overlay{
+    position:fixed; inset:0; background:rgba(15,23,42,.40); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center; z-index:100;
+    display:none;
+  }
+  .cat-modal-overlay.open{ display:flex; }
+  .cat-modal-content{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    width:880px; max-width:94vw; max-height:80vh;
+    display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(15,23,42,.20);
+  }
+  .cat-modal-head{
+    padding:16px 20px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .cat-modal-head .eyebrow{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .cat-modal-head h3{ font-size:15px; font-weight:600; margin:2px 0 0; }
+  .cat-modal-body{ flex:1; overflow-y:auto; overflow-x:hidden; padding:0; }
+  .cat-modal-content{ overflow:hidden; }   /* 컨텐츠 박스 자체도 가로 오버플로우 차단 */
+  .cat-modal-foot{ padding:12px 20px; border-top:1px solid var(--line); font-size:11.5px; color:var(--muted); display:flex; justify-content:space-between; }
+  /* 카테고리 모달 게시글 로우 — 헤더와 데이터 행이 같은 그리드 (정렬 일관) */
+  .cm-row{
+    display:grid;
+    grid-template-columns:
+      32px               /* NO */
+      minmax(0, 1fr)     /* 제목 (minmax(0,..) 로 축소 허용 → 오버플로우 방지) */
+      72px 80px 70px;    /* 방문 / 인바운드 / 전환율 */
+    gap:12px; align-items:center;
+    padding:10px 18px;
+    border-bottom:1px solid var(--line);
+    font-size:12.5px;
+    box-sizing:border-box;
+  }
+  .cm-row > *{ min-width:0; }   /* 모든 셀이 그리드 셀 안에서 축소 가능 */
+  .cm-row:last-child{ border-bottom:0; }
+  .cm-row .no{ font-family:'JetBrains Mono', monospace; color:var(--muted); font-size:11.5px; text-align:center; }
+  .cm-row .ttl{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500; }
+  .cm-row .meta{ font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cm-row .num{ font-family:'JetBrains Mono', monospace; text-align:right; font-size:12px; white-space:nowrap; }
+  .cm-row .num.green{ color:var(--green); }
+  .cm-row .info-cell{ overflow:hidden; }
+  .cm-row .info-cell .meta{ display:block; }   /* flex-wrap 으로 행 높이 부풀던 문제 해결 */
+  .cm-head{ background:var(--panel-2); color:var(--muted); font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.04em; }
+  .cm-head .num{ color:var(--muted); }
+  .cm-modal-body-inner{ overflow-x:hidden; }
+  .vgroup{ cursor:pointer; }
+  .vgroup:hover .vbar{ filter:brightness(1.2); }
+
+  /* 카테고리 모달: 두 리스트(방문자 TOP / 인바운드 TOP) 좌우 분할 */
+  .cm-section-row{
+    flex:1; overflow:hidden;
+    border-top:1px solid var(--line);
+    display:block;
+  }
+  .cm-section-row.split{
+    display:grid; grid-template-columns:1fr 1fr; gap:0;
+  }
+  /* 단일 리스트(인사이트 카드 산출 근거 등) 모드에서는 세로 스크롤 */
+  .cm-section-row:not(.split){ overflow-y:auto; overflow-x:hidden; }
+  @media (max-width:780px){ .cm-section-row.split{ grid-template-columns:1fr; } }
+  .cm-section{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  .cm-section + .cm-section{ border-left:1px solid var(--line); }
+  @media (max-width:780px){ .cm-section + .cm-section{ border-left:0; border-top:1px solid var(--line); } }
+  .cm-section-title{
+    padding:10px 18px; font-size:12px; font-weight:600; color:var(--text-2);
+    background:var(--panel-2); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:6px;
+  }
+  .cm-section-title .dot{ width:7px; height:7px; border-radius:50%; }
+  .cm-section-title .dot.visit{ background:var(--accent); }
+  .cm-section-title .dot.inbound{ background:var(--green); }
+  .cm-section-list{ flex:1; overflow-y:auto; }
+  /* 분할된 섹션 내부의 row 는 단순화: NO · 제목 · 값 */
+  .cm-section .cm-row{
+    grid-template-columns: 32px minmax(0, 1fr) 80px;
+  }
+  .cm-row-link{ cursor:pointer; transition:background .12s; }
+  .cm-row-link:hover{ background:var(--hover-bg); }
+</style>
+<div class="cat-modal-overlay" id="cat-modal">
+  <div class="cat-modal-content" role="dialog" aria-modal="true">
+    <div class="cat-modal-head">
+      <div>
+        <div class="eyebrow">카테고리 게시글</div>
+        <h3 id="cat-modal-title">-</h3>
+      </div>
+      <button class="modal-close" id="cat-modal-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="cm-section-row" id="cat-modal-body"></div>
+    <div class="cat-modal-foot">
+      <span id="cat-modal-info">-</span>
+      <span>ESC · 바깥 클릭으로 닫기</span>
+    </div>
+  </div>
+</div>
+
+<script src="../proxy-client.js?v=20260523-1"></script>
+<script src="../_detail-drawer.js?v=20260523-1"></script>
+<script src="../../table-grid.js"></script>
+<script>
+  function $(id){ return document.getElementById(id); }
+  function fmt(n){ const v = Number(n); return isFinite(v) ? v.toLocaleString('ko-KR') : '0'; }
+  function fmtK(n){
+    n = Number(n) || 0;
+    if (n >= 1000) return (n/1000).toFixed(n>=10000?0:1) + 'k';
+    return String(Math.round(n));
+  }
+  function pct(n, digits){ return (Number(n)*100).toFixed(digits===undefined?2:digits) + '%'; }
+  function setStatus(text, kind){
+    const el = $('status');
+    el.className = 'status ' + (kind || '');
+    el.textContent = text;
+    el.title = text;
+  }
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  // ── 기간 필터 (blog/option-c 와 동일 UX: PENDING 입력 → 조회 버튼 클릭 시 적용) ───
+  let ALL_ROWS = [];
+  let SOURCE_LABEL = '데모 데이터';
+  let ACTIVE_RANGE = '';
+  let PENDING_RANGE = '';
+  let APPLIED_DATE_START = '';
+  let APPLIED_DATE_END   = '';
+  let INBOUND_COUNTS = {};         // utm_term → 인바운드 인입 건수 (제출일자 기간 필터 적용)
+  let STATS_DAILY_ROWS = [];       // 일자별 visitors (조회 기간 한정)
+  let STATS_DAILY_LOADED = false;       // 빈 배열도 'loaded'=true → 0건 정상응답을 lifetime 폴백으로 잘못 치환하지 않도록
+  let INBOUND_BY_DATE_ROWS = [];   // 인바운드 raw rows (인입 일자 + utm_term, 조회 기간 한정)
+  let INBOUND_BY_DATE_LOADED = false;
+  let SCOPED_ROWS_GLOBAL = [];
+  let IDX_GLOBAL = null;            // refresh() 가 만든 현재 기간 인덱스 — 모달/위젯이 차트와 동일 산식을 쓰도록 공유
+  let COMPARE_MODE = 'mom';
+
+  function ymdStr(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  function yesterday(){
+    const d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,0,0,0); return d;
+  }
+
+  // STATS_DAILY/INBOUND_BY_DATE 단 1회 순회로 모든 위젯이 쓰는 인덱스 생성.
+  // (blog/option-c 와 동일 패턴 — refresh 마다 함수별로 같은 데이터를 다시 순회하던
+  // 병목을 제거)
+  function buildPeriodIndex(){
+    const visByPid   = Object.create(null);
+    const visByDate  = Object.create(null);
+    const visByMonth = Object.create(null);
+    const ibByUtm    = Object.create(null);
+    const ibByDate   = Object.create(null);
+    const ibByMonth  = Object.create(null);
+    const pidSet     = Object.create(null);
+    let totalVisits = 0, totalInbounds = 0;
+    for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+      const s = STATS_DAILY_ROWS[i]; if (!s) continue;
+      const pid = s.postid ? String(s.postid) : '';
+      const d   = s.date ? String(s.date) : '';
+      const v   = +s.visitors || 0;
+      if (pid){ pidSet[pid] = true; visByPid[pid] = (visByPid[pid] || 0) + v; }
+      if (d){
+        const dd = d.length > 10 ? d.slice(0,10) : d;
+        visByDate[dd]  = (visByDate[dd]  || 0) + v;
+        visByMonth[dd.slice(0,7)] = (visByMonth[dd.slice(0,7)] || 0) + v;
+      }
+      totalVisits += v;
+    }
+    for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+      const b = INBOUND_BY_DATE_ROWS[i]; if (!b) continue;
+      const u = b.utm_term ? String(b.utm_term).trim() : '';
+      const d = b.date ? String(b.date) : '';
+      if (u) ibByUtm[u] = (ibByUtm[u] || 0) + 1;
+      if (d){
+        const dd = d.length > 10 ? d.slice(0,10) : d;
+        ibByDate[dd]  = (ibByDate[dd]  || 0) + 1;
+        ibByMonth[dd.slice(0,7)] = (ibByMonth[dd.slice(0,7)] || 0) + 1;
+      }
+      totalInbounds++;
+    }
+    return {
+      visByPid, visByDate, visByMonth,
+      ibByUtm,  ibByDate,  ibByMonth,
+      pidSet, totalVisits, totalInbounds,
+      // length 가 아니라 LOADED 플래그 사용 — 빈 배열(0건)도 hasStats/hasIb=true
+      // 가 되어 lifetime 폴백 없이 정확히 0이 표시됨.
+      hasStats: STATS_DAILY_LOADED,
+      hasIb:    INBOUND_BY_DATE_LOADED
+    };
+  }
+
+  // STATS_DAILY pidSet 기준 — blog/option-c 와 동일. pidSet 미전달 시 자체 빌드.
+  function applyDateFilter(rows, statsPidSet){
+    const ds = APPLIED_DATE_START, de = APPLIED_DATE_END;
+    if (!ds && !de) return rows.slice();
+    if (!STATS_DAILY_ROWS.length){
+      return rows.filter(function(r){
+        const d = String(r['날짜']||'').slice(0,10);
+        return d && (!ds || d >= ds) && (!de || d <= de);
+      });
+    }
+    if (!statsPidSet){
+      statsPidSet = Object.create(null);
+      for (let i = 0; i < STATS_DAILY_ROWS.length; i++){
+        const r = STATS_DAILY_ROWS[i];
+        if (!r || !r.postid) continue;
+        statsPidSet[String(r.postid)] = true;
+      }
+    }
+    return rows.filter(function(r){
+      const pid = String(r.postid || '').trim();
+      return !!(pid && statsPidSet[pid]);
+    });
+  }
+
+  // 입력만 세팅 (조회 버튼 클릭 전까지 반영 안 함)
+  function setQuickRangeInput(days){
+    const end = yesterday();
+    const start = new Date(end);
+    start.setDate(start.getDate() - (days - 1));
+    $('date-start').value = ymdStr(start);
+    $('date-end').value   = ymdStr(end);
+    PENDING_RANGE = String(days);
+    updatePendingState();
+  }
+  function clearDateRange(){
+    $('date-start').value = '';
+    $('date-end').value = '';
+    ACTIVE_RANGE = ''; PENDING_RANGE = '';
+    APPLIED_DATE_START = ''; APPLIED_DATE_END = '';
+    updatePendingState();
+    loadStatsAndInboundForCurrent().then(refresh);
+  }
+  function isDirty(){
+    return ($('date-start').value || '') !== APPLIED_DATE_START
+        || ($('date-end').value   || '') !== APPLIED_DATE_END;
+  }
+  function updatePendingState(){
+    const dirty = isDirty();
+    $('date-start').classList.toggle('pending', dirty);
+    $('date-end').classList.toggle('pending', dirty);
+    $('btn-apply-date').classList.toggle('pending', dirty);
+    document.querySelectorAll('.qbtn').forEach(function(b){
+      const isActive  = !dirty && b.dataset.range === ACTIVE_RANGE && !!ACTIVE_RANGE;
+      const isPending = dirty && b.dataset.range === PENDING_RANGE && !!PENDING_RANGE;
+      b.classList.toggle('active', isActive);
+      b.classList.toggle('pending', isPending);
+    });
+  }
+  function updateRangeInfo(){
+    const ds = APPLIED_DATE_START, de = APPLIED_DATE_END;
+    const el = $('range-info');
+    if (el) el.textContent = (!ds && !de) ? '전체 기간' : (ds || '...') + ' ~ ' + (de || '...');
+    document.querySelectorAll('.qbtn').forEach(function(b){
+      b.classList.toggle('active', !isDirty() && b.dataset.range === ACTIVE_RANGE);
+    });
+  }
+
+  // ── 인사이트 도출 로직 (idx 가 있으면 기간 합산으로, 없으면 누적 폴백) ─────
+  function derive(rows, countsMap, idx){
+    if (!rows || !rows.length) return null;
+
+    const counts = countsMap || INBOUND_COUNTS;
+    // 행 단위 조회수: idx.hasStats 면 기간 합산, 아니면 누적 totalVisit 폴백.
+    const rowVisits = function(r){
+      const pid = String(r && r.postid || '');
+      if (idx && idx.hasStats) return (pid && idx.visByPid[pid]) || 0;
+      return +r.totalVisit || 0;
+    };
+    // 행 단위 인바운드: idx.hasIb 면 기간 utm_term 카운트, 아니면 counts(INBOUND_COUNTS) 폴백.
+    const actualInbound = function(r){
+      const u = String(r.utm_term || '').trim();
+      if (!u) return 0;
+      if (idx && idx.hasIb) return idx.ibByUtm[u] || 0;
+      return Number(counts[u]) || 0;
+    };
+
+    // 게시글에 귀속되는 attribution set — ALL_ROWS 의 postid / utm_term.
+    // 광고/타 캠페인 등 블로그 미매칭 트래픽은 KPI 총량에서 제외해야
+    // '조회 기간 내 블로그 조회수/인바운드' 가 된다.
+    const pidAttr = Object.create(null);
+    const utmAttr = Object.create(null);
+    for (let i = 0; i < ALL_ROWS.length; i++){
+      const pid = String(ALL_ROWS[i].postid || '');
+      const utm = String(ALL_ROWS[i].utm_term || '').trim();
+      if (pid) pidAttr[pid] = true;
+      if (utm) utmAttr[utm] = true;
+    }
+    let totalVisit = 0, totalInbound = 0;
+    if (idx && idx.hasStats){
+      // 기간 내 visByPid 중 블로그 게시글 매칭 pid 만 합산
+      const vp = idx.visByPid;
+      for (const k in vp) if (pidAttr[k]) totalVisit += vp[k];
+    } else {
+      for (let i = 0; i < rows.length; i++) totalVisit += +rows[i].totalVisit || 0;
+    }
+    if (idx && idx.hasIb){
+      // 인바운드 = 기간 내 ibByUtm 중 블로그 utm_term 매칭 건만 합산
+      const iu = idx.ibByUtm;
+      for (const u in iu) if (utmAttr[u]) totalInbound += iu[u];
+      // ── 진단 로그 ─ 매핑 정확성 + 날짜 범위 검증 (F12 → Console).
+      try {
+        let v2 = 0, outOfRange = 0;
+        let minD = '9999-99-99', maxD = '';
+        const ds = APPLIED_DATE_START || '';
+        const de = APPLIED_DATE_END   || '';
+        for (let i = 0; i < INBOUND_BY_DATE_ROWS.length; i++){
+          const r = INBOUND_BY_DATE_ROWS[i];
+          if (!r) continue;
+          const d = String(r.date || '').slice(0,10);
+          if (d){
+            if (d < minD) minD = d;
+            if (d > maxD) maxD = d;
+            if ((ds && d < ds) || (de && d > de)) outOfRange++;
+          }
+          if (!r.utm_term) continue;
+          const u = String(r.utm_term).trim();
+          if (u && utmAttr[u]) v2++;
+        }
+        const matched = [], unmatched = [];
+        for (const u in iu){
+          (utmAttr[u] ? matched : unmatched).push([u, iu[u]]);
+        }
+        matched.sort((a,b)=>b[1]-a[1]);
+        unmatched.sort((a,b)=>b[1]-a[1]);
+        const sumM = matched.reduce((s,e)=>s+e[1],0);
+        const sumU = unmatched.reduce((s,e)=>s+e[1],0);
+        console.groupCollapsed(
+          '[insights] 인바운드 KPI 진단 — ' +
+          '조회 기간 [' + (ds||'∞') + ' ~ ' + (de||'∞') + '] · ' +
+          'API 반환 ' + INBOUND_BY_DATE_ROWS.length + '건 (' + minD + ' ~ ' + maxD + ') · ' +
+          '블로그 매칭 ' + sumM + '건 (KPI) · 미매칭 ' + sumU + '건' +
+          (totalInbound === v2 ? ' ✓ 매핑 정확' : ' ⚠ 불일치') +
+          (outOfRange ? ' · ⚠ 기간 밖 ' + outOfRange + '건!' : '')
+        );
+        console.log('● 적용된 기간             :', ds || '(없음)', '~', de || '(없음)');
+        console.log('● API 반환 raw 이벤트 수  :', INBOUND_BY_DATE_ROWS.length);
+        console.log('● raw 날짜 최소~최대      :', minD, '~', maxD,
+                    outOfRange ? ('— ⚠ 기간 밖 ' + outOfRange + '건 (GAS 필터 무시?)') : '— ✓ 모두 기간 내');
+        console.log('● method-1 (dict 합산)    :', totalInbound);
+        console.log('● method-2 (raw 순회)     :', v2, totalInbound === v2 ? '✓ 일치' : '⚠ 불일치');
+        console.log('● 블로그 utm_term 개수    :', Object.keys(utmAttr).length);
+        console.log('● 인입 utm_term 종류      :', matched.length + unmatched.length);
+        console.log('매칭 TOP 10  :', matched.slice(0,10));
+        console.log('미매칭 TOP 10:', unmatched.slice(0,10));
+        const perPost = [];
+        for (let i = 0; i < ALL_ROWS.length; i++){
+          const r = ALL_ROWS[i];
+          const u = String(r.utm_term || '').trim();
+          const c = u ? (iu[u] || 0) : 0;
+          if (c > 0) perPost.push([r['제목'] || u, u, c]);
+        }
+        perPost.sort((a,b)=>b[2]-a[2]);
+        console.log('게시글별 인바운드 (count > 0, 합:' + perPost.reduce((s,e)=>s+e[2],0) + '):', perPost);
+        console.groupEnd();
+      } catch(_){}
+    } else {
+      for (let i = 0; i < rows.length; i++) totalInbound += actualInbound(rows[i]);
+    }
+    const totalWeekly  = rows.reduce((s,r)=>s+(+r.weeklyVisitor||0), 0);
+    const totalMonthly = rows.reduce((s,r)=>s+(+r.monthlyVisitor||0), 0);
+    const overallCV    = totalVisit > 0 ? totalInbound / totalVisit : 0;
+    const avgInbound   = totalInbound / rows.length;
+
+    // 카테고리별 집계 — 지표별 기간 귀속 분리:
+    //   방문자(totalVisit) = 기간 내 조회 (글 무관 전체)
+    //   인바운드(inbound)  = 기간 내 인바운드 (인입일 기준, 발행/조회 무관 전체)
+    //   발행(count)        = 발행일(날짜)이 기간 내인 글만
+    // 따라서 모집단을 filtered(조회된 글)가 아닌 ALL_ROWS 전체로 순회한다.
+    const _ds = APPLIED_DATE_START, _de = APPLIED_DATE_END;
+    const _inPubRange = function (s){
+      if (!_ds && !_de) return true;
+      const d = String(s || '').slice(0,10);
+      return !!d && (!_ds || d >= _ds) && (!_de || d <= _de);
+    };
+    const byCat = {};
+    for (let i = 0; i < ALL_ROWS.length; i++){
+      const r = ALL_ROWS[i];
+      const c = r.category || '미분류';
+      if (!byCat[c]) byCat[c] = { count:0, totalVisit:0, weekly:0, inbound:0 };
+      byCat[c].totalVisit += rowVisits(r);        // 기간 조회
+      byCat[c].inbound    += actualInbound(r);     // 기간 인바운드(인입일)
+      if (_inPubRange(r['날짜'])){                 // 발행일이 기간 내인 글만
+        byCat[c].count  += 1;
+        byCat[c].weekly += +r.weeklyVisitor || 0;
+      }
+    }
+    const catList = Object.entries(byCat).map(([name,v]) => ({
+      name, ...v,
+      avgInbound: v.count ? v.inbound / v.count : 0,
+      avgVisit:   v.count ? v.totalVisit / v.count : 0
+    }));
+    const topCat   = catList.slice().sort((a,b)=>b.avgInbound-a.avgInbound)[0];
+    const worstCat = catList.filter(c=>c.count>=2).sort((a,b)=>a.avgInbound-b.avgInbound)[0];
+
+    // 요일별 집계
+    const byDOW = {};
+    rows.forEach(r => {
+      const s = String(r['날짜']||'').slice(0,10);
+      if (!s) return;
+      const d = new Date(s);
+      if (isNaN(d)) return;
+      const dow = d.getDay();
+      if (!byDOW[dow]) byDOW[dow] = { count:0, weekly:0 };
+      byDOW[dow].count++;
+      byDOW[dow].weekly += +r.weeklyVisitor||0;
+    });
+    const dowList = Object.entries(byDOW).map(([dow,v])=>({
+      dow:+dow, count:v.count, avgWeekly: v.weekly / v.count
+    }));
+    const overallAvgWeekly = totalWeekly / rows.length;
+    const sortedDOW = dowList.slice().sort((a,b)=>b.avgWeekly-a.avgWeekly);
+    const bestDOW2 = sortedDOW.slice(0,2).filter(d=>d.avgWeekly > overallAvgWeekly);
+
+    // 고트래픽 글 전환율 비교 (5000+ vs 전체)
+    const highT = rows.filter(r => +r.totalVisit >= 5000);
+    const lowT  = rows.filter(r => +r.totalVisit < 5000);
+    const highCV = highT.length ? highT.reduce((s,r)=>s+(+r.inbound||0),0) / Math.max(highT.reduce((s,r)=>s+(+r.totalVisit||0),0),1) : 0;
+    const lowCV  = lowT.length  ? lowT.reduce((s,r)=>s+(+r.inbound||0),0)  / Math.max(lowT.reduce((s,r)=>s+(+r.totalVisit||0),0),1)  : 0;
+
+    // 서비스별 집계
+    const bySvc = {};
+    rows.forEach(r => {
+      const s = r.service || '기타';
+      if (!bySvc[s]) bySvc[s] = { count:0, totalVisit:0 };
+      bySvc[s].count++;
+      bySvc[s].totalVisit += +r.totalVisit||0;
+    });
+    const svcList = Object.entries(bySvc).map(([name,v])=>({
+      name, count:v.count, totalVisit:v.totalVisit, avgVisit: v.totalVisit / v.count
+    })).sort((a,b)=>b.avgVisit-a.avgVisit);
+
+    // 키워드 분석 (제목 빈출 단어)
+    const stopWords = new Set(['의','가','이','은','는','을','를','에','와','과','로','으로','및','및',' ','-','·','/']);
+    const wordCount = {};
+    rows.forEach(r => {
+      const t = String(r['제목']||'');
+      const tokens = t.split(/[\s,·/\-()\[\]]+/).filter(w => w && w.length >= 2 && !stopWords.has(w));
+      tokens.forEach(w => {
+        if (!wordCount[w]) wordCount[w] = { count:0, visits:0 };
+        wordCount[w].count++;
+        wordCount[w].visits += +r.totalVisit||0;
+      });
+    });
+    const avgVisitAll = totalVisit / rows.length;
+    const keywordHits = Object.entries(wordCount)
+      .filter(([w,v]) => v.count >= 2)
+      .map(([w,v]) => ({ word:w, count:v.count, avgVisit: v.visits/v.count, lift: (v.visits/v.count) / Math.max(avgVisitAll,1) }))
+      .filter(k => k.lift > 1.2)
+      .sort((a,b) => b.lift - a.lift);
+    const topKeyword = keywordHits[0];
+
+    // 종합 성과 점수 (0~100)
+    const efficiency = Math.min(overallCV / 0.005, 1);              // 0.5%+ → 만점
+    const diversity  = Math.min(catList.length / 8, 1);             // 8+ 카테고리 만점
+    const frequency  = Math.min(rows.length / 35, 1);               // 35+ 글 만점
+    const scale      = Math.min(totalVisit / 200000, 1);            // 200k+ 만점
+    const score      = Math.round(efficiency*30 + diversity*25 + frequency*25 + scale*20);
+
+    return {
+      score, rows,
+      totalVisit, totalWeekly, totalMonthly, totalInbound,
+      overallCV, avgInbound, overallAvgWeekly,
+      catList, topCat, worstCat,
+      dowList, bestDOW2,
+      highT, lowT, highCV, lowCV,
+      svcList,
+      keywordHits, topKeyword
+    };
+  }
+
+  function buildInsights(d){
+    const cards = [];
+    const reco  = [];
+    if (!d) return { cards, reco };
+
+    // 1) 누적 방문 — 서비스 비교
+    if (d.svcList.length >= 2){
+      const a = d.svcList[0], b = d.svcList[d.svcList.length-1];
+      const ratio = a.avgVisit / Math.max(b.avgVisit, 1);
+      if (ratio > 1.3){
+        const usedRows = d.rows.filter(function(r){ return r.service === a.name || r.service === b.name; });
+        cards.push({
+          key:'svc',
+          icon:'', tone:'',
+          score: Math.min(85, 65 + Math.round(ratio*5)),
+          title:'누적 방문 — 서비스 비교',
+          statement:`<b>${escapeHtml(a.name)}</b> 서비스 평균 누적 방문이 ${escapeHtml(b.name)} 대비 <b class="green">${ratio.toFixed(1)}배</b>`,
+          detail:`${a.name} ${a.count}글 합계 ${fmtK(a.totalVisit)} vs ${b.name} ${b.count}글 합계 ${fmtK(b.totalVisit)}. 발행 우선순위 재조정 권장.`,
+          miniLabel:`${escapeHtml(a.name)} 우위`,
+          miniPct: Math.min(100, ratio*30),
+          miniNum: ratio.toFixed(1)+'×',
+          criteria:[
+            '서비스별 글 단위 누적 방문 평균을 비교',
+            `최상위 서비스(${a.name}) 평균: ${fmtK(a.avgVisit)} / 글`,
+            `최하위 서비스(${b.name}) 평균: ${fmtK(b.avgVisit)} / 글`,
+            `비율 = 최상위 평균 / 최하위 평균 = ${ratio.toFixed(2)}배`
+          ],
+          rows: usedRows
+        });
+      }
+    }
+
+    // 2) 주간 방문 — 요일별
+    if (d.bestDOW2 && d.bestDOW2.length){
+      const days = d.bestDOW2.map(x=>DOW[x.dow]+'요일').join('·');
+      const avgBest = d.bestDOW2.reduce((s,x)=>s+x.avgWeekly,0) / d.bestDOW2.length;
+      const lift = (avgBest / Math.max(d.overallAvgWeekly,1) - 1) * 100;
+      if (lift > 5){
+        const dowSet = new Set(d.bestDOW2.map(function(x){ return x.dow; }));
+        const usedRows = d.rows.filter(function(r){
+          const dt = new Date(String(r['날짜']||'').slice(0,10));
+          return !isNaN(dt) && dowSet.has(dt.getDay());
+        });
+        cards.push({
+          key:'dow',
+          icon:'', tone:'green',
+          score: Math.min(92, 70 + Math.round(lift*0.5)),
+          title:'주간 방문 — 발행 요일',
+          statement:`<b>${days}</b> 발행 글의 주간 방문이 <b class="green">+${lift.toFixed(0)}%</b> 더 높음`,
+          detail:`전체 평균 ${fmt(Math.round(d.overallAvgWeekly))} → 해당 요일 ${fmt(Math.round(avgBest))}. 발행 캘린더 조정 권장.`,
+          miniLabel: days+' 평균',
+          miniPct: Math.min(100, 60 + lift),
+          miniNum: Math.round(avgBest),
+          criteria:[
+            `발행일 요일별 글의 주간 방문 평균을 집계`,
+            `상위 요일: ${days}`,
+            `해당 요일 평균: ${fmt(Math.round(avgBest))}`,
+            `전체 평균: ${fmt(Math.round(d.overallAvgWeekly))}`,
+            `상승률 = (${Math.round(avgBest)} / ${Math.round(d.overallAvgWeekly)} - 1) × 100 = +${lift.toFixed(1)}%`
+          ],
+          rows: usedRows
+        });
+        reco.push({ text:`발행 요일을 <strong>${days}</strong> 중심으로 이동`, sub:`주간 방문 평균 +${lift.toFixed(0)}% 예상` });
+      }
+    }
+
+    // 3) 키워드
+    if (d.topKeyword){
+      const lift = (d.topKeyword.lift - 1) * 100;
+      const kw = d.topKeyword.word;
+      const usedRows = d.rows.filter(function(r){ return String(r['제목']||'').indexOf(kw) >= 0; });
+      cards.push({
+        key:'kw',
+        icon:'', tone:'blue',
+        score: Math.min(85, 65 + Math.round(lift*0.4)),
+        title:'키워드',
+        statement:`<b>'${escapeHtml(kw)}' 키워드</b> 포함 글의 평균 조회수가 <b class="green">+${lift.toFixed(0)}%</b>`,
+        detail:`해당 키워드 ${d.topKeyword.count}개 글 평균 ${fmtK(d.topKeyword.avgVisit)} 방문. 관련 토픽 시리즈 기획 추천.`,
+        miniLabel: `'${escapeHtml(kw)}' 키워드`,
+        miniPct: Math.min(100, 50 + lift*0.5),
+        miniNum: fmtK(d.topKeyword.avgVisit),
+        criteria:[
+          `제목에서 등장 빈도 ≥2 인 단어 추출 후 평균 조회수 계산`,
+          `최상위 키워드: '${kw}'`,
+          `해당 키워드 글 평균 조회수: ${fmtK(d.topKeyword.avgVisit)}`,
+          `전체 평균 조회수: ${fmtK(d.totalVisit / d.rows.length)}`,
+          `lift = ${d.topKeyword.lift.toFixed(2)}배 (+${lift.toFixed(0)}%)`
+        ],
+        rows: usedRows
+      });
+    }
+
+    // 4) 카테고리 조회수 — 최상위
+    if (d.catList.length >= 2){
+      const topByVisit = d.catList.slice().sort(function(a,b){ return b.totalVisit - a.totalVisit; })[0];
+      if (topByVisit && topByVisit.count >= 2){
+        const usedRows = d.rows.filter(function(r){ return (r.category||'미분류') === topByVisit.name; });
+        const avgVisit = topByVisit.totalVisit / topByVisit.count;
+        const overallAvg = d.totalVisit / d.rows.length;
+        const lift = avgVisit / Math.max(overallAvg, 1);
+        cards.push({
+          key:'cat-view',
+          icon:'', tone:'amber',
+          score: Math.min(92, 70 + Math.round(lift*8)),
+          title:'카테고리 조회수 — 최상위',
+          statement:'<b>'+escapeHtml(topByVisit.name)+'</b> 카테고리가 평균 조회수 <b class="green">'+fmtK(avgVisit)+'</b> — 전체 평균 대비 <b class="green">'+lift.toFixed(1)+'배</b>',
+          detail:topByVisit.count+'개 발행글 합계 '+fmtK(topByVisit.totalVisit)+' 방문. 트래픽 강세 카테고리.',
+          miniLabel:escapeHtml(topByVisit.name)+' 평균',
+          miniPct: Math.min(100, lift*35),
+          miniNum: fmtK(avgVisit),
+          criteria:[
+            '카테고리별 글 단위 누적 방문 평균(조회수) 비교',
+            '최상위 카테고리: '+topByVisit.name,
+            '평균 조회수: '+fmtK(avgVisit)+' / 글 (글수 '+topByVisit.count+')',
+            '전체 평균: '+fmtK(overallAvg)+' / 글',
+            'lift = '+Math.round(avgVisit)+' / '+Math.round(overallAvg)+' = '+lift.toFixed(2)+'배'
+          ],
+          rows: usedRows
+        });
+        if (lift >= 1.5){
+          reco.push({ text:'<strong>'+escapeHtml(topByVisit.name)+'</strong> 카테고리 발행 비중 확대 검토', sub:'평균 조회수 '+fmtK(avgVisit)+' (전체 평균의 '+lift.toFixed(1)+'배)' });
+        }
+      }
+    }
+
+    // 5) 카테고리 인바운드 — 최상위
+    if (d.topCat && d.topCat.count >= 2){
+      const lift = d.topCat.avgInbound / Math.max(d.avgInbound, 0.001);
+      const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.topCat.name; });
+      cards.push({
+        key:'cat-top',
+        icon:'', tone:'',
+        score: Math.min(95, 70 + Math.round(lift*5)),
+        title:'카테고리 인바운드 — 최상위',
+        statement:`<b>${escapeHtml(d.topCat.name)}</b> 카테고리가 평균 인바운드 <b class="green">${fmt(Math.round(d.topCat.avgInbound))}건</b> — 전체 평균 대비 <b class="green">${lift.toFixed(1)}배</b>`,
+        detail:`${d.topCat.count}개 발행글 합산 인바운드 ${fmt(d.topCat.inbound)}건. 다음 분기 발행 비중 확대 검토.`,
+        miniLabel:`${escapeHtml(d.topCat.name)} vs 평균`,
+        miniPct: Math.min(100, lift*40),
+        miniNum: Math.round(d.topCat.avgInbound),
+        criteria:[
+          `카테고리별 글 단위 인바운드 평균을 비교 (utm_term 매칭)`,
+          `최상위 카테고리: ${d.topCat.name}`,
+          `평균 인바운드: ${fmt(Math.round(d.topCat.avgInbound))} 건/글 (글수 ${d.topCat.count})`,
+          `전체 평균: ${fmt(Math.round(d.avgInbound))} 건/글`,
+          `lift = ${d.topCat.avgInbound.toFixed(1)} / ${d.avgInbound.toFixed(1)} = ${lift.toFixed(2)}배`
+        ],
+        rows: usedRows
+      });
+      if (lift >= 1.3){
+        reco.push({ text:`<strong>${escapeHtml(d.topCat.name)}</strong> 카테고리 발행량 +50% 확대`, sub:`예상 추가 인바운드 약 ${Math.round(d.topCat.avgInbound*0.5*4)}건/월` });
+      }
+    }
+
+    // 6) 카테고리 인바운드 — 최하위
+    if (d.worstCat && d.worstCat.avgInbound < d.avgInbound * 0.7){
+      const drop = (1 - d.worstCat.avgInbound / Math.max(d.avgInbound, 0.001)) * 100;
+      const usedRows = d.rows.filter(function(r){ return (r.category || '미분류') === d.worstCat.name; });
+      cards.push({
+        key:'cat-worst',
+        icon:'⚠', tone:'red',
+        score: 70,
+        title:'카테고리 인바운드 — 최하위',
+        statement:`<b>'${escapeHtml(d.worstCat.name)}'</b> 카테고리는 발행 대비 인바운드 효율 <b class="red">-${drop.toFixed(0)}%</b>`,
+        detail:`평균 ${fmt(Math.round(d.worstCat.avgInbound))}건 (전체 평균 ${fmt(Math.round(d.avgInbound))}건). 콘텐츠 방향 재검토 필요.`,
+        miniLabel:`${escapeHtml(d.worstCat.name)} 효율`,
+        miniPct: Math.max(15, 100-drop),
+        miniNum:'-'+drop.toFixed(0)+'%',
+        miniBg:'red',
+        criteria:[
+          `최소 2개 이상 글이 있는 카테고리 중 평균 인바운드 최하위`,
+          `해당 카테고리: ${d.worstCat.name}`,
+          `평균 인바운드: ${fmt(Math.round(d.worstCat.avgInbound))} 건/글 (글수 ${d.worstCat.count})`,
+          `전체 평균: ${fmt(Math.round(d.avgInbound))} 건/글`,
+          `효율 차이 = -${drop.toFixed(1)}%`
+        ],
+        rows: usedRows
+      });
+      reco.push({ text:`<strong>${escapeHtml(d.worstCat.name)}</strong> 카테고리 콘텐츠 방향 재검토`, sub:`현재 효율 -${drop.toFixed(0)}% (개선 또는 축소)` });
+    }
+
+    return { cards, reco };
+  }
+
+  function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function escAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
+
+  // 안전 setter — 요소가 제거된 경우에도 에러 없이 무시
+  function safeSet(id, text){ const el = $(id); if (el) el.textContent = text; }
+  function safeHtml(id, html){ const el = $(id); if (el) el.innerHTML = html; }
+
+  function tierTextOf(score){
+    return score >= 80 ? '상위 18%' : score >= 65 ? '평균 이상' : '개선 필요';
+  }
+
+  function renderHero(d){
+    // KPI(총 게시물/조회수/인바운드/전환율/카테고리)는 refresh() 에서 직접 set 하므로
+    // 여기서는 점수 영역만 처리한다 (이전엔 renderHero 가 KPI 를 덮어써 refresh 에서
+    // 계산한 기간 기준 값이 즉시 누적값으로 되돌아가는 버그가 있었음).
+    if (!d){
+      safeSet('score-val', '–');
+      safeSet('score-tier', '–');
+      const ring = $('score-ring'); if (ring) ring.style.background = 'conic-gradient(var(--line) 0 100%)';
+      return;
+    }
+    safeSet('score-val', d.score);
+    // tier-below: "상위 N%" 만 표시 — 비교 모드 시 applyCompare 에서 비교 점수로 덮어씀
+    safeSet('score-tier', tierTextOf(d.score));
+    const ring = $('score-ring');
+    if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 '+d.score+'%, var(--line) '+d.score+'% 100%)';
+  }
+
+  let CURRENT_INSIGHT_CARDS = [];
+  function renderCards(items){
+    CURRENT_INSIGHT_CARDS = items;
+    safeSet('kpi-insights', items.length);
+    if (!items.length){
+      $('insights-grid').innerHTML = '<div style="grid-column:1/-1"><div class="empty">도출 가능한 인사이트가 없습니다. 더 많은 데이터가 필요합니다.</div></div>';
+      return;
+    }
+    $('insights-grid').innerHTML = items.map((c, idx) => {
+      const bg = c.miniBg === 'red'
+        ? 'background:linear-gradient(90deg,#ff5d73,#ff8a9b)'
+        : c.tone === 'green' ? 'background:linear-gradient(90deg,#3ddc97,#76eaba)'
+        : c.tone === 'amber' ? 'background:linear-gradient(90deg,#ffb648,#ffd99a)'
+        : c.tone === 'blue'  ? 'background:linear-gradient(90deg,#4ea3ff,#a3cdff)'
+        : '';
+      return `<div class="insight-card" data-idx="${idx}" style="cursor:pointer" title="클릭하여 산출 근거 보기">
+        <div class="insight-head">
+          <span class="score-pill">신뢰도 <span class="v">${c.score}%</span></span>
+        </div>
+        <div class="insight-statement">${c.statement}</div>
+        <div class="insight-detail">${escapeHtml(c.detail)}</div>
+        <div class="insight-mini">
+          <span>${c.miniLabel}</span>
+          <span class="mini-bar"><i style="width:${c.miniPct}%; ${bg}"></i></span>
+          <span class="mini-num">${c.miniNum}</span>
+        </div>
+      </div>`;
+    }).join('');
+    // 카드 클릭 → 산출 근거 모달
+    document.querySelectorAll('.insight-card[data-idx]').forEach(function(el){
+      el.addEventListener('click', function(){
+        const idx = parseInt(el.dataset.idx, 10);
+        openInsightDetail(CURRENT_INSIGHT_CARDS[idx]);
+      });
+    });
+  }
+
+  // 인사이트 상세 모달 — cat-modal 인프라 재사용
+  function openInsightDetail(card){
+    if (!card) return;
+    const inbOf = function(r){
+      const u = String(r.utm_term || '').trim();
+      if (!u) return 0;
+      return Number(INBOUND_COUNTS[u]) || 0;
+    };
+    const rows = (card.rows || []).slice().sort(function(a,b){ return Number(b.totalVisit||0) - Number(a.totalVisit||0); });
+
+    $('cat-modal-title').innerHTML = (card.title || '인사이트') + ' <span style="font-size:11.5px; color:var(--muted); font-weight:400;">신뢰도 ' + card.score + '%</span>';
+    document.querySelector('#cat-modal .eyebrow').textContent = '산출 근거';
+
+    const sumV = rows.reduce(function(s,r){ return s + Number(r.totalVisit||0); }, 0);
+    const sumI = rows.reduce(function(s,r){ return s + inbOf(r); }, 0);
+    $('cat-modal-info').textContent = '참고 ' + rows.length + '건 · 누적 방문 ' + fmt(sumV) + ' · 인바운드 ' + fmt(sumI);
+
+    const body = $('cat-modal-body');
+    body.classList.remove('split');
+    let html = '';
+    // 산출 기준
+    if (card.criteria && card.criteria.length){
+      html += '<div style="padding:14px 18px; background:rgba(124,92,255,.08); border-bottom:1px solid var(--line);">'
+        + '<div style="font-size:11px; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;">산출 기준</div>'
+        + '<ul style="font-size:12px; color:var(--text-2); list-style:disc; padding-left:18px; line-height:1.7; margin:0;">'
+        + card.criteria.map(function(c){ return '<li>'+escapeHtml(c)+'</li>'; }).join('')
+        + '</ul></div>';
+    }
+    // 헤더
+    html += '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div><div class="num">인바운드</div><div class="num">전환율</div></div>';
+    // 행
+    if (!rows.length){
+      html += '<div class="empty" style="margin:24px;">참고된 게시글 없음</div>';
+    } else {
+      html += rows.map(function(r,i){
+        const tv = Number(r.totalVisit||0);
+        const ib = inbOf(r);
+        const cv = tv > 0 ? (ib/tv*100).toFixed(2)+'%' : '-';
+        const pid = r.postid != null ? String(r.postid) : '';
+        return '<div class="cm-row cm-row-link" data-postid="'+escAttr(pid)+'" title="클릭하여 상세보기">'
+          + '<div class="no">'+(i+1)+'</div>'
+          + '<div class="info-cell">'
+            + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escapeHtml(r['제목']||'-')+'</div>'
+            + '<div class="meta">'
+              + (r.category ? escapeHtml(r.category)+' · ' : '')
+              + (r.service ? escapeHtml(r.service)+' · ' : '')
+              + escapeHtml(String(r['날짜']||'').slice(0,10))
+            + '</div>'
+          + '</div>'
+          + '<div class="num">'+fmt(tv)+'</div>'
+          + '<div class="num green">'+fmt(ib)+'</div>'
+          + '<div class="num">'+cv+'</div>'
+        + '</div>';
+      }).join('');
+    }
+    body.innerHTML = html;
+    // 행 클릭 → 인사이트 페이지 내에서 상세 드로어 오픈
+    body.querySelectorAll('.cm-row-link').forEach(function(el){
+      el.addEventListener('click', function(){
+        const pid = el.dataset.postid || '';
+        if (!pid) return;
+        const row = ALL_ROWS.find(function(r){ return String(r.postid||'') === pid; });
+        if (!row) return;
+        MktDrawer.open(row, { editHref: '../?postid=' + encodeURIComponent(pid) });
+      });
+    });
+    $('cat-modal').classList.add('open');
+  }
+
+  function renderReco(items){
+    if (!items.length){
+      $('reco-list').innerHTML = '<div class="empty" style="grid-column:1/-1">추천 액션을 산출할 데이터가 부족합니다.</div>';
+      return;
+    }
+    $('reco-list').innerHTML = items.map((r,i) => `
+      <div class="reco-item">
+        <div class="dot-num">${i+1}</div>
+        <div class="text">${r.text}<small>${escapeHtml(r.sub||'')}</small></div>
+      </div>
+    `).join('');
+  }
+
+  // 카테고리별 방문자 + 인바운드 — 세로 막대그래프 (X: 카테고리, Y: 값 · 단일 스케일)
+  function renderCatChart(d){
+    const wrap = $('cat-chart');
+    if (!d || !d.catList || !d.catList.length){
+      wrap.innerHTML = '<div class="empty">데이터 없음</div>';
+      return;
+    }
+    // 누적 방문 많은 순 TOP 8
+    const arr = d.catList.slice().sort((a,b)=>b.totalVisit-a.totalVisit).slice(0,8);
+
+    // 단일 Y축 — 방문자/인바운드 모든 값 중 최대값 기준으로 정규화
+    const allVals = arr.flatMap(c => [c.totalVisit, c.inbound]);
+    const maxAll  = Math.max.apply(null, allVals.concat([1]));
+
+    // 좌측 Y축 5눈금 (k 포맷)
+    const yTicks = [1, .75, .5, .25, 0].map(function(p){
+      return '<span>' + fmtK(maxAll * p) + '</span>';
+    }).join('');
+
+    const groups = arr.map(function(c){
+      const hv = Math.max(0.5, c.totalVisit / maxAll * 100);
+      const hi = Math.max(0.5, c.inbound    / maxAll * 100);
+      return ''
+        + '<div class="vgroup" data-cat="'+escAttr(c.name)+'" title="클릭하여 게시글 보기">'
+          + '<div class="vbars">'
+            + '<div class="vbar visit" style="height:'+hv.toFixed(2)+'%">'
+              + '<span class="vlabel">'+fmtK(c.totalVisit)+'</span>'
+            + '</div>'
+            + '<div class="vbar inbound" style="height:'+hi.toFixed(2)+'%">'
+              + '<span class="vlabel">'+fmt(c.inbound)+'</span>'
+            + '</div>'
+          + '</div>'
+          + '<div class="xlabel" title="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+'</div>'
+        + '</div>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<div class="vchart">'
+        + '<div class="y-axis">' + yTicks + '</div>'
+        + '<div class="plot">'
+          + '<div class="gl gl1"></div><div class="gl gl3"></div>'
+          + groups
+        + '</div>'
+      + '</div>'
+      + '<div class="vchart-bottom-gap"></div>';
+
+    // 카테고리 막대 클릭 → 게시글 모달
+    wrap.querySelectorAll('.vgroup[data-cat]').forEach(function(el){
+      el.addEventListener('click', function(){ openCategoryModal(el.dataset.cat); });
+    });
+  }
+
+  // ── 카테고리 모달 ─────────────────────────────────
+  function openCategoryModal(catName){
+    if (!catName) return;
+    // 차트(기간 추이)와 동일 산식: 카테고리 귀속은 발행/조회 여부와 무관하게 ALL_ROWS 기준,
+    // 인바운드는 기간 인덱스(idx.ibByUtm), 방문자는 기간 조회(idx.visByPid) 로 집계한다.
+    // (이전엔 모달이 INBOUND_COUNTS·totalVisit 를 써서 차트와 값이 어긋났다 — 차트 1 / 모달 0)
+    const idx = IDX_GLOBAL;
+    const posts = (ALL_ROWS || []).filter(function(r){ return (r.category||'미분류') === catName; });
+    // 인바운드 = 기간 ibByUtm (없으면 INBOUND_COUNTS 폴백)
+    const inbOf = function(r){
+      const u = String(r.utm_term || '').trim();
+      if (!u) return 0;
+      if (idx && idx.hasIb) return Number(idx.ibByUtm[u]) || 0;
+      return Number(INBOUND_COUNTS[u]) || 0;
+    };
+    // 방문자 = 기간 조회수 (없으면 누적 totalVisit 폴백)
+    const visOf = function(r){
+      const pid = String(r && r.postid || '');
+      if (idx && idx.hasStats) return (pid && Number(idx.visByPid[pid])) || 0;
+      return Number(r.totalVisit||0);
+    };
+    const sumV = posts.reduce(function(s,r){ return s + visOf(r); }, 0);
+    const sumI = posts.reduce(function(s,r){ return s + inbOf(r); }, 0);
+
+    $('cat-modal-title').textContent = catName + ' 카테고리';
+    $('cat-modal-info').textContent = '총 ' + posts.length + '건 · 누적 방문 ' + fmt(sumV) + ' · 인바운드 ' + fmt(sumI);
+
+    const body = $('cat-modal-body');
+    body.classList.add('split');
+    if (!posts.length){
+      body.classList.remove('split');
+      body.innerHTML = '<div class="empty" style="margin:24px;">게시글 없음</div>';
+      $('cat-modal').classList.add('open');
+      return;
+    }
+
+    const renderList = function(rows, valueOf, valueClass){
+      const rowsHtml = rows.map(function(r,i){
+        const v = valueOf(r);
+        const pid = r.postid != null ? String(r.postid) : '';
+        return '<div class="cm-row cm-row-link" data-postid="'+escAttr(pid)+'" title="클릭하여 상세보기">'
+          + '<div class="no">'+(i+1)+'</div>'
+          + '<div class="info-cell">'
+            + '<div class="ttl" title="'+escAttr(r['제목'])+'">'+escapeHtml(r['제목']||'-')+'</div>'
+            + '<div class="meta">'
+              + (r.service ? '<span>'+escapeHtml(r.service)+'</span>' : '')
+              + (r['날짜'] ? '<span>·</span><span>'+escapeHtml(String(r['날짜']).slice(0,10))+'</span>' : '')
+              + (r.utm_term ? '<span>·</span><span style="font-family:JetBrains Mono,monospace;">'+escapeHtml(r.utm_term)+'</span>' : '')
+            + '</div>'
+          + '</div>'
+          + '<div class="num '+(valueClass||'')+'">'+fmt(v)+'</div>'
+        + '</div>';
+      }).join('');
+      return rowsHtml;
+    };
+
+    const byVisit   = posts.slice().sort(function(a,b){ return visOf(b) - visOf(a); });
+    const byInbound = posts.slice().sort(function(a,b){ return inbOf(b) - inbOf(a); });
+
+    body.innerHTML =
+      '<div class="cm-section">'
+        + '<div class="cm-section-title"><span class="dot visit"></span>방문자 많은 순<span style="margin-left:auto; color:var(--muted); font-weight:400; font-size:11px;">'+ posts.length +'건</span></div>'
+        + '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">방문</div></div>'
+        + '<div class="cm-section-list">' + renderList(byVisit, function(r){ return visOf(r); }) + '</div>'
+      + '</div>'
+      + '<div class="cm-section">'
+        + '<div class="cm-section-title"><span class="dot inbound"></span>인바운드 많은 순<span style="margin-left:auto; color:var(--muted); font-weight:400; font-size:11px;">'+ posts.length +'건</span></div>'
+        + '<div class="cm-row cm-head"><div class="no">NO</div><div>제목</div><div class="num">인바운드</div></div>'
+        + '<div class="cm-section-list">' + renderList(byInbound, function(r){ return inbOf(r); }, 'green') + '</div>'
+      + '</div>';
+
+    // 행 클릭 → 인사이트 페이지 내에서 상세 드로어 오픈
+    body.querySelectorAll('.cm-row-link').forEach(function(el){
+      el.addEventListener('click', function(){
+        const pid = el.dataset.postid || '';
+        if (!pid) return;
+        const row = ALL_ROWS.find(function(r){ return String(r.postid||'') === pid; });
+        if (!row) return;
+        MktDrawer.open(row, { editHref: '../?postid=' + encodeURIComponent(pid) });
+      });
+    });
+
+    $('cat-modal').classList.add('open');
+  }
+  function closeCategoryModal(){ $('cat-modal').classList.remove('open'); }
+  // 즉시 바인딩 (DOM 이미 준비됨 — script 가 body 끝)
+  $('cat-modal-close').addEventListener('click', closeCategoryModal);
+  $('cat-modal').addEventListener('click', function(e){
+    if (e.target === $('cat-modal')) closeCategoryModal();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && $('cat-modal').classList.contains('open')) closeCategoryModal();
+  });
+
+  // 비교 버튼 핸들러
+  document.querySelectorAll('.cmp-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      COMPARE_MODE = (COMPARE_MODE === btn.dataset.cmp) ? '' : btn.dataset.cmp;
+      refresh();
+    });
+  });
+
+  // ── 비교(전월/전년) ────────────────────────────────
+  function shiftDateStr(s, days, months, years){
+    if (!s) return '';
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    if (days)   d.setDate(d.getDate() + days);
+    if (months) d.setMonth(d.getMonth() + months);
+    if (years)  d.setFullYear(d.getFullYear() + years);
+    return ymdStr(d);
+  }
+  function getCurrentRange(){
+    const ds = $('date-start').value, de = $('date-end').value;
+    if (ds && de) return { start: ds, end: de };
+    if (ACTIVE_RANGE){
+      const end = yesterday();
+      const start = new Date(end);
+      start.setDate(start.getDate() - (parseInt(ACTIVE_RANGE,10) - 1));
+      return { start: ymdStr(start), end: ymdStr(end) };
+    }
+    // 전체 기간 → ALL_ROWS 의 min/max 날짜
+    if (!ALL_ROWS.length) return null;
+    const dates = ALL_ROWS.map(r => String(r['날짜']||'').slice(0,10)).filter(Boolean).sort();
+    if (!dates.length) return null;
+    return { start: dates[0], end: dates[dates.length-1] };
+  }
+  function rowsInRange(start, end){
+    return ALL_ROWS.filter(function(r){
+      const d = String(r['날짜']||'').slice(0,10);
+      return d && d >= start && d <= end;
+    });
+  }
+  function diffPctHtml(now, prev){
+    if (!prev) return '<span class="neu">–</span>';
+    const r = (now - prev) / prev * 100;
+    const cls = r > 0.05 ? 'pos' : (r < -0.05 ? 'neg' : 'neu');
+    const sign = r > 0 ? '+' : '';
+    return '<span class="'+cls+'">'+sign+r.toFixed(1)+'%</span>';
+  }
+  function diffPpHtml(now, prev){
+    // 비율(소수)에 대한 % 포인트 차이
+    const diff = (now - prev) * 100;
+    const cls = diff > 0.005 ? 'pos' : (diff < -0.005 ? 'neg' : 'neu');
+    const sign = diff > 0 ? '+' : '';
+    return '<span class="'+cls+'">'+sign+diff.toFixed(2)+'%p</span>';
+  }
+  function diffScoreHtml(now, prev){
+    const d = now - prev;
+    const cls = d > 0 ? 'pos' : (d < 0 ? 'neg' : 'neu');
+    const sign = d > 0 ? '+' : '';
+    return '<span class="'+cls+'">'+sign+d+'점</span>';
+  }
+
+  async function applyCompare(curD){
+    document.querySelectorAll('.cmp-btn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.cmp === COMPARE_MODE);
+    });
+    const tbody = $('cmp-tbody');
+
+    const cur = getCurrentRange();
+    if (!cur || !curD){
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">데이터 없음</td></tr>';
+      return;
+    }
+
+    // 비교 모드 비활성 — 현재 행만 표시
+    if (!COMPARE_MODE){
+      tbody.innerHTML =
+        '<tr>'
+          + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
+          + '<td class="num">'+fmt(curD.rows.length)+'</td>'
+          + '<td class="num">'+fmtK(curD.totalVisit)+'</td>'
+          + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
+          + '<td class="num">'+pct(curD.overallCV)+'</td>'
+        + '</tr>';
+      return;
+    }
+
+    let prevStart, prevEnd;
+    if (COMPARE_MODE === 'mom'){
+      prevStart = shiftDateStr(cur.start, 0, -1, 0);
+      prevEnd   = shiftDateStr(cur.end,   0, -1, 0);
+    } else {
+      prevStart = shiftDateStr(cur.start, 0, 0, -1);
+      prevEnd   = shiftDateStr(cur.end,   0, 0, -1);
+    }
+
+    const prevRows = rowsInRange(prevStart, prevEnd);
+    const cmpLabel = COMPARE_MODE === 'mom' ? '전월' : '전년';
+
+    // 비교 기간 STATS_DAILY/INBOUND_BY_DATE/INBOUND_COUNTS 병렬 로드 (cache hit 시 즉시).
+    // → prevD 도 현재와 동일한 산식(기간 합산)으로 도출되어 비교가 정확해짐.
+    let prevCounts = {}, prevStats = [], prevIbByDate = [];
+    if (MktProxy.getUrl()){
+      const params = { from: prevStart, to: prevEnd };
+      const tasks = [
+        MktProxy.blogInboundCounts(params).then(r => { prevCounts   = (r && r.counts) ? r.counts : {}; }).catch(_=>{}),
+        MktProxy.blogStatsDaily(params).then(r =>    { prevStats    = (r && r.rows)   ? r.rows   : []; }).catch(_=>{}),
+        MktProxy.blogInboundByDate(params).then(r => { prevIbByDate = (r && r.rows)   ? r.rows   : []; }).catch(_=>{})
+      ];
+      await Promise.all(tasks);
+    } else {
+      // 데모 모드: SAMPLE_* 클라이언트 필터
+      prevStats = (window.SAMPLE_STATS_DAILY || []).filter(r => r.date >= prevStart && r.date <= prevEnd);
+      prevIbByDate = (window.SAMPLE_INBOUND_BY_DATE || []).filter(r => r.date >= prevStart && r.date <= prevEnd);
+      prevCounts = {};
+      prevIbByDate.forEach(function(r){
+        const u = String(r.utm_term||'').trim();
+        if (u) prevCounts[u] = (prevCounts[u] || 0) + 1;
+      });
+    }
+    // prev period 의 idx 를 즉석 구성
+    const prevIdx = (function(){
+      const visByPid = Object.create(null), ibByUtm = Object.create(null);
+      let totalV = 0, totalI = 0;
+      for (let i = 0; i < prevStats.length; i++){
+        const s = prevStats[i]; if (!s) continue;
+        const pid = s.postid ? String(s.postid) : '';
+        const v = +s.visitors || 0;
+        if (pid) visByPid[pid] = (visByPid[pid] || 0) + v;
+        totalV += v;
+      }
+      for (let i = 0; i < prevIbByDate.length; i++){
+        const b = prevIbByDate[i]; if (!b) continue;
+        const u = b.utm_term ? String(b.utm_term).trim() : '';
+        if (u) ibByUtm[u] = (ibByUtm[u] || 0) + 1;
+        totalI++;
+      }
+      return {
+        visByPid, ibByUtm, totalVisits: totalV, totalInbounds: totalI,
+        hasStats: prevStats.length > 0, hasIb: prevIbByDate.length > 0
+      };
+    })();
+
+    if (!prevRows.length){
+      tbody.innerHTML =
+        '<tr>'
+          + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
+          + '<td class="num">'+fmt(curD.rows.length)+'</td>'
+          + '<td class="num">'+fmtK(curD.totalVisit)+'</td>'
+          + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
+          + '<td class="num">'+pct(curD.overallCV)+'</td>'
+        + '</tr>'
+        + '<tr>'
+          + '<td>'+prevStart+' ~ '+prevEnd+' <span class="badge cmp">'+cmpLabel+'</span></td>'
+          + '<td colspan="4" style="text-align:center;color:var(--muted);font-size:11.5px;">비교 기간 데이터 없음</td>'
+        + '</tr>';
+      return;
+    }
+
+    const prevD = derive(prevRows, prevCounts, prevIdx);
+
+    // 점수 자동 변경 — 비교 기간의 점수로 표시
+    safeSet('score-val', prevD.score);
+    safeSet('score-tier', tierTextOf(prevD.score));
+    const ring = $('score-ring');
+    if (ring) ring.style.background = 'conic-gradient(#7c5cff 0 ' + prevD.score + '%, var(--line) ' + prevD.score + '% 100%)';
+
+    tbody.innerHTML =
+      '<tr>'
+        + '<td>'+cur.start+' ~ '+cur.end+' <span class="badge cur">현재</span></td>'
+        + '<td class="num">'+fmt(curD.rows.length)+'</td>'
+        + '<td class="num">'+fmtK(curD.totalVisit)+'</td>'
+        + '<td class="num">'+fmt(curD.totalInbound)+'</td>'
+        + '<td class="num">'+pct(curD.overallCV)+'</td>'
+      + '</tr>'
+      + '<tr>'
+        + '<td>'+prevStart+' ~ '+prevEnd+' <span class="badge cmp">'+cmpLabel+'</span></td>'
+        + '<td class="num">'+fmt(prevD.rows.length)+'</td>'
+        + '<td class="num">'+fmtK(prevD.totalVisit)+'</td>'
+        + '<td class="num">'+fmt(prevD.totalInbound)+'</td>'
+        + '<td class="num">'+pct(prevD.overallCV)+'</td>'
+      + '</tr>'
+      + '<tr class="diff-row">'
+        + '<td class="label">증감률 · 점수 ' + diffScoreHtml(curD.score, prevD.score) + '</td>'
+        + '<td class="num">'+diffPctHtml(curD.rows.length, prevD.rows.length)+'</td>'
+        + '<td class="num">'+diffPctHtml(curD.totalVisit, prevD.totalVisit)+'</td>'
+        + '<td class="num">'+diffPctHtml(curD.totalInbound, prevD.totalInbound)+'</td>'
+        + '<td class="num">'+diffPpHtml(curD.overallCV, prevD.overallCV)+'</td>'
+      + '</tr>';
+  }
+
+  // STATS_DAILY + INBOUND_BY_DATE + INBOUND_COUNTS 적용 기간 기준 일괄 로드.
+  // 3 endpoint 병렬 호출 + MktProxy 캐시(메모리/sessionStorage) 활용.
+  async function loadStatsAndInboundForCurrent(){
+    const ds = APPLIED_DATE_START, de = APPLIED_DATE_END;
+    const params = {};
+    if (ds) params.from = ds;
+    if (de) params.to   = de;
+
+    if (!MktProxy.getUrl()){
+      // 데모 모드: 클라이언트 측 필터
+      const sd = (window.SAMPLE_STATS_DAILY || []).filter(function(r){
+        if (ds && r.date < ds) return false;
+        if (de && r.date > de) return false;
+        return true;
+      });
+      const ib = (window.SAMPLE_INBOUND_BY_DATE || []).filter(function(r){
+        if (ds && r.date < ds) return false;
+        if (de && r.date > de) return false;
+        return true;
+      });
+      STATS_DAILY_ROWS = sd;
+      INBOUND_BY_DATE_ROWS = ib;
+      STATS_DAILY_LOADED = true;
+      INBOUND_BY_DATE_LOADED = true;
+      INBOUND_COUNTS = {};
+      ib.forEach(function(r){
+        const u = String(r.utm_term||'').trim();
+        if (!u) return;
+        INBOUND_COUNTS[u] = (INBOUND_COUNTS[u] || 0) + 1;
+      });
+      return;
+    }
+    const tasks = [
+      MktProxy.blogStatsDaily(params).then(function(r){
+        STATS_DAILY_ROWS = (r && r.rows) ? r.rows : [];
+        STATS_DAILY_LOADED = true;
+      }).catch(function(err){ STATS_DAILY_ROWS = []; STATS_DAILY_LOADED = false; console.warn('[insights] statsDaily:', err); }),
+      MktProxy.blogInboundByDate(params).then(function(r){
+        INBOUND_BY_DATE_ROWS = (r && r.rows) ? r.rows : [];
+        INBOUND_BY_DATE_LOADED = true;
+      }).catch(function(err){ INBOUND_BY_DATE_ROWS = []; INBOUND_BY_DATE_LOADED = false; console.warn('[insights] inboundByDate:', err); }),
+      MktProxy.blogInboundCounts(params).then(function(r){
+        INBOUND_COUNTS = (r && r.counts) ? r.counts : {};
+      }).catch(function(err){ INBOUND_COUNTS = {}; console.warn('[insights] inboundCounts:', err); })
+    ];
+    await Promise.all(tasks);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // 조회 버튼 클릭: 적용값 갱신 + 데이터 재조회 + 재렌더.
+  // 입력값이 이미 적용값과 동일하면 no-op (중복 API/렌더 방지).
+  // 비동기 로드 중에는 버튼을 disabled + '조회 중…' 라벨로 잠가
+  // 중복 클릭을 막아 동시 호출/플리커를 방지한다.
+  // ──────────────────────────────────────────────────────────
+  let _applyInflight = false;
+  function applyPeriodQuery(){
+    const _t0 = performance.now();
+    console.log('[insights] ▶ applyPeriodQuery 진입 — inputs:',
+                $('date-start').value, '~', $('date-end').value,
+                '· pending:', PENDING_RANGE,
+                '· inflight:', _applyInflight);
+    if (_applyInflight){ console.log('[insights] ⛔ inflight 가드로 스킵'); return; }
+    APPLIED_DATE_START = $('date-start').value || '';
+    APPLIED_DATE_END   = $('date-end').value   || '';
+    ACTIVE_RANGE = PENDING_RANGE || ACTIVE_RANGE;
+    PENDING_RANGE = '';
+    updatePendingState();
+
+    _applyInflight = true;
+    const btn = $('btn-apply-date');
+    const prevLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '조회 중…';
+    loadStatsAndInboundForCurrent()
+      .then(function(){
+        const tApi = (performance.now() - _t0).toFixed(0);
+        console.log('[insights] ✓ API 로드 완료 — ' + tApi + 'ms');
+        const _t1 = performance.now();
+        refresh();
+        const tRender = (performance.now() - _t1).toFixed(0);
+        console.log('[insights] ✓ 렌더 완료 — ' + tRender + 'ms (합계: ' +
+                    (performance.now() - _t0).toFixed(0) + 'ms)');
+      })
+      .catch(function(err){ console.error('[insights] applyPeriodQuery:', err); })
+      .then(function(){
+        _applyInflight = false;
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      });
+  }
+
+  function refresh(){
+    const idx = buildPeriodIndex();
+    IDX_GLOBAL = idx;
+    const filtered = applyDateFilter(ALL_ROWS, idx.pidSet);
+    SCOPED_ROWS_GLOBAL = filtered;
+    updateRangeInfo();
+
+    const d = derive(filtered, INBOUND_COUNTS, idx);
+    if (!d){
+      // 빈 상태 — KPI/패널 초기화 정도만
+      $('kpi-count').textContent = '0';
+      $('kpi-total').textContent = '0';
+      $('kpi-avg').textContent   = '0';
+      $('kpi-inbound').textContent = '0';
+      $('kpi-cvr').textContent   = '0%';
+      $('kpi-cat-sub').textContent = '카테고리 0개';
+      applyCompare(null);
+      const cur0 = getCurrentRange();
+      const range0 = cur0 ? (cur0.start + ' ~ ' + cur0.end) : '전체 기간';
+      $('footer-note').textContent = `${SOURCE_LABEL} · ${range0} · 0건 분석`;
+      return;
+    }
+
+    // KPI: 총 게시물 = 조회 기간 내 1회 이상 조회된 글 수
+    let postCount = filtered.length;
+    if (idx.hasStats){
+      const vp = idx.visByPid;
+      const curSet = Object.create(null);
+      for (let i = 0; i < ALL_ROWS.length; i++){
+        const pid = String(ALL_ROWS[i].postid || '');
+        if (pid) curSet[pid] = true;
+      }
+      postCount = 0;
+      for (const k in vp){ if (vp[k] > 0 && curSet[k]) postCount++; }
+    }
+    const avg = postCount ? Math.round(d.totalVisit / postCount) : 0;
+    const cats = Array.from(new Set(filtered.map(r=>r.category||'미분류')));
+    $('kpi-count').textContent   = fmt(postCount);
+    $('kpi-total').textContent   = fmt(d.totalVisit);
+    $('kpi-avg').textContent     = fmt(avg);
+    $('kpi-inbound').textContent = fmt(d.totalInbound);
+    $('kpi-cvr').textContent     = pct(d.overallCV);
+    $('kpi-cat-sub').textContent = '카테고리 ' + cats.length + '개';
+
+    renderHero(d);
+    applyCompare(d);
+    renderCatChart(d);
+    const ins = buildInsights(d);
+    renderCards(ins.cards);
+    renderReco(ins.reco);
+    const cur = getCurrentRange();
+    const range = cur ? (cur.start + ' ~ ' + cur.end) : '전체 기간';
+    $('footer-note').textContent =
+      `${SOURCE_LABEL} · ${range} · ${postCount}건 분석 · ${ins.cards.length}개 인사이트 · ${ins.reco.length}개 추천 액션`;
+  }
+
+  async function load(){
+    const url = MktProxy.getUrl();
+    $('gas-url').value = url;
+    $('btn-disconnect').style.display = url ? '' : 'none';
+
+    // 초기 진입(F5/첫 방문)은 '전체 조회' 상태 — 기간 필터 미적용.
+    updatePendingState();
+
+    if (!url){
+      setStatus('GAS 연결이 필요합니다', 'amber');
+      ALL_ROWS = [];
+      SOURCE_LABEL = '데이터 없음';
+      await loadStatsAndInboundForCurrent();
+      refresh();
+      return;
+    }
+    try{
+      setStatus('연결 중...');
+      const data = await MktProxy.blogList();
+      const rows = data.rows || [];
+      if (!rows.length){
+        setStatus('● 연결됨 · 데이터 없음', 'amber');
+        ALL_ROWS = [];
+        SOURCE_LABEL = '연결됨 · 데이터 없음';
+        await loadStatsAndInboundForCurrent();
+        refresh();
+        return;
+      }
+      ALL_ROWS = rows;
+      SOURCE_LABEL = 'BLOG_RAW_DATA · ' + rows.length + '건';
+      await loadStatsAndInboundForCurrent();
+      const matched = Object.keys(INBOUND_COUNTS).length;
+      setStatus('● 연결됨 · ' + rows.length + '건 · 세일즈맵 utm ' + matched + '종', 'ok');
+      refresh();
+    }catch(err){
+      let hint = '';
+      try {
+        await MktProxy.health();
+        hint = ' · ⚠ 프록시는 정상 — blog 모듈 코드/배포 확인 필요';
+      } catch (_) {
+        hint = ' · ⚠ 프록시 자체 응답 없음 — URL/재배포 확인';
+      }
+      setStatus('연결 실패: ' + err.message + hint, 'err');
+      console.error('[MktProxy] blog.list 실패:', err);
+      ALL_ROWS = [];
+      SOURCE_LABEL = '연결 실패 · 데이터 없음';
+      await loadStatsAndInboundForCurrent();
+      refresh();
+    }
+  }
+
+  $('btn-connect').addEventListener('click', () => {
+    const v = $('gas-url').value.trim();
+    if (!v) return;
+    MktProxy.setUrl(v);
+    MktProxy.invalidateAll();
+    load();
+  });
+  $('btn-refresh').addEventListener('click', () => { MktProxy.invalidateAll(); load(); });
+  $('btn-disconnect').addEventListener('click', () => {
+    MktProxy.setUrl(''); $('gas-url').value=''; $('btn-disconnect').style.display='none'; load();
+  });
+
+  // 기간 조회: 빠른 선택 버튼 → 입력만 PENDING. 실제 반영은 조회 버튼 클릭 시
+  document.querySelectorAll('.qbtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      setQuickRangeInput(parseInt(btn.dataset.range, 10));
+    });
+  });
+  function onDateInputChange(){
+    // 빠른선택과 다른 값으로 바뀌면 PENDING 해제
+    if (PENDING_RANGE){
+      const days = parseInt(PENDING_RANGE, 10);
+      const end = yesterday();
+      const start = new Date(end);
+      start.setDate(start.getDate() - (days - 1));
+      const expectedStart = ymdStr(start), expectedEnd = ymdStr(end);
+      if ($('date-start').value !== expectedStart || $('date-end').value !== expectedEnd){
+        PENDING_RANGE = '';
+      }
+    }
+    updatePendingState();
+  }
+  $('date-start').addEventListener('change', onDateInputChange);
+  $('date-end').addEventListener('change',   onDateInputChange);
+  $('date-start').addEventListener('input',  onDateInputChange);
+  $('date-end').addEventListener('input',    onDateInputChange);
+  $('btn-apply-date').addEventListener('click', applyPeriodQuery);
+  $('btn-clear-date').addEventListener('click', clearDateRange);
+
+  window.addEventListener('DOMContentLoaded', function(){
+    if (window.TableGrid){
+      const cmp = document.getElementById('cmp-tbl');
+      if (cmp) TableGrid.attach(cmp);
+    }
+    load();
+  });
+</script>
+<script src="../../sidebar-nav.js"></script>
+</body>
+</html>

@@ -8,5 +8,23 @@
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
       ]
     }
+  ],
+  "redirects": [
+    { "source": "/wireframes/blog/option-c/:path*", "destination": "/blog/:path*", "permanent": true },
+    { "source": "/wireframes/blog/:path*", "destination": "/blog/:path*", "permanent": true },
+    { "source": "/wireframes/salesmap/option-b/:path*", "destination": "/salesmap/:path*", "permanent": true },
+    { "source": "/wireframes/salesmap/option-a/:path*", "destination": "/salesmap/a/:path*", "permanent": true },
+    { "source": "/wireframes/salesmap/option-c/:path*", "destination": "/salesmap/c/:path*", "permanent": true },
+    { "source": "/wireframes/salesmap/:path*", "destination": "/salesmap/:path*", "permanent": true },
+    { "source": "/wireframes/ib-ob/analysis/option-a/:path*", "destination": "/ib-ob/analysis/:path*", "permanent": true },
+    { "source": "/wireframes/ib-ob/analysis/option-b/:path*", "destination": "/ib-ob/analysis/b/:path*", "permanent": true },
+    { "source": "/wireframes/ib-ob/analysis/option-c/:path*", "destination": "/ib-ob/analysis/c/:path*", "permanent": true },
+    { "source": "/wireframes/ib-ob/option-c/:path*", "destination": "/ib-ob/:path*", "permanent": true },
+    { "source": "/wireframes/ib-ob/:path*", "destination": "/ib-ob/:path*", "permanent": true },
+    { "source": "/wireframes/dashboard/:path*", "destination": "/dashboard/:path*", "permanent": true },
+    { "source": "/wireframes/option-a/:path*", "destination": "/drafts/a/:path*", "permanent": true },
+    { "source": "/wireframes/option-b/:path*", "destination": "/drafts/b/:path*", "permanent": true },
+    { "source": "/wireframes/option-c/:path*", "destination": "/drafts/c/:path*", "permanent": true },
+    { "source": "/wireframes/:path*", "destination": "/:path*", "permanent": true }
   ]
 }

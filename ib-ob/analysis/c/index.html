@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>IB / OB 분석 · 시안 C (Bento Cockpit)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared.css">
+<link rel="stylesheet" href="../analysis.css">
+<style>
+  .an-filter{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:12px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+  .an-filter .fl{ font-size:10.5px; font-weight:600; letter-spacing:.08em; color:var(--muted); }
+  .an-filter select{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 10px; color:var(--text); font-size:12.5px; cursor:pointer; }
+  .an-filter input[type="date"]{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 9px; color:var(--text); font-size:12px; font-family:'JetBrains Mono',monospace; color-scheme:light; }
+  .an-filter .sep{ color:var(--muted); }
+  .an-filter .qbtn{ background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px 11px; color:var(--text-2); font-size:12px; cursor:pointer; }
+  .an-filter .qbtn:hover{ border-color:var(--accent-2); } .an-filter .qbtn.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .an-filter .chk{ display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--text-2); } .an-filter .chk input{ accent-color:var(--accent); }
+  .an-filter .clear,.an-filter .reset{ background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 11px; font-size:12px; cursor:pointer; }
+  .an-filter .clear{ color:var(--muted); } .an-filter .reset{ color:var(--accent); border-color:var(--accent-2); }
+  .an-filter .range-info{ font-size:11.5px; color:var(--muted); margin-left:auto; }
+
+  /* 히어로 벤토 */
+  .hero-bento{ display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+  @media (max-width:1100px){ .hero-bento{ grid-template-columns:1fr; } }
+  .hero-card{ background:linear-gradient(135deg, rgba(109,78,255,.12), rgba(22,163,74,.05)); border:1px solid rgba(109,78,255,.22); border-radius:16px; padding:18px 20px; }
+  .hero-card .lab{ font-size:11.5px; color:var(--accent); }
+  .hero-card .big{ font-family:'JetBrains Mono',monospace; font-size:40px; font-weight:600; line-height:1; margin-top:6px; }
+  .hero-card .sub{ font-size:12px; color:var(--text-2); margin-top:8px; }
+  .mini-facts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .mini-facts .fc{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .mini-facts .fc .l{ font-size:11px; color:var(--muted); } .mini-facts .fc .v{ font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; margin-top:2px; }
+
+  /* 칩 점프 내비 (스티키) */
+  .chip-nav{ position:sticky; top:56px; z-index:20; display:flex; gap:6px; flex-wrap:wrap; background:rgba(246,247,251,.92); backdrop-filter:blur(6px); padding:10px 0; margin-bottom:8px; border-bottom:1px solid var(--line); }
+  .chip-nav a{ font-size:12px; padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--panel); color:var(--text-2); cursor:pointer; display:inline-flex; gap:6px; align-items:center; }
+  .chip-nav a:hover{ border-color:var(--accent-2); color:var(--text); }
+  .chip-nav a.on{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .chip-nav a .ic{ font-size:11px; opacity:.85; }
+
+  /* 섹션 앵커 블록 */
+  .sec-block{ scroll-margin-top:70px; padding-top:8px; border-top:1px dashed var(--line); margin-top:18px; }
+  .sec-block:first-of-type{ border-top:0; margin-top:6px; }
+  .sec-head{ margin-bottom:12px; }
+  .sec-head .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+  .sec-head h2{ font-size:20px; font-weight:600; margin:3px 0 0; }
+  .sec-head p{ font-size:12.5px; color:var(--muted); margin-top:5px; max-width:760px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">Marketing CRM</div></div>
+    <div class="brand-ver">2026.06 · v1.0</div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item" href="../../../dashboard/">대시보드</a>
+    <div class="nav-section">인바운드</div>
+    <a class="nav-item active">IB / OB 분석</a>
+    <a class="nav-item" href="../../">IB / OB 종합</a>
+    <a class="nav-item" href="../../../salesmap/">세일즈맵</a>
+    <div class="nav-section">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+    <div class="nav-section">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+    <div class="nav-section">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+    <div class="nav-section">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item" href="../../../blog/">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-eyebrow">인바운드 · IB / OB 분석 · 시안 C</div>
+        <h1>IB / OB 분석 · Bento Cockpit</h1>
+      </div>
+      <div class="conn">
+        <span class="status" id="status">데모 데이터 분석 중</span>
+        <button class="btn-disconnect" id="btn-refresh" title="데이터 새로고침">⟳ 새로고침</button>
+        <input id="gas-url" type="text" placeholder="GAS 프록시 URL 붙여넣기 → [연결]" spellcheck="false"/>
+        <button class="btn-disconnect" id="btn-disconnect" style="display:none">해제</button>
+        <button class="btn-connect" id="btn-connect">연결</button>
+      </div>
+    </div>
+
+    <div class="an-filter">
+      <span class="fl">FILTER</span>
+      <select id="fSvc"><option value="">서비스 전체</option></select>
+      <select id="fAware"><option value="">인지채널 전체</option></select>
+      <input type="date" id="date-start"/><span class="sep">~</span><input type="date" id="date-end"/>
+      <button class="qbtn" data-range="30">30일</button>
+      <button class="qbtn" data-range="90">90일</button>
+      <button class="qbtn" data-range="365">1년</button>
+      <label class="chk"><input type="checkbox" id="fConv"> 성약건만</label>
+      <button class="clear" id="btn-clear-date">기간 초기화</button>
+      <button class="reset" id="fReset">전체 초기화</button>
+      <span class="range-info" id="range-info"></span>
+    </div>
+
+    <section class="hero-bento" id="hero"></section>
+    <nav class="chip-nav" id="chip-nav"></nav>
+    <div id="sec-host"></div>
+
+    <div class="text-center muted py-4" style="font-size:11.5px;color:var(--muted)">IB / OB 분석 · 원페이지 벤토 + 칩 점프 내비 · 데이터: 고객사 인바운드 리스트</div>
+  </main>
+</div>
+
+<script src="../../sample-data.js"></script>
+<script src="../../shared.js"></script>
+<script src="../../_detail-drawer.js"></script>
+<script src="../../proxy-client.js"></script>
+<script src="../../../table-grid.js"></script>
+<script src="../analysis-core.js"></script>
+<script src="../analysis-sections.js"></script>
+<script src="../analysis-app.js"></script>
+<script>
+(function(){
+  const host = document.getElementById('sec-host');
+  const chipNav = document.getElementById('chip-nav');
+  const hero = document.getElementById('hero');
+  const FLAT = AnalysisSections.flat;
+  let built = false, observer = null;
+
+  chipNav.innerHTML = FLAT.map((it,i) => `<a data-id="${it.id}" class="${i===0?'on':''}"><span class="ic">${it.icon}</span>${it.label}</a>`).join('');
+  chipNav.addEventListener('click', e => {
+    const a = e.target.closest('a[data-id]'); if (!a) return;
+    const el = document.getElementById('sec-'+a.dataset.id);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+
+  function drawHero(rows){
+    const k = Analysis.kpi(rows), f = Analysis.fmt;
+    hero.innerHTML =
+      `<div class="hero-card"><div class="lab">성약 전환율</div><div class="big">${k.rate}%</div><div class="sub">전체 ${f(k.total)}건 중 성약 ${f(k.conv)}건 · 협의중 ${k.mid}</div></div>` +
+      `<div class="mini-facts"><div class="fc"><div class="l">IB 인입</div><div class="v">${f(k.ib)}</div></div><div class="fc"><div class="l">OB 컨택</div><div class="v">${f(k.ob)}</div></div></div>` +
+      `<div class="mini-facts"><div class="fc"><div class="l">최초 협의</div><div class="v">${f(k.meet)}</div></div><div class="fc"><div class="l">계약 날인</div><div class="v">${f(k.sign)}</div></div></div>`;
+  }
+
+  function render(rows){
+    drawHero(rows);
+    if (!built){
+      host.innerHTML = FLAT.map(it => `<div class="sec-block" id="sec-${it.id}"></div>`).join('');
+      built = true;
+    }
+    FLAT.forEach(it => AnalysisSections.render(it.id, rows, document.getElementById('sec-'+it.id)));
+    setupObserver();
+  }
+
+  function setupObserver(){
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (en.isIntersecting){
+          const id = en.target.id.replace('sec-','');
+          chipNav.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.id===id));
+        }
+      });
+    }, { rootMargin:'-60px 0px -70% 0px', threshold:0 });
+    FLAT.forEach(it => { const el = document.getElementById('sec-'+it.id); if (el) observer.observe(el); });
+  }
+
+  AnalysisApp.init({ onRender: render });
+})();
+</script>
+<script src="../../../sidebar-nav.js"></script>
+</body>
+</html>

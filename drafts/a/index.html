@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>시안 A · Dark Minimal · 마케팅 CRM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f6f7fb; --panel:#ffffff; --panel-2:#f3f5f9; --line:#e2e5ec; --line-2:#cbd0d9;
+    --muted:#6b7280; --text:#0f172a; --text-2:#374151;
+    --accent:#6d4eff; --accent-2:#8a72ff;
+    --green:#16a34a; --red:#dc2626; --amber:#d97706; --blue:#2563eb;
+    --hover-bg:#eef0f5; --pill-bg:#f0f2f7;
+  }
+  html,body{ background:var(--bg); color:var(--text); font-family:'Pretendard',sans-serif; }
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+  .muted{ color:var(--muted); }
+  .num{ font-family:'JetBrains Mono', monospace; }
+  .chip{ font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--text-2); background:var(--panel); }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:8px; color:var(--text-2); font-size:13.5px; }
+  .nav-item:hover{ background:var(--hover-bg); color:var(--text); }
+  .nav-item.active{ background:var(--hover-bg); color:var(--text); font-weight:600; }
+  .nav-sub{ font-size:12.5px; padding-left:28px; color:var(--muted); }
+  .nav-sub:hover{ color:var(--text); }
+  .dot{ width:6px; height:6px; border-radius:999px; display:inline-block; }
+  .grid-bg{
+    background-image:
+      linear-gradient(transparent 95%, rgba(15,23,42,.05) 95%),
+      linear-gradient(90deg, transparent 95%, rgba(15,23,42,.05) 95%);
+    background-size: 24px 24px;
+  }
+  .bar{ background: linear-gradient(180deg, var(--accent), #4b35cc); border-radius:3px 3px 0 0; }
+  .spark path { fill:none; stroke:var(--accent); stroke-width:1.6; }
+  .spark .area{ fill:rgba(109,78,255,.12); stroke:none; }
+</style>
+</head>
+<body class="min-h-screen">
+<div class="flex">
+  <!-- Sidebar -->
+  <aside class="w-[240px] min-h-screen border-r border-[var(--line)] p-4 sticky top-0" style="background:var(--panel)">
+    <div class="flex items-center gap-2 mb-6">
+      <div class="w-7 h-7 rounded-md" style="background:linear-gradient(135deg,#6d4eff,#16a34a)"></div>
+      <div class="font-semibold">Marketing CRM</div>
+    </div>
+    <div class="text-[11px] muted uppercase tracking-wider mb-2">Overview</div>
+    <a class="nav-item active mb-1"><span class="dot" style="background:var(--accent)"></span>대시보드</a>
+
+    <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">인바운드</div>
+    <a class="nav-item" href="../../ib-ob/analysis/">IB / OB 분석</a>
+    <a class="nav-item" href="../../ib-ob/">IB / OB 종합</a>
+    <a class="nav-item" href="../../salesmap/">세일즈맵</a>
+
+    <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">고객사 관리</div>
+    <a class="nav-item">성약</a>
+    <a class="nav-item">이탈</a>
+
+    <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">제휴점</div>
+    <a class="nav-item">제휴점 리스트</a>
+
+    <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">광고</div>
+    <a class="nav-item">인앱</a>
+    <a class="nav-item">CORP</a>
+
+    <div class="text-[11px] muted uppercase tracking-wider mt-5 mb-2">SNS</div>
+    <a class="nav-item">미리보기</a>
+    <a class="nav-item">블로그</a>
+    <a class="nav-item">인스타그램</a>
+    <a class="nav-item">링크드인</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-8">
+    <!-- Top bar -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <div class="text-[12px] muted">Overview · 2026 · Q2</div>
+        <h1 class="text-[26px] font-semibold tracking-tight">메인 대시보드</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="panel px-3 py-1.5 text-[12.5px] flex items-center gap-2"><span class="dot" style="background:var(--green)"></span>GAS 동기화 · 2분 전</div>
+        <div class="panel px-3 py-1.5 text-[12.5px]">기간 · 최근 30일 ▾</div>
+        <div class="panel px-3 py-1.5 text-[12.5px]">새로고침</div>
+      </div>
+    </div>
+
+    <!-- KPI -->
+    <section class="grid grid-cols-4 gap-4 mb-6">
+      <div class="panel p-5">
+        <div class="text-[12px] muted">신규 인바운드</div>
+        <div class="num text-[28px] mt-1">1,284</div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--green); border-color:rgba(22,163,74,.35)">▲ 12.4%</span><span class="text-[11.5px] muted">전월 대비</span></div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">성약 건수</div>
+        <div class="num text-[28px] mt-1">187</div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--green); border-color:rgba(22,163,74,.35)">▲ 6.1%</span><span class="text-[11.5px] muted">전월 대비</span></div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">이탈률</div>
+        <div class="num text-[28px] mt-1">3.2%</div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--red); border-color:rgba(220,38,38,.35)">▼ 0.4%p</span><span class="text-[11.5px] muted">전월 대비</span></div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">광고 ROAS</div>
+        <div class="num text-[28px] mt-1">412%</div>
+        <div class="flex items-center gap-2 mt-2"><span class="chip" style="color:var(--amber); border-color:rgba(217,119,6,.35)">▲ 3.0%</span><span class="text-[11.5px] muted">전월 대비</span></div>
+      </div>
+    </section>
+
+    <!-- Row: Big chart + Sales map -->
+    <section class="grid grid-cols-3 gap-4 mb-6">
+      <div class="panel p-5 col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-[12px] muted">인바운드 / 아웃바운드 추이</div>
+            <div class="text-[15px] font-medium">IB · OB 채널 비교</div>
+          </div>
+          <div class="flex gap-2 text-[12px]">
+            <span class="chip"><span class="dot mr-1" style="background:var(--accent)"></span>IB</span>
+            <span class="chip"><span class="dot mr-1" style="background:var(--green)"></span>OB</span>
+          </div>
+        </div>
+        <div class="h-[220px] grid-bg flex items-end gap-2 px-2">
+          <!-- placeholder bars -->
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:40%"></div><div class="w-1/2 rounded-t" style="height:30%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:55%"></div><div class="w-1/2 rounded-t" style="height:38%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:48%"></div><div class="w-1/2 rounded-t" style="height:42%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:65%"></div><div class="w-1/2 rounded-t" style="height:50%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:72%"></div><div class="w-1/2 rounded-t" style="height:55%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:60%"></div><div class="w-1/2 rounded-t" style="height:45%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:80%"></div><div class="w-1/2 rounded-t" style="height:62%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:70%"></div><div class="w-1/2 rounded-t" style="height:58%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:85%"></div><div class="w-1/2 rounded-t" style="height:60%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:78%"></div><div class="w-1/2 rounded-t" style="height:65%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:90%"></div><div class="w-1/2 rounded-t" style="height:70%; background:#16a34a"></div></div>
+          <div class="flex-1 flex items-end gap-[3px]"><div class="bar w-1/2" style="height:82%"></div><div class="w-1/2 rounded-t" style="height:72%; background:#16a34a"></div></div>
+        </div>
+      </div>
+      <div class="panel p-5">
+        <div class="text-[12px] muted">세일즈맵 · 지역 분포</div>
+        <div class="text-[15px] font-medium mb-3">전국 세일즈 활동</div>
+        <div class="h-[220px] rounded-md grid-bg relative overflow-hidden">
+          <!-- placeholder map dots -->
+          <div class="absolute" style="left:30%; top:25%"><div class="dot" style="background:var(--accent); width:10px; height:10px;"></div></div>
+          <div class="absolute" style="left:55%; top:35%"><div class="dot" style="background:var(--green); width:14px; height:14px;"></div></div>
+          <div class="absolute" style="left:42%; top:55%"><div class="dot" style="background:var(--amber); width:8px; height:8px;"></div></div>
+          <div class="absolute" style="left:65%; top:62%"><div class="dot" style="background:var(--accent); width:12px; height:12px;"></div></div>
+          <div class="absolute" style="left:25%; top:70%"><div class="dot" style="background:var(--red); width:6px; height:6px;"></div></div>
+        </div>
+        <div class="grid grid-cols-3 mt-3 gap-2 text-[11.5px]">
+          <div class="muted">서울 · 412</div><div class="muted">경기 · 287</div><div class="muted">부산 · 152</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row: 고객사 / 제휴점 / 광고 -->
+    <section class="grid grid-cols-3 gap-4 mb-6">
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[15px] font-medium">고객사 관리</div>
+          <span class="chip muted">최근 7일</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-[13px]"><span class="muted">신규 성약</span><span class="num">+24</span></div>
+          <div class="flex justify-between text-[13px]"><span class="muted">활성 고객사</span><span class="num">1,082</span></div>
+          <div class="flex justify-between text-[13px]"><span class="muted">이탈 위험</span><span class="num" style="color:var(--red)">17</span></div>
+        </div>
+        <svg class="spark mt-3" viewBox="0 0 200 50" width="100%" height="50">
+          <path class="area" d="M0,40 L20,30 L40,35 L60,25 L80,28 L100,15 L120,20 L140,12 L160,18 L180,8 L200,14 L200,50 L0,50 Z"/>
+          <path d="M0,40 L20,30 L40,35 L60,25 L80,28 L100,15 L120,20 L140,12 L160,18 L180,8 L200,14"/>
+        </svg>
+      </div>
+
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[15px] font-medium">제휴점</div>
+          <span class="chip muted">총 348곳</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-[11.5px] muted">신규</div><div class="num text-[20px]">+12</div></div>
+          <div><div class="text-[11.5px] muted">활성</div><div class="num text-[20px]">312</div></div>
+          <div><div class="text-[11.5px] muted">대기</div><div class="num text-[20px]">22</div></div>
+          <div><div class="text-[11.5px] muted">중단</div><div class="num text-[20px]" style="color:var(--red)">14</div></div>
+        </div>
+      </div>
+
+      <div class="panel p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[15px] font-medium">광고 성과</div>
+          <span class="chip muted">인앱 · CORP</span>
+        </div>
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between text-[12.5px]"><span class="muted">인앱</span><span class="num">ROAS 380%</span></div>
+            <div class="h-1.5 bg-[#eef0f5] rounded mt-1"><div class="h-1.5 rounded" style="width:78%; background:var(--accent)"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-[12.5px]"><span class="muted">CORP</span><span class="num">ROAS 442%</span></div>
+            <div class="h-1.5 bg-[#eef0f5] rounded mt-1"><div class="h-1.5 rounded" style="width:90%; background:var(--green)"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SNS row -->
+    <section class="panel p-5 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-[15px] font-medium">SNS · 채널별 미리보기</div>
+        <div class="flex gap-2 text-[12px]"><span class="chip">블로그</span><span class="chip">인스타그램</span><span class="chip">링크드인</span></div>
+      </div>
+      <div class="grid grid-cols-4 gap-3">
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
+          <div class="text-[12.5px]">블로그 포스트 · 신규 캠페인 회고</div>
+          <div class="text-[11px] muted mt-1">조회 12.4k · 5/8</div>
+        </div>
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
+          <div class="text-[12.5px]">인스타 릴스 · 봄 프로모션</div>
+          <div class="text-[11px] muted mt-1">좋아요 3.2k · 5/7</div>
+        </div>
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
+          <div class="text-[12.5px]">링크드인 · B2B 케이스</div>
+          <div class="text-[11px] muted mt-1">반응 412 · 5/6</div>
+        </div>
+        <div class="rounded-lg border border-[var(--line)] p-3">
+          <div class="aspect-video rounded bg-[#eef0f5] grid-bg mb-2"></div>
+          <div class="text-[12.5px]">블로그 · 분기 리포트</div>
+          <div class="text-[11px] muted mt-1">조회 8.7k · 5/3</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="text-center text-[11.5px] muted py-4">시안 A · Dark Minimal · 마케팅 CRM 와이어프레임</div>
+  </main>
+</div>
+</body>
+</html>

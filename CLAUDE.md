@@ -2,18 +2,18 @@
 
 ## 로우테이블(Row Table) 표준
 
-페이지에 **데이터 로우 테이블**(여러 행을 보여주는 `<table>` 데이터 그리드)을 만들 때는 항상 아래 패턴을 따른다. 기준 구현은 `wireframes/salesmap/option-a/index.html` 이다.
+페이지에 **데이터 로우 테이블**(여러 행을 보여주는 `<table>` 데이터 그리드)을 만들 때는 항상 아래 패턴을 따른다. 기준 구현은 `salesmap/a/index.html` 이다.
 
-### 1. `wireframes/table-grid.js` 를 로드한다
+### 1. `table-grid.js` (저장소 루트) 를 로드한다
 
 페이지에서 `proxy-client.js` 다음 줄에 추가:
 
 ```html
-<script src="../proxy-client.js"></script>
-<script src="../../table-grid.js"></script>
+<script src="./proxy-client.js"></script>
+<script src="../table-grid.js"></script>
 ```
 
-경로는 페이지 깊이에 맞춰 조정 (`../../table-grid.js`, `../../../table-grid.js` 등).
+경로는 페이지 깊이에 맞춰 조정 (`../table-grid.js`, `../../table-grid.js` 등).
 
 ### 2. 테이블 엘리먼트에 `id="tbl"` 을 부여하고 attach 한다
 
@@ -92,13 +92,13 @@ tbody.querySelectorAll('tr').forEach(tr => {
 
 ### 적용된 페이지
 
-- `wireframes/salesmap/option-a/index.html` (리드 로우테이블 — 기준 구현)
-- `wireframes/salesmap/option-b/index.html`
-- `wireframes/blog/option-c/index.html`
-- `wireframes/ib-ob/option-c/index.html`
+- `salesmap/a/index.html` (리드 로우테이블 — 기준 구현)
+- `salesmap/index.html`
+- `blog/index.html`
+- `ib-ob/index.html`
 
 ### div 기반 행 그리드는 `<table>` 로 변환한다
 
 기존에 `display:grid` 로 만든 div 기반 행 그리드(예: `.table-head` + `.post-row`)는
 실제 `<table>` 로 바꾼다. 시각 그대로 두려면 `display:block` 으로 테이블 디폴트를 끈 뒤
-`<tr>` 에 `display:grid; grid-template-columns: …` 를 그대로 얹으면 된다 — `wireframes/blog/option-c/index.html` 참고.
+`<tr>` 에 `display:grid; grid-template-columns: …` 를 그대로 얹으면 된다 — `blog/index.html` 참고.
