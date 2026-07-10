@@ -156,7 +156,9 @@ a{ color:inherit; text-decoration:none; }
 
 /* === resizable table (시안 A 핵심) === */
 /* table-layout:fixed + 각 컬럼 width 직접 제어, 헤더에 그립 핸들 부착 */
-.smap-table{ width:max-content; border-collapse:separate; border-spacing:0; table-layout:fixed; }
+/* min-width:100% — 컬럼 합이 컨테이너보다 좁으면 페이지 너비에 맞춰 늘어나고,
+ * 넓으면 max-content 로 가로 스크롤. */
+.smap-table{ width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }
 .smap-table thead th{
   position:sticky; top:0; z-index:3;
   background:var(--panel-2); color:var(--muted);
